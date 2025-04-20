@@ -1,84 +1,59 @@
-import React, { useEffect, useState } from "react";
-
-declare global {
-  interface Window {
-    botpressWebChat?: {
-      init: (config: any) => void;
-    };
-  }
-}
+import React, { useEffect, useState, useRef } from "react";
 
 const BotpressChat: React.FC = () => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const iframeRef = useRef<HTMLIFrameElement | null>(null);
 
   useEffect(() => {
-    // Check if script is already loaded
-    if (document.querySelector('script[src="https://cdn.botpress.cloud/webchat/v2/inject.js"]')) {
-      setIsLoaded(true);
-      return;
-    }
-
-    // Add Botpress script to the document
-    const script = document.createElement("script");
-    script.src = "https://cdn.botpress.cloud/webchat/v2/inject.js";
-    script.async = true;
+    // Use shareable link from Botpress
+    const shareableLink = "https://cdn.botpress.cloud/webchat/v2.3/shareable.html?configUrl=https://files.bpcontent.cloud/2025/04/17/12/20250417122849-GAAFK7D8.json";
     
-    // Handle loading errors
-    script.onerror = () => {
-      setLoadError("Failed to load Botpress chat script");
-      console.error("Failed to load Botpress chat script");
+    // Create iframe element
+    const iframe = document.createElement("iframe");
+    iframe.src = shareableLink;
+    
+    // Set iframe styles
+    iframe.style.border = "none";
+    iframe.style.position = "fixed";
+    iframe.style.bottom = "20px";
+    iframe.style.right = "20px";
+    iframe.style.width = "400px";
+    iframe.style.height = "600px";
+    iframe.style.maxHeight = "80vh";
+    iframe.style.maxWidth = "90vw";
+    iframe.style.zIndex = "9999";
+    iframe.style.borderRadius = "10px";
+    iframe.style.boxShadow = "0 5px 15px rgba(0, 0, 0, 0.3)";
+    
+    // Add loading and error handlers
+    iframe.onload = () => {
+      setIsLoaded(true);
+      console.log("Botpress chat iframe loaded successfully");
     };
     
-    script.onload = () => {
-      setIsLoaded(true);
-      console.log("Botpress script loaded successfully");
-      
-      // Give time for the script to initialize
-      setTimeout(() => {
-        try {
-          if (window.botpressWebChat) {
-            window.botpressWebChat.init({
-              "botId": "0bd9d0e4-a167-4bfb-97ae-7422bc7f98c3", // Your provided Bot ID
-              "hostUrl": "https://cdn.botpress.cloud/webchat/v2",
-              "messagingUrl": "https://messaging.botpress.cloud",
-              "clientId": "01JS1FVRPGCP54ZKENQJ8WZCMP", // Your provided Client ID
-              "botName": "Ella",
-              "avatarUrl": "https://img.icons8.com/color/96/000000/bot.png", 
-              "stylesheet": "https://cdn.botpress.cloud/webchat/v2/themes/default.css",
-              "enableConversationDeletion": true,
-              "showPoweredBy": false,
-              "useSessionStorage": true,
-              "containerWidth": "100%",
-              "layoutWidth": "100%",
-              "theme": "dark"
-            });
-            console.log("Botpress webchat initialized");
-          } else {
-            console.error("Botpress webchat is not available after script load");
-            setLoadError("Botpress chat integration is not available");
-          }
-        } catch (err) {
-          console.error("Error initializing Botpress chat:", err);
-          setLoadError(`Error initializing chat: ${err instanceof Error ? err.message : String(err)}`);
-        }
-      }, 1000); // Wait 1 second for script to fully initialize
+    iframe.onerror = () => {
+      setLoadError("Failed to load Botpress chat iframe");
+      console.error("Failed to load Botpress chat iframe");
     };
     
-    document.body.appendChild(script);
-
-    // Cleanup
+    // Add iframe to document
+    document.body.appendChild(iframe);
+    
+    // Save reference to iframe
+    iframeRef.current = iframe;
+    
+    // Cleanup function
     return () => {
-      // Only remove if it exists and was added by this component
-      if (document.body.contains(script)) {
-        document.body.removeChild(script);
+      if (iframe && document.body.contains(iframe)) {
+        document.body.removeChild(iframe);
       }
     };
   }, []);
 
-  // This component doesn't render anything directly, but we could add error messaging if needed
+  // Show error message if loading fails
   return loadError ? (
-    <div className="p-4 text-sm text-red-500">
+    <div className="p-4 text-sm text-red-500 fixed bottom-4 right-4 bg-white rounded shadow-lg z-50">
       <p>Chatbot temporarily unavailable. Please try again later.</p>
       {/* Only show detailed error in development */}
       {import.meta.env.DEV && <p className="text-xs mt-1">{loadError}</p>}
