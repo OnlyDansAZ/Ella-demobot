@@ -5,8 +5,8 @@ export interface BotResponsesMap {
 export const botResponses: BotResponsesMap = {
   // Greetings
   "hello": "Hello! How can I assist you today?",
-  "hi": "Hi there! What would you like to know about YoBot?",
-  "hey": "Hey! I'm YoBot, ready to help you. What can I do for you?",
+  "hi": "Hi there! What would you like to know about Ella?",
+  "hey": "Hey! I'm Ella, ready to help you. What can I do for you?",
   "good morning": "Good morning! How can I make your day more productive?",
   "good afternoon": "Good afternoon! How can I assist you today?",
   "good evening": "Good evening! How can I help you tonight?",

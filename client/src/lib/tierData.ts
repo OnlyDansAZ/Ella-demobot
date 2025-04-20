@@ -33,7 +33,7 @@ export const tiers: Tier[] = [
       "Basic note-taking",
     ],
     chat: {
-      botMessage: "Hi there! I'm YoBot Starter. I can help you manage your calendar and take basic notes. How can I assist you today?",
+      botMessage: "Hi there! I'm Ella Starter. I can help you manage your calendar and take basic notes. How can I assist you today?",
       userMessage: "Can you schedule a meeting for me next Tuesday at 3pm?",
       botResponse: "I'll schedule that meeting for Tuesday at 3:00 PM. What would you like to title the meeting?"
     }
@@ -50,7 +50,7 @@ export const tiers: Tier[] = [
       "Custom voice options"
     ],
     chat: {
-      botMessage: "Hey there! I'm YoBot Pro. I can handle calls, texts, advanced scheduling, and keep detailed records. What can I help you with?",
+      botMessage: "Hey there! I'm Ella Pro. I can handle calls, texts, advanced scheduling, and keep detailed records. What can I help you with?",
       userMessage: "I need to call my team and let them know our meeting has moved to Thursday.",
       botResponse: "I can handle that for you. I'll call your team members to inform them about the meeting change to Thursday. Would you like me to update the calendar invites as well?"
     }
@@ -68,7 +68,7 @@ export const tiers: Tier[] = [
       "Fully customizable personality"
     ],
     chat: {
-      botMessage: "Hello! I'm YoBot Enterprise. I provide complete business automation with system integrations, financial management, and detailed analytics. How may I assist your organization today?",
+      botMessage: "Hello! I'm Ella Enterprise. I provide complete business automation with system integrations, financial management, and detailed analytics. How may I assist your organization today?",
       userMessage: "I need to pay all our pending invoices and generate a financial report for Q2.",
       botResponse: "I'll process all pending invoices immediately and generate a comprehensive Q2 financial report. The report will include expense breakdown, payment history, and budget analysis. Would you like me to email this to the finance team as well?"
     }
@@ -86,7 +86,7 @@ export const tiers: Tier[] = [
       "Dedicated AI development team"
     ],
     chat: {
-      botMessage: "Greetings! I'm YoBot, your Platinum assistant. I have access to proprietary AI models, predictive analytics, and multi-language capabilities. I'm designed to anticipate your needs before you even ask. How may I help you today?",
+      botMessage: "Greetings! I'm Ella, your Platinum assistant. I have access to proprietary AI models, predictive analytics, and multi-language capabilities. I'm designed to anticipate your needs before you even ask. How may I help you today?",
       userMessage: "Our team is planning an international expansion. Can you help with the logistics and market research?",
       botResponse: "I'll coordinate your international expansion immediately. Based on your company profile and recent meetings, I've already begun analyzing potential markets in Asia and Europe. I'll prepare a comprehensive report with logistics requirements, market analysis, and regulatory considerations. I can also arrange meetings with local partners in your target regions. Would you like me to prepare a presentation for your board meeting next week?"
     }

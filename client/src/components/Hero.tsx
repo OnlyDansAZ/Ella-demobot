@@ -12,7 +12,7 @@ const Hero: React.FC = () => {
             </h1>
             <p className="text-xl text-gray-300 mb-8">
               Custom personalities. Real conversations. Total control.
-              Experience the future of automated assistance with YoBot.
+              Experience the future of automated assistance with Ella.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
               <a
@@ -39,12 +39,12 @@ const Hero: React.FC = () => {
                   <div className="w-3 h-3 bg-red-500 rounded-full mr-2"></div>
                   <div className="w-3 h-3 bg-yellow-500 rounded-full mr-2"></div>
                   <div className="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
-                  <div className="ml-2 text-sm font-medium">YoBot Assistant</div>
+                  <div className="ml-2 text-sm font-medium">Ella</div>
                 </div>
                 <div className="p-4 space-y-4 max-h-96 overflow-y-auto">
                   <div className="flex items-start">
                     <div className="bg-[#0D82DA] text-white p-3 rounded-lg rounded-tl-none max-w-xs">
-                      Hey there! I'm YoBot, your AI assistant. How can I help
+                      Hey there! I'm Ella, your AI assistant. How can I help
                       you today?
                     </div>
                   </div>
