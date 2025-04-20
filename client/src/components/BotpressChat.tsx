@@ -43,7 +43,7 @@ const BotpressChat: React.FC = () => {
               "hostUrl": "https://cdn.botpress.cloud/webchat/v2",
               "messagingUrl": "https://messaging.botpress.cloud",
               "clientId": "01JS1FVRPGCP54ZKENQJ8WZCMP", // Your provided Client ID
-              "botName": "YoBot Assistant",
+              "botName": "Ella",
               "avatarUrl": "https://img.icons8.com/color/96/000000/bot.png", 
               "stylesheet": "https://cdn.botpress.cloud/webchat/v2/themes/default.css",
               "enableConversationDeletion": true,
