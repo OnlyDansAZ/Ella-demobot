@@ -12,7 +12,7 @@ export const botResponses: BotResponsesMap = {
   "good evening": "Good evening! How can I help you tonight?",
   
   // Info about Ella
-  "features": "Ella offers calendar management, call handling, record keeping, bill payment, and custom personalities. The features vary by tier.",
+  "features": "YoBot's Ella offers calendar management, call handling, record keeping, bill payment, and custom personalities. The features vary by tier.",
   "pricing": "We offer four tiers: Starter (Basic), Pro (Standard), Enterprise (Professional), and Platinum (Premium). Each tier has different features.",
   "plans": "We offer four tiers: Starter (Basic), Pro (Standard), Enterprise (Professional), and Platinum (Premium). Each tier has different features.",
   "tiers": "Our tiers include Starter, Pro, Enterprise, and Platinum, each with increasing capabilities.",
