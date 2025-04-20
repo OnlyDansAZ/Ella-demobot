@@ -41,7 +41,7 @@ const Footer: React.FC = () => {
               </li>
               <li>
                 <a href="#tiers" className="hover:text-white transition-colors">
-                  Luna Tuna
+                  Ella
                 </a>
               </li>
             </ul>
