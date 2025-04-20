@@ -8,11 +8,11 @@ const Header: React.FC = () => {
         <div className="flex items-center mb-4 md:mb-0">
           <img
             src="https://www.yobot.store/images/yobot-logo-blue.png"
-            alt="YoBot Logo"
+            alt="Ella Logo"
             className="h-10 mr-3 bg-white rounded-full p-1"
           />
           <div>
-            <h1 className="text-2xl font-bold text-white">YoBot</h1>
+            <h1 className="text-2xl font-bold text-white">Ella</h1>
             <p className="text-sm text-blue-100">Engage smarter. Not harder.</p>
           </div>
         </div>
