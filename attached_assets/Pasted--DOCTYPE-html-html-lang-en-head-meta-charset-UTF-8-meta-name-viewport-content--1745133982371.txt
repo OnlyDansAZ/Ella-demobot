@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>YoBot - Engage Smarter</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #0d0d0d;
+      color: #ffffff;
+      margin: 0;
+      padding: 0;
+    }
+    .header {
+      background-color: #0d82da;
+      padding: 20px;
+      text-align: center;
+    }
+    .tagline {
+      margin-top: 10px;
+      font-size: 1.2em;
+    }
+    .hero {
+      padding: 40px 20px;
+      text-align: center;
+      background: #1e1e1e;
+    }
+    .cta {
+      display: inline-block;
+      margin-top: 20px;
+      padding: 10px 20px;
+      background-color: #0d82da;
+      color: #fff;
+      text-decoration: none;
+      border-radius: 5px;
+    }
+    .features, .customization, .contact {
+      padding: 40px 20px;
+      background-color: #2e2e2e;
+    }
+    .features ul {
+      list-style: none;
+      padding: 0;
+    }
+    .features li {
+      margin: 10px 0;
+    }
+    .footer {
+      text-align: center;
+      padding: 20px;
+      background-color: #0d82da;
+    }
+    a {
+      color: #0d82da;
+      text-decoration: none;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <h1>YoBot</h1>
+    <p class="tagline">Engage smarter. Not harder.</p>
+  </header>
+
+  <section class="hero">
+    <h2>Meet Your AI-Powered Assistant</h2>
+    <p>Custom personalities. Real conversations. Total control.</p>
+    <a href="#contact" class="cta">Request a Demo</a>
+  </section>
+
+  <section class="features">
+    <h2>What YoBot Can Do</h2>
+    <ul>
+      <li><strong>Calls & Texting</strong> – Communicate like a pro</li>
+      <li><strong>Calendar Sync</strong> – Never miss a meeting</li>
+      <li><strong>Record Keeping</strong> – Auto notes and logs</li>
+      <li><strong>Bill Pay</strong> – Smart financial assistant</li>
+      <li><strong>Custom Voice & Personality</strong> – Be goofy or all business</li>
+      <li><strong>24/7 Availability</strong> – It never sleeps</li>
+    </ul>
+  </section>
+
+  <section class="customization">
+    <h2>Make It Yours</h2>
+    <p>Slide between pro, fun, sassy, or serious – YoBot adapts to your style.</p>
+  </section>
+
+  <section class="contact" id="contact">
+    <h2>Let’s Talk</h2>
+    <p>Email: <a href="mailto:daniel@yobot.bot">daniel@yobot.bot</a></p>
+    <p>Phone: <a href="tel:+16027850165">602-785-0165</a></p>
+  </section>
+
+  <footer class="footer">
+    <p>&copy; 2025 YoBot. All rights reserved.</p>
+  </footer>
+</body>
+</html>

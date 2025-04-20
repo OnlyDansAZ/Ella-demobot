@@ -1,0 +1,71 @@
+<!DOCTYPE html><html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Luna Tuna | Tactical AI</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(to bottom right, #0f2027, #203a43, #2c5364);
+      color: #f0f0f0;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+    }
+    .overlay {
+      background: rgba(0, 0, 0, 0.7);
+      padding: 4rem 2rem;
+      width: 100%;
+    }
+    .container {
+      max-width: 900px;
+      margin: auto;
+    }
+    .logo {
+      height: 60px;
+      margin-bottom: 1rem;
+    }
+    h1 {
+      font-size: 2.5rem;
+      margin-bottom: 1rem;
+    }
+    p {
+      font-size: 1.2rem;
+      margin-bottom: 2rem;
+    }
+    #webchat {
+      height: 600px;
+      max-width: 600px;
+      margin: auto;
+    }
+  </style>
+</head>
+<body>
+  <section class="overlay">
+    <div class="container">
+      <img class="logo" src="https://www.yobot.store/images/yobot-logo-blue.png" alt="YoBot Logo">
+      <h1>Meet Luna Tuna</h1>
+      <p>
+        Tactical AI. Elegant, efficient, always one step ahead. Luna doesn’t ask questions —
+        she just delivers answers. With a smile, and a little side-eye.
+      </p>
+      <div id="webchat"></div>
+    </div>
+  </section>  <script src="https://cdn.botpress.cloud/webchat/v2/inject.js"></script>  <script>
+    window.botpressWebChat.init({
+      "botId": "your-botpress-bot-id",
+      "hostUrl": "https://cdn.botpress.cloud/webchat/v2",
+      "messagingUrl": "https://messaging.botpress.cloud",
+      "clientId": "your-botpress-client-id",
+      "botName": "Luna Tuna",
+      "avatarUrl": "https://www.yobot.store/images/yobot-logo-blue.png",
+      "stylesheet": "https://cdn.botpress.cloud/webchat/v2/themes/default.css",
+      "enableConversationDeletion": true,
+      "showPoweredBy": false,
+      "useSessionStorage": true
+    });
+  </script></body>
+</html>
