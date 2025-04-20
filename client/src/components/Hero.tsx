@@ -12,7 +12,7 @@ const Hero: React.FC = () => {
             </h1>
             <p className="text-xl text-gray-300 mb-8">
               Custom personalities. Real conversations. Total control.
-              Experience the future of automated assistance with Ella.
+              Experience the future of automated assistance with YoBot's Ella.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
               <a

@@ -10,7 +10,7 @@ interface Message {
 const LiveDemo: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([
     {
-      text: "Hello! I'm Ella, your AI assistant. I'm here to demonstrate my capabilities. What would you like to know about my features?",
+      text: "Hello! I'm Ella, YoBot's AI assistant. I'm here to demonstrate my capabilities. What would you like to know about my features?",
       isUser: false,
     },
   ]);
@@ -52,7 +52,7 @@ const LiveDemo: React.FC = () => {
     <section id="demo" className="py-16 px-4 bg-gray-800">
       <div className="container mx-auto max-w-6xl">
         <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold mb-4">Try Ella in Action</h2>
+          <h2 className="text-3xl font-bold mb-4">Try YoBot's Ella in Action</h2>
           <p className="text-gray-300 max-w-2xl mx-auto">
             Experience our AI assistant with this live demo. Ask questions,
             schedule meetings, or explore other features.
