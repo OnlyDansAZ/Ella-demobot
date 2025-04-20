@@ -16,7 +16,7 @@ export interface Tier {
   id: string;
   name: string;
   description: string;
-  price: number;
+  price_tier: string; // Changed from numeric price to tier label
   features: string[];
   chat: TierChat;
 }
@@ -26,7 +26,7 @@ export const tiers: Tier[] = [
     id: "starter",
     name: "Starter",
     description: "Perfect for individuals who need basic assistance",
-    price: 19,
+    price_tier: "Basic",
     features: [
       "Basic chatbot interactions",
       "Calendar management",
@@ -42,7 +42,7 @@ export const tiers: Tier[] = [
     id: "pro",
     name: "Pro",
     description: "Advanced features for professionals and small teams",
-    price: 49,
+    price_tier: "Standard",
     features: [
       "Everything in Starter",
       "Call handling and texting",
@@ -59,7 +59,7 @@ export const tiers: Tier[] = [
     id: "enterprise",
     name: "Enterprise",
     description: "Complete solution for businesses and organizations",
-    price: 99,
+    price_tier: "Professional",
     features: [
       "Everything in Pro",
       "Complete bill payment automation",
@@ -77,7 +77,7 @@ export const tiers: Tier[] = [
     id: "platinum",
     name: "Platinum",
     description: "Ultimate AI assistant with proprietary customization",
-    price: 199,
+    price_tier: "Premium",
     features: [
       "Everything in Enterprise",
       "Proprietary AI model",
@@ -86,7 +86,7 @@ export const tiers: Tier[] = [
       "Dedicated AI development team"
     ],
     chat: {
-      botMessage: "Greetings! I'm Luna Tuna, your Platinum YoBot assistant. I have access to proprietary AI models, predictive analytics, and multi-language capabilities. I'm designed to anticipate your needs before you even ask. How may I help you today?",
+      botMessage: "Greetings! I'm YoBot, your Platinum assistant. I have access to proprietary AI models, predictive analytics, and multi-language capabilities. I'm designed to anticipate your needs before you even ask. How may I help you today?",
       userMessage: "Our team is planning an international expansion. Can you help with the logistics and market research?",
       botResponse: "I'll coordinate your international expansion immediately. Based on your company profile and recent meetings, I've already begun analyzing potential markets in Asia and Europe. I'll prepare a comprehensive report with logistics requirements, market analysis, and regulatory considerations. I can also arrange meetings with local partners in your target regions. Would you like me to prepare a presentation for your board meeting next week?"
     }

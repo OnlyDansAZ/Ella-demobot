@@ -25,7 +25,7 @@ const Hero: React.FC = () => {
                 href="#tiers"
                 className="border border-gray-500 hover:border-white text-white font-medium px-6 py-3 rounded-md text-center transition-colors"
               >
-                View Pricing Tiers
+                View Plans
               </a>
             </div>
           </div>

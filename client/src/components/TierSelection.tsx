@@ -50,15 +50,12 @@ const TierSelection: React.FC = () => {
                     <p className="text-gray-400">{currentTier.description}</p>
                   </div>
                   <div className="text-right">
-                    <div className="text-3xl font-bold">
-                      ${currentTier.price}
-                      <span className="text-sm font-normal text-gray-400">
-                        /month
-                      </span>
+                    <div className="text-xl font-bold text-[#0D82DA] mb-2">
+                      {currentTier.price_tier} Plan
                     </div>
                     <a
                       href="#contact"
-                      className="inline-block mt-2 bg-[#0D82DA] hover:bg-blue-600 text-white font-medium px-6 py-2 rounded-md transition-colors"
+                      className="inline-block bg-[#0D82DA] hover:bg-blue-600 text-white font-medium px-6 py-2 rounded-md transition-colors"
                     >
                       Get Started
                     </a>

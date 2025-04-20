@@ -31,7 +31,7 @@ const Header: React.FC = () => {
                 href="#tiers"
                 className="text-white hover:text-blue-200 transition py-2 inline-block"
               >
-                Pricing
+                Plans
               </a>
             </li>
             <li>
