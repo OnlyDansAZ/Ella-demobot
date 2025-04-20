@@ -10,7 +10,7 @@ interface Message {
 const LiveDemo: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([
     {
-      text: "Hello! I'm Luna Tuna, your YoBot assistant. I'm here to demonstrate my capabilities. What would you like to know about my features?",
+      text: "Hello! I'm YoBot, your AI assistant. I'm here to demonstrate my capabilities. What would you like to know about my features?",
       isUser: false,
     },
   ]);
@@ -52,7 +52,7 @@ const LiveDemo: React.FC = () => {
     <section id="demo" className="py-16 px-4 bg-gray-800">
       <div className="container mx-auto max-w-6xl">
         <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold mb-4">Try Luna Tuna in Action</h2>
+          <h2 className="text-3xl font-bold mb-4">Try YoBot in Action</h2>
           <p className="text-gray-300 max-w-2xl mx-auto">
             Experience our AI assistant with this live demo. Ask questions,
             schedule meetings, or explore other features.
@@ -63,11 +63,11 @@ const LiveDemo: React.FC = () => {
           <div className="p-4 bg-gray-800 border-b border-gray-700 flex justify-between items-center">
             <div className="flex items-center">
               <img
-                src="https://www.yobot.store/images/yobot-logo-blue.png"
-                alt="Luna Tuna"
+                src="https://img.icons8.com/color/96/000000/bot.png"
+                alt="YoBot"
                 className="h-8 w-8 bg-white rounded-full p-1 mr-3"
               />
-              <h3 className="font-medium">Luna Tuna</h3>
+              <h3 className="font-medium">YoBot</h3>
             </div>
             <div>
               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
