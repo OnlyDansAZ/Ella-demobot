@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Mic, MicOff, Send, Volume2, VolumeX, ArrowLeft, User, Brain, Edit, Calendar } from 'lucide-react';
+import { Mic, MicOff, Send, Volume2, VolumeX, ArrowLeft, User, Brain, Edit, Calendar, Clock, MapPin, AlertCircle } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar } from '@/components/ui/avatar';
 import { Slider } from '@/components/ui/slider';
@@ -19,7 +19,9 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { predefinedPersonas, customPersonaTemplate } from '@/lib/personas';
 import { ScheduleMeeting } from '@/components/ScheduleMeeting';
+import { Badge } from '@/components/ui/badge';
 import { useCalendly } from '@/hooks/use-calendly';
+import { apiRequest } from '@/lib/queryClient';
 import yobotLogo from "../assets/yobot-logo.png";
 import yobotHeadLogo from "../assets/yobot-head-logo.png";
 import yobotTransparentLogo from "../assets/yobot-transparent-logo.png";
@@ -30,6 +32,20 @@ interface Message {
   content: string;
   isUser: boolean;
   timestamp: Date;
+}
+
+// Define appointment interface matching the database schema
+interface Appointment {
+  id: number;
+  title: string;
+  description?: string;
+  date: string;
+  startTime: string;
+  endTime?: string;
+  location?: string;
+  status: 'confirmed' | 'pending' | 'cancelled' | 'completed';
+  reminderSent: boolean;
+  timeZone?: string;
 }
 
 export default function EllaChat() {
@@ -50,12 +66,39 @@ export default function EllaChat() {
   
   // Scheduling state
   const [showCalendly, setShowCalendly] = useState(false);
+  const [showAppointments, setShowAppointments] = useState(false);
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [isLoadingAppointments, setIsLoadingAppointments] = useState(false);
   const { calendlyUrl, meetingTypes } = useCalendly();
   
   // Persona state
   const [selectedPersona, setSelectedPersona] = useState<string>("default");
   const [useCustomPersona, setUseCustomPersona] = useState(false);
   const [customPersonaText, setCustomPersonaText] = useState(customPersonaTemplate);
+  
+  // Fetch upcoming appointments
+  const fetchAppointments = async () => {
+    setIsLoadingAppointments(true);
+    try {
+      const response = await fetch('/api/appointments/upcoming?limit=5', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data && data.appointments) {
+          setAppointments(data.appointments);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching appointments:', error);
+    } finally {
+      setIsLoadingAppointments(false);
+    }
+  };
   
   // Refs
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -264,6 +307,13 @@ export default function EllaChat() {
     }
   };
   
+  // Load appointments when needed
+  useEffect(() => {
+    if (showAppointments) {
+      fetchAppointments();
+    }
+  }, [showAppointments]);
+
   // Scroll to bottom when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -392,6 +442,91 @@ export default function EllaChat() {
                         />
                       )}
                     </div>
+                  </div>
+                )}
+                
+                {showAppointments && (
+                  <div className="my-4 p-2 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
+                    <div className="flex justify-between items-center mb-2">
+                      <h3 className="text-xs sm:text-sm font-medium flex items-center gap-1">
+                        <Calendar className="h-3 w-3 sm:h-4 sm:w-4" />
+                        Your Appointments
+                      </h3>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="h-6 w-6 p-0" 
+                        onClick={() => setShowAppointments(false)}
+                      >
+                        ✕
+                      </Button>
+                    </div>
+                    
+                    {isLoadingAppointments ? (
+                      <div className="flex justify-center p-4">
+                        <div className="h-4 w-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                      </div>
+                    ) : appointments.length > 0 ? (
+                      <div className="space-y-2">
+                        {appointments.map((appointment) => (
+                          <div key={appointment.id} className="p-2 bg-white dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700">
+                            <div className="flex justify-between">
+                              <h4 className="text-xs sm:text-sm font-medium">{appointment.title}</h4>
+                              <Badge 
+                                variant={
+                                  appointment.status === "confirmed" ? "default" : 
+                                  appointment.status === "completed" ? "secondary" : 
+                                  appointment.status === "cancelled" ? "destructive" : 
+                                  "outline"
+                                }
+                                className="text-[8px] px-1 py-0 h-4"
+                              >
+                                {appointment.status}
+                              </Badge>
+                            </div>
+                            
+                            <div className="mt-1 space-y-1">
+                              <div className="flex items-center text-[10px] sm:text-xs text-muted-foreground">
+                                <Calendar className="h-2.5 w-2.5 mr-1" />
+                                <span>
+                                  {new Date(appointment.date).toLocaleDateString()}
+                                </span>
+                              </div>
+                              
+                              <div className="flex items-center text-[10px] sm:text-xs text-muted-foreground">
+                                <Clock className="h-2.5 w-2.5 mr-1" />
+                                <span>
+                                  {appointment.startTime}
+                                  {appointment.endTime ? ` - ${appointment.endTime}` : ''}
+                                </span>
+                              </div>
+                              
+                              {appointment.location && (
+                                <div className="flex items-center text-[10px] sm:text-xs text-muted-foreground">
+                                  <MapPin className="h-2.5 w-2.5 mr-1" />
+                                  <span>{appointment.location}</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center p-2">
+                        <p className="text-xs text-muted-foreground">No upcoming appointments found.</p>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="mt-2 text-xs"
+                          onClick={() => {
+                            setShowAppointments(false);
+                            setShowCalendly(true);
+                          }}
+                        >
+                          Schedule One Now
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 )}
                 <div ref={messagesEndRef} />
