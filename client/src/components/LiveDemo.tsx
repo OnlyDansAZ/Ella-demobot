@@ -1,10 +1,11 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Send } from "lucide-react";
+import { Send, Volume2, VolumeX } from "lucide-react";
 import { getBotResponse } from "@/lib/botResponses";
 
 interface Message {
   text: string;
   isUser: boolean;
+  id?: string;
 }
 
 const LiveDemo: React.FC = () => {
@@ -12,10 +13,72 @@ const LiveDemo: React.FC = () => {
     {
       text: "Hello! I'm Ella, YoBot's AI assistant. I'm here to demonstrate my capabilities. What would you like to know about my features?",
       isUser: false,
+      id: "intro",
     },
   ]);
   const [inputValue, setInputValue] = useState("");
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [audioEnabled, setAudioEnabled] = useState(true);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const speechSynthesis = window.speechSynthesis;
+  const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
+
+  // Speak text function
+  const speakText = (text: string) => {
+    if (!audioEnabled) return;
+    
+    // Cancel any ongoing speech
+    speechSynthesis.cancel();
+    
+    // Create a new utterance
+    const utterance = new SpeechSynthesisUtterance(text);
+    
+    // Configure voice properties
+    utterance.rate = 1.0;
+    utterance.pitch = 1.0;
+    utterance.volume = 1.0;
+    
+    // Try to use a female voice if available
+    const voices = speechSynthesis.getVoices();
+    const femaleVoice = voices.find(voice => 
+      voice.name.includes('female') || 
+      voice.name.includes('Samantha') || 
+      voice.name.includes('Victoria') ||
+      voice.name.includes('Ava')
+    );
+    
+    if (femaleVoice) {
+      utterance.voice = femaleVoice;
+    }
+    
+    // Event handlers
+    utterance.onstart = () => setIsSpeaking(true);
+    utterance.onend = () => setIsSpeaking(false);
+    utterance.onerror = () => setIsSpeaking(false);
+    
+    // Store reference to current utterance
+    utteranceRef.current = utterance;
+    
+    // Start speaking
+    speechSynthesis.speak(utterance);
+  };
+
+  // Toggle audio
+  const toggleAudio = () => {
+    if (isSpeaking) {
+      speechSynthesis.cancel();
+      setIsSpeaking(false);
+    }
+    setAudioEnabled(!audioEnabled);
+  };
+
+  // Speak a specific message
+  const speakMessage = (messageId: string) => {
+    const messageToSpeak = messages.find(m => m.id === messageId);
+    if (messageToSpeak && !messageToSpeak.isUser) {
+      speakText(messageToSpeak.text);
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,6 +89,7 @@ const LiveDemo: React.FC = () => {
     const userMessage = {
       text: inputValue,
       isUser: true,
+      id: `user-${Date.now()}`,
     };
     
     setMessages((prev) => [...prev, userMessage]);
@@ -33,13 +97,47 @@ const LiveDemo: React.FC = () => {
     
     // Add bot response after a delay
     setTimeout(() => {
+      const botResponseId = `bot-${Date.now()}`;
+      const botResponseText = getBotResponse(inputValue);
+      
       const botResponse = {
-        text: getBotResponse(inputValue),
+        text: botResponseText,
         isUser: false,
+        id: botResponseId,
       };
+      
       setMessages((prev) => [...prev, botResponse]);
+      
+      // Speak the bot's response
+      if (audioEnabled) {
+        setTimeout(() => speakText(botResponseText), 100);
+      }
     }, 1000);
   };
+
+  // Initialize speech synthesis
+  useEffect(() => {
+    if ('speechSynthesis' in window) {
+      // Get voices when they are loaded
+      speechSynthesis.onvoiceschanged = () => {
+        speechSynthesis.getVoices();
+      };
+      
+      // Play the initial greeting message on load
+      setTimeout(() => {
+        if (audioEnabled && messages.length > 0 && messages[0].id === "intro") {
+          speakText(messages[0].text);
+        }
+      }, 1000);
+    }
+    
+    // Clean up on unmount
+    return () => {
+      if (speechSynthesis) {
+        speechSynthesis.cancel();
+      }
+    };
+  }, []);
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
@@ -62,14 +160,40 @@ const LiveDemo: React.FC = () => {
         <div className="mx-auto max-w-2xl bg-gray-900 rounded-xl overflow-hidden shadow-2xl border border-gray-700">
           <div className="p-4 bg-gray-800 border-b border-gray-700 flex justify-between items-center">
             <div className="flex items-center">
-              <img
-                src="https://img.icons8.com/color/96/000000/bot.png"
-                alt="Ella"
-                className="h-8 w-8 bg-white rounded-full p-1 mr-3"
-              />
-              <h3 className="font-medium">Ella</h3>
+              <div className="relative">
+                <img
+                  src="https://img.icons8.com/color/96/000000/bot.png"
+                  alt="Ella"
+                  className={`h-8 w-8 bg-white rounded-full p-1 mr-3 ${isSpeaking ? 'ring-2 ring-green-400 ring-offset-1 ring-offset-gray-800' : ''}`}
+                />
+                {isSpeaking && (
+                  <div className="absolute -top-1 -right-1 flex items-center justify-center">
+                    <span className="flex h-3 w-3">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+                    </span>
+                  </div>
+                )}
+              </div>
+              <div>
+                <h3 className="font-medium">Ella</h3>
+                {isSpeaking && (
+                  <p className="text-xs text-green-400">Speaking...</p>
+                )}
+              </div>
             </div>
-            <div>
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={toggleAudio}
+                className="p-1.5 rounded-full bg-gray-700 hover:bg-gray-600 transition-colors"
+                title={audioEnabled ? "Disable voice" : "Enable voice"}
+              >
+                {audioEnabled ? (
+                  <Volume2 className="h-4 w-4 text-green-400" />
+                ) : (
+                  <VolumeX className="h-4 w-4 text-gray-400" />
+                )}
+              </button>
               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                 Online
               </span>
@@ -91,9 +215,18 @@ const LiveDemo: React.FC = () => {
                     message.isUser
                       ? "bg-gray-700 text-white rounded-lg rounded-tr-none"
                       : "bg-[#0D82DA] text-white rounded-lg rounded-tl-none"
-                  } p-3 max-w-md`}
+                  } p-3 max-w-md relative`}
                 >
                   {message.text}
+                  {!message.isUser && (
+                    <button
+                      onClick={() => message.id && speakMessage(message.id)}
+                      className="absolute -top-2 -right-2 bg-gray-800 p-1.5 rounded-full hover:bg-gray-700 transition-colors"
+                      title="Play message"
+                    >
+                      <Volume2 className="h-3 w-3 text-white" />
+                    </button>
+                  )}
                 </div>
               </div>
             ))}
