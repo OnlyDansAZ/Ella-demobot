@@ -117,4 +117,3 @@ Here are some aspects you might want to customize:
 - Any special knowledge or emphasis
 
 Keep the instructions clear and avoid contradictory directions.`;
-`
