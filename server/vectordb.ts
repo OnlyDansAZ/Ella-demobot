@@ -1,11 +1,15 @@
-import { Pool } from '@neondatabase/serverless';
+import { Pool, neonConfig } from '@neondatabase/serverless';
 import { OpenAIEmbeddings } from "@langchain/openai";
 import { PGVectorStore } from '@langchain/community/vectorstores/pgvector';
 import { Document } from 'langchain/document';
+import ws from 'ws';
 
-// Database connection
+// Configure Neon for WebSocket support
+neonConfig.webSocketConstructor = ws;
+
+// Database connection for Neon DB
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
+  connectionString: process.env.DATABASE_URL
 });
 
 // Initialize the embeddings model
@@ -23,9 +27,11 @@ let vectorStore: PGVectorStore;
 export async function initVectorDB() {
   try {
     // Initialize PGVector store
+    // Direct connection config for PGVector which expects a direct client config, not a pool
     vectorStore = await PGVectorStore.initialize(embeddings, {
       postgresConnectionOptions: {
-        pool,
+        type: "neon",
+        connectionString: process.env.DATABASE_URL,
       },
       tableName: "documents", // Table name to use
       columns: {
