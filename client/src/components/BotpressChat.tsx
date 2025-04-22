@@ -1,11 +1,18 @@
 import React, { useEffect, useState, useRef } from "react";
 
-const BotpressChat: React.FC = () => {
+interface BotpressChatProps {
+  enabled?: boolean; // Optional prop to control whether the chat is displayed
+}
+
+const BotpressChat: React.FC<BotpressChatProps> = ({ enabled = false }) => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
 
   useEffect(() => {
+    // If disabled, don't load Botpress
+    if (!enabled) return;
+    
     // Use shareable link from Botpress
     const shareableLink = "https://cdn.botpress.cloud/webchat/v2.3/shareable.html?configUrl=https://files.bpcontent.cloud/2025/04/17/12/20250417122849-GAAFK7D8.json";
     
@@ -49,16 +56,19 @@ const BotpressChat: React.FC = () => {
         document.body.removeChild(iframe);
       }
     };
-  }, []);
+  }, [enabled]);
 
-  // Show error message if loading fails
-  return loadError ? (
+  // If disabled or no error, render nothing
+  if (!enabled || !loadError) return null;
+  
+  // Show error message if loading fails and enabled
+  return (
     <div className="p-4 text-sm text-red-500 fixed bottom-4 right-4 bg-white rounded shadow-lg z-50">
       <p>Chatbot temporarily unavailable. Please try again later.</p>
       {/* Only show detailed error in development */}
       {import.meta.env.DEV && <p className="text-xs mt-1">{loadError}</p>}
     </div>
-  ) : null;
+  );
 };
 
 export default BotpressChat;

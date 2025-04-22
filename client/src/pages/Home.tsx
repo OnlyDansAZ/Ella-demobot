@@ -6,7 +6,8 @@ import TierSelection from "@/components/TierSelection";
 import LiveDemo from "@/components/LiveDemo";
 import Contact from "@/components/Contact";
 import Footer from "@/components/Footer";
-import BotpressChat from "@/components/BotpressChat";
+// Botpress chat removed to prevent obstruction of the demo
+// import BotpressChat from "@/components/BotpressChat";
 
 const Home: React.FC = () => {
   return (
@@ -20,7 +21,7 @@ const Home: React.FC = () => {
         <Contact />
       </main>
       <Footer />
-      <BotpressChat />
+      {/* BotpressChat removed to prevent obstruction of the demo */}
     </div>
   );
 };

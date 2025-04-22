@@ -144,8 +144,8 @@ const LiveDemo: React.FC = () => {
     setIsLoading(true);
     
     try {
-      // Format conversation history for context
-      const conversationHistory = messages.slice(-6).map(msg => ({
+      // Format conversation history with ALL previous messages for better context
+      const conversationHistory = messages.map(msg => ({
         role: msg.isUser ? "user" : "assistant",
         content: msg.text
       }));
@@ -298,8 +298,8 @@ const LiveDemo: React.FC = () => {
               setIsLoading(true);
               
               try {
-                // Format conversation history for API
-                const conversationHistory = messages.slice(-6).map(msg => ({
+                // Format conversation history with ALL previous messages for better context
+                const conversationHistory = messages.map(msg => ({
                   role: msg.isUser ? "user" : "assistant",
                   content: msg.text
                 }));

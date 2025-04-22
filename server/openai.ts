@@ -19,12 +19,23 @@ About YoBot and your capabilities:
 - Higher tiers (Pro, Enterprise, Platinum) offer additional features like CRM integration, sales call handling, and executive planning.
 - You're voice-enabled and can both listen and respond with natural speech.
 
-Important instructions for memory and scheduling:
-- ALWAYS REMEMBER specific details that users mention, especially dates, times, and appointments.
-- For scheduling, respond with confirmation of the EXACT day and time suggested by the user.
-- If the user mentions any specific time (like "3:00 today"), always confirm that exact time in your response.
-- Pay careful attention to previous messages for context.
-- Never ask for information that the user has already provided earlier in the conversation.
+CRITICAL INSTRUCTIONS FOR MEMORY AND SCHEDULING (HIGHEST PRIORITY):
+- Your primary goal is to maintain PERFECT MEMORY throughout the conversation.
+- ALWAYS remember specific details mentioned previously, especially dates, times, and appointments.
+- When a user mentions a specific time (like "3:00 today" or "an hour from now"), you MUST remember this exact time.
+- When scheduling, ALWAYS repeat back the EXACT day, time, and purpose in your response.
+- NEVER ask for information that the user has already provided at any point in the conversation.
+- If the user says they told you something earlier, always apologize and confirm you now remember.
+- For scheduling, use the format: "Confirmed: [day] at [time] for [purpose]" to make it absolutely clear.
+- READ THE ENTIRE CONVERSATION HISTORY before responding to any scheduling request.
+
+Example of proper scheduling:
+User: "Let's set up a meeting for 3pm today"
+Ella: "Confirmed: Today at 3:00 PM for our meeting. I've noted this appointment. What topics would you like to discuss during our meeting?"
+
+Example of proper memory:
+User: "I told you earlier we'd meet at 3:00"
+Ella: "You're absolutely right. I apologize for the confusion. I have your appointment confirmed for today at 3:00 PM. Is there anything specific you'd like me to prepare for our meeting?"
 
 When asked about YoBot's services, pricing, or features, be enthusiastic and highlight the benefits.
 If asked something you don't know, admit your limitations and offer to connect the user with a YoBot representative.
@@ -36,52 +47,148 @@ interface ChatMessage {
   content: string;
 }
 
+// Extract scheduling-related details from conversation history
+function extractSchedulingDetails(conversationHistory: ChatMessage[]): string | null {
+  if (!conversationHistory || conversationHistory.length === 0) {
+    return null;
+  }
+
+  // Keywords that might indicate scheduling information
+  const schedulingKeywords = [
+    'schedule', 'appointment', 'meeting', 'call', 'time', 'date',
+    'today', 'tomorrow', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday',
+    ':00', ' am', ' pm', 'o\'clock', 'morning', 'afternoon', 'evening'
+  ];
+  
+  // Pattern for detecting time (HH:MM or H:MM with optional am/pm)
+  const timePattern = /\b(\d{1,2}):?(\d{2})?\s*(am|pm|a\.m\.|p\.m\.)?\b/i;
+  
+  // Look for messages that contain scheduling information
+  const schedulingMessages: string[] = [];
+  
+  for (const message of conversationHistory) {
+    const lowerContent = message.content.toLowerCase();
+    
+    // Check if the message contains any scheduling keywords
+    if (schedulingKeywords.some(keyword => lowerContent.includes(keyword)) || 
+        timePattern.test(lowerContent)) {
+      // For user messages, add the whole message
+      if (message.role === 'user') {
+        schedulingMessages.push(`User said: "${message.content}"`);
+      }
+      // For assistant confirmations, add them too
+      else if (message.role === 'assistant' && 
+               (lowerContent.includes('confirm') || 
+                lowerContent.includes('schedule') || 
+                lowerContent.includes('appointment'))) {
+        schedulingMessages.push(`Ella confirmed: "${message.content}"`);
+      }
+    }
+  }
+  
+  // If we found scheduling information, return it
+  if (schedulingMessages.length > 0) {
+    return schedulingMessages.join(' → ');
+  }
+  
+  return null;
+}
+
+// Summarize older messages to provide context without exceeding token limits
+function summarizeOlderMessages(messages: ChatMessage[]): string {
+  if (!messages || messages.length === 0) {
+    return "No earlier conversation.";
+  }
+  
+  // Check if there are scheduling-related messages
+  const schedulingDetails = extractSchedulingDetails(messages);
+  if (schedulingDetails) {
+    return `Earlier scheduling details: ${schedulingDetails}`;
+  }
+  
+  // Otherwise, provide a simple count of exchanges
+  const userMessages = messages.filter(m => m.role === 'user');
+  const assistantMessages = messages.filter(m => m.role === 'assistant');
+  
+  return `${userMessages.length} user messages and ${assistantMessages.length} assistant responses. The conversation was about YoBot's features and capabilities.`;
+}
+
 // Function to generate a response from OpenAI
 export async function generateResponse(userMessage: string, conversationHistory: ChatMessage[] = []): Promise<string> {
   try {
-    // Prepare the conversation for OpenAI
+    // Extract scheduling details from conversation history for better memory
+    const schedulingDetails = extractSchedulingDetails(conversationHistory);
+    
+    // Create a memory prompt enhancement with extracted details
+    const memoryPrompt = schedulingDetails ? 
+      `IMPORTANT MEMORY CONTEXT: Based on the conversation history, the user has previously discussed scheduling: ${schedulingDetails}. Keep this information in mind when responding.` : '';
+    
+    // Prepare the conversation for OpenAI with enhanced system prompt
+    const systemPromptWithMemory = memoryPrompt ? `${SYSTEM_PROMPT}\n\n${memoryPrompt}` : SYSTEM_PROMPT;
+    
     const messages: ChatMessage[] = [
-      { role: "system", content: SYSTEM_PROMPT }
+      { role: "system", content: systemPromptWithMemory }
     ];
     
-    // Add conversation history if available (increased to 15 messages for better context)
+    // Always include ALL conversation history but make sure we don't exceed the token limit
+    // by prioritizing the most recent messages when we have too many
     if (conversationHistory.length > 0) {
-      messages.push(...conversationHistory.slice(-15));
+      // For very long conversations, keep all messages but summarize older ones
+      if (conversationHistory.length > 30) {
+        // First, add a summary of older messages
+        messages.push({ 
+          role: "system", 
+          content: `This is a long conversation. Earlier in the conversation (${conversationHistory.length - 30} messages ago), the user discussed: ${summarizeOlderMessages(conversationHistory.slice(0, conversationHistory.length - 30))}`
+        });
+        
+        // Then add the most recent 30 messages in full
+        messages.push(...conversationHistory.slice(-30));
+      } else {
+        // For shorter conversations, include all messages
+        messages.push(...conversationHistory);
+      }
     }
     
     // Check for scheduling-related keywords to add a reminder about scheduling importance
     const lowerCaseMessage = userMessage.toLowerCase();
-    const schedulingKeywords = ['schedule', 'appointment', 'meeting', 'time', 'today', 'tomorrow', ':', 'am', 'pm'];
+    const schedulingKeywords = [
+      'schedule', 'appointment', 'meeting', 'time', 'today', 'tomorrow', ':', 'am', 'pm', 
+      'hour', 'minute', 'o\'clock', 'morning', 'afternoon', 'evening'
+    ];
     
     const isSchedulingRelated = schedulingKeywords.some(keyword => lowerCaseMessage.includes(keyword));
     
     if (isSchedulingRelated) {
+      // Add a very clear scheduling instruction
       messages.push({ 
         role: "system", 
-        content: "This appears to be about scheduling. Pay extremely close attention to any dates, times, or appointment details mentioned. Always confirm the EXACT date and time in your response, and refer back to previous messages for context."
+        content: "CRITICAL SCHEDULING INSTRUCTION: The user is discussing scheduling. You MUST pay extremely close attention to ANY dates, times, or appointment details mentioned in BOTH this message AND previous messages. ALWAYS confirm the EXACT date and time in your response using the format 'Confirmed: [Day] at [Time] for [Purpose]'. You MUST look through the ENTIRE conversation history to ensure you have the correct details."
       });
     }
     
     // Add the new user message
     messages.push({ role: "user", content: userMessage });
     
-    // Add reminder to check previous context when appropriate
-    const remindContextKeywords = ['again', 'mentioned', 'told you', 'already said', 'repeat', 'remember'];
+    // Check if the user is indicating we missed or forgot something
+    const remindContextKeywords = [
+      'again', 'mentioned', 'told you', 'already said', 'repeat', 'remember', 
+      'forgot', 'i just said', 'we just', 'earlier', 'previous'
+    ];
     const needsContextReminder = remindContextKeywords.some(keyword => lowerCaseMessage.includes(keyword));
     
     if (needsContextReminder) {
       messages.push({ 
         role: "system", 
-        content: "The user is indicating you may have missed or forgotten something they previously mentioned. Please very carefully check the conversation history before responding."
+        content: "CRITICAL MEMORY ALERT: The user is indicating you have missed or forgotten something they previously mentioned. You MUST very carefully read through the ENTIRE conversation history again before responding. Your response should begin with 'You're right, I apologize for missing that...' followed by the correct information. This is extremely important for maintaining user trust."
       });
     }
     
-    // Call OpenAI API with slightly higher temperature for more precise responses on factual matters
+    // Call OpenAI API with low temperature for more precise responses on factual matters
     const completion = await openai.chat.completions.create({
       model: MODEL,
       messages: messages,
       max_tokens: 300,
-      temperature: 0.5, // Lower temperature for more consistent/factual responses
+      temperature: 0.3, // Even lower temperature for more consistent/precise responses when scheduling
     });
     
     // Extract and return the response
