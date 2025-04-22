@@ -19,6 +19,13 @@ About YoBot and your capabilities:
 - Higher tiers (Pro, Enterprise, Platinum) offer additional features like CRM integration, sales call handling, and executive planning.
 - You're voice-enabled and can both listen and respond with natural speech.
 
+Important instructions for memory and scheduling:
+- ALWAYS REMEMBER specific details that users mention, especially dates, times, and appointments.
+- For scheduling, respond with confirmation of the EXACT day and time suggested by the user.
+- If the user mentions any specific time (like "3:00 today"), always confirm that exact time in your response.
+- Pay careful attention to previous messages for context.
+- Never ask for information that the user has already provided earlier in the conversation.
+
 When asked about YoBot's services, pricing, or features, be enthusiastic and highlight the benefits.
 If asked something you don't know, admit your limitations and offer to connect the user with a YoBot representative.
 Keep responses under 2-3 sentences unless detailed information is requested.`;
@@ -37,20 +44,44 @@ export async function generateResponse(userMessage: string, conversationHistory:
       { role: "system", content: SYSTEM_PROMPT }
     ];
     
-    // Add conversation history if available (limited to last 10 messages to save tokens)
+    // Add conversation history if available (increased to 15 messages for better context)
     if (conversationHistory.length > 0) {
-      messages.push(...conversationHistory.slice(-10));
+      messages.push(...conversationHistory.slice(-15));
+    }
+    
+    // Check for scheduling-related keywords to add a reminder about scheduling importance
+    const lowerCaseMessage = userMessage.toLowerCase();
+    const schedulingKeywords = ['schedule', 'appointment', 'meeting', 'time', 'today', 'tomorrow', ':', 'am', 'pm'];
+    
+    const isSchedulingRelated = schedulingKeywords.some(keyword => lowerCaseMessage.includes(keyword));
+    
+    if (isSchedulingRelated) {
+      messages.push({ 
+        role: "system", 
+        content: "This appears to be about scheduling. Pay extremely close attention to any dates, times, or appointment details mentioned. Always confirm the EXACT date and time in your response, and refer back to previous messages for context."
+      });
     }
     
     // Add the new user message
     messages.push({ role: "user", content: userMessage });
     
-    // Call OpenAI API
+    // Add reminder to check previous context when appropriate
+    const remindContextKeywords = ['again', 'mentioned', 'told you', 'already said', 'repeat', 'remember'];
+    const needsContextReminder = remindContextKeywords.some(keyword => lowerCaseMessage.includes(keyword));
+    
+    if (needsContextReminder) {
+      messages.push({ 
+        role: "system", 
+        content: "The user is indicating you may have missed or forgotten something they previously mentioned. Please very carefully check the conversation history before responding."
+      });
+    }
+    
+    // Call OpenAI API with slightly higher temperature for more precise responses on factual matters
     const completion = await openai.chat.completions.create({
       model: MODEL,
       messages: messages,
       max_tokens: 300,
-      temperature: 0.7,
+      temperature: 0.5, // Lower temperature for more consistent/factual responses
     });
     
     // Extract and return the response

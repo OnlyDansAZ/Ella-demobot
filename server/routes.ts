@@ -55,10 +55,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json({ success: true, response: fallbackResponse });
       }
       
+      // Log conversation history for debugging context issues
+      if (message.toLowerCase().includes("schedule") || 
+          message.toLowerCase().includes("appointment") ||
+          message.toLowerCase().includes("remember")) {
+        console.log("Conversation history for context-sensitive request:", 
+          history.map((msg: any) => `${msg.role}: ${msg.content.substring(0, 50)}${msg.content.length > 50 ? '...' : ''}`));
+      }
+      
       // Generate AI response using OpenAI
       try {
         console.log("Generating OpenAI response for:", message);
         const aiResponse = await generateResponse(message, history);
+        
+        // Log the AI's response for important queries to help diagnose context issues
+        if (message.toLowerCase().includes("schedule") || 
+            message.toLowerCase().includes("appointment") ||
+            message.toLowerCase().includes("time")) {
+          console.log("AI response to scheduling query:", aiResponse);
+        }
         
         res.json({ 
           success: true,
