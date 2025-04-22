@@ -1,4 +1,4 @@
-import { eq, and, gte, lte, desc, isNull, or } from 'drizzle-orm';
+import { eq, and, gte, lte, desc, isNull, or, sql } from 'drizzle-orm';
 import { db } from './db';
 import { 
   appointments, 
@@ -16,15 +16,16 @@ export class AppointmentStorage {
    */
   async createAppointment(appointment: InsertAppointment): Promise<Appointment> {
     try {
-      // Convert the time strings to SQL time format
+      // Convert the time strings to SQL time format and date to string format
       const formattedAppointment = {
         ...appointment,
+        date: appointment.date.toISOString().split('T')[0], // Convert Date to YYYY-MM-DD
         startTime: this.formatTimeString(appointment.startTime),
         endTime: appointment.endTime ? this.formatTimeString(appointment.endTime) : undefined
       };
       
       // Insert the appointment into the database
-      const [result] = await db.insert(appointments).values(formattedAppointment).returning();
+      const [result] = await db.insert(appointments).values(formattedAppointment as any).returning();
       
       console.log('Created new appointment:', result);
       
@@ -100,10 +101,13 @@ export class AppointmentStorage {
    */
   async getAppointmentsByDate(date: Date): Promise<Appointment[]> {
     try {
+      // Convert Date to YYYY-MM-DD string format for PostgreSQL date comparison
+      const dateStr = date.toISOString().split('T')[0];
+      
       return await db
         .select()
         .from(appointments)
-        .where(eq(appointments.date, date))
+        .where(eq(appointments.date, dateStr))
         .orderBy(appointments.startTime);
     } catch (error) {
       console.error('Error getting appointments by date:', error);
@@ -116,6 +120,7 @@ export class AppointmentStorage {
    */
   async checkForConflicts(date: Date, startTime: string, endTime?: string): Promise<Appointment[]> {
     try {
+      const dateStr = date.toISOString().split('T')[0]; // Convert to YYYY-MM-DD
       const formattedStartTime = this.formatTimeString(startTime);
       const formattedEndTime = endTime ? this.formatTimeString(endTime) : undefined;
       
@@ -128,7 +133,7 @@ export class AppointmentStorage {
         .from(appointments)
         .where(
           and(
-            eq(appointments.date, date),
+            eq(appointments.date, dateStr),
             and(
               // Start time is before the end of another appointment
               lte(appointments.startTime, effectiveEndTime),
@@ -153,13 +158,13 @@ export class AppointmentStorage {
   async getUpcomingAppointments(limit: number = 5): Promise<Appointment[]> {
     try {
       const today = new Date();
-      today.setHours(0, 0, 0, 0);
+      const todayStr = today.toISOString().split('T')[0]; // Convert to YYYY-MM-DD
       
       return await db
         .select()
         .from(appointments)
-        .where(gte(appointments.date, today))
-        .orderBy([appointments.date, appointments.startTime])
+        .where(gte(appointments.date, todayStr))
+        .orderBy(appointments.date) // Order by date first
         .limit(limit);
     } catch (error) {
       console.error('Error getting upcoming appointments:', error);
