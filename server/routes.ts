@@ -106,9 +106,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const voiceId = "KgleQSAupUuS391XuXpI";
       
       try {
-        // Initialize ElevenLabs with proper API key
+        // Initialize ElevenLabs with the new API key
         const elevenLabs = new ElevenLabs({
-          apiKey: ELEVENLABS_API_KEY,
+          apiKey: "sk_a8633895aaaca535de2cec49baddc62d42c14674d2ed7cf0", // Using the API key directly for testing
           voiceId: voiceId
         });
         
