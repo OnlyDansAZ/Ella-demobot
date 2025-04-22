@@ -43,6 +43,14 @@ const Header: React.FC = () => {
               </a>
             </li>
             <li>
+              <Link
+                href="/knowledge-base"
+                className="text-white hover:text-blue-200 transition py-2 inline-block"
+              >
+                Knowledge Base
+              </Link>
+            </li>
+            <li>
               <a
                 href="#demo"
                 className="bg-white text-[#0D82DA] px-4 py-2 rounded-md font-medium hover:bg-blue-100 transition"
