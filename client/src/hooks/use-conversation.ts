@@ -10,6 +10,17 @@ export interface ChatMessage {
   timestamp: Date;
 }
 
+// Define response type for our API
+interface ConversationResponse {
+  success: boolean;
+  messages: Array<{
+    id: string;
+    content: string;
+    isUser: boolean;
+    timestamp: string;
+  }>;
+}
+
 // Main hook for conversation management with persistence
 export const useConversation = () => {
   // State for messages
@@ -40,14 +51,12 @@ export const useConversation = () => {
       
       try {
         setIsLoading(true);
-        const response = await apiRequest<{success: boolean, messages: ChatMessage[]}>({
-          url: `/api/conversations/${sessionId}`, 
-          method: 'GET'
-        });
+        const response = await fetch(`/api/conversations/${sessionId}`);
+        const data = await response.json() as ConversationResponse;
         
-        if (response.success && response.messages && response.messages.length > 0) {
+        if (data.success && data.messages && data.messages.length > 0) {
           // Format dates properly from strings
-          const formattedMessages = response.messages.map(msg => ({
+          const formattedMessages = data.messages.map(msg => ({
             ...msg,
             timestamp: new Date(msg.timestamp)
           }));

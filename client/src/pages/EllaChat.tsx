@@ -27,7 +27,7 @@ import yobotLogo from "../assets/yobot-logo.png";
 import yobotHeadLogo from "../assets/yobot-head-logo.png";
 import yobotTransparentLogo from "../assets/yobot-transparent-logo.png";
 
-// Define appointment interface matching the database schema
+// Define interfaces needed for the component
 interface Appointment {
   id: number;
   title: string;
@@ -42,16 +42,22 @@ interface Appointment {
   details?: string; // Additional details like items to bring
 }
 
+// Reuse the ChatMessage type from our hook for local state
+interface Message extends ChatMessage {
+  // Additional fields can be added here if needed
+}
+
 export default function EllaChat() {
-  // State for managing the conversation
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: '1',
-      content: "Hello! I'm Ella, your AI assistant. How can I help you today?",
-      isUser: false,
-      timestamp: new Date()
-    }
-  ]);
+  // Use our persistence hook for conversation management
+  const {
+    messages,
+    isLoading: isLoadingMessages,
+    addMessage,
+    clearConversation,
+    startNewConversation,
+    sessionId
+  } = useConversation();
+
   const [inputMessage, setInputMessage] = useState('');
   const [isListening, setIsListening] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
@@ -165,20 +171,13 @@ export default function EllaChat() {
     setIsListening(false);
   };
   
-  // Function to send a message
+  // Function to send a message using the persistence hook
   const sendMessage = async () => {
     if (!inputMessage.trim()) return;
     
-    // Create a new user message
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      content: inputMessage,
-      isUser: true,
-      timestamp: new Date()
-    };
+    // Add the user message using our hook (this handles persistence)
+    const userMessage = await addMessage(inputMessage, true);
     
-    // Add the user message to the chat
-    setMessages(prev => [...prev, userMessage]);
     setInputMessage('');
     setIsLoading(true);
     
@@ -196,23 +195,16 @@ export default function EllaChat() {
             content: msg.content
           })),
           persona: useCustomPersona ? null : selectedPersona,
-          customPersonaPrompt: useCustomPersona ? customPersonaText : null
+          customPersonaPrompt: useCustomPersona ? customPersonaText : null,
+          sessionId: sessionId // Include the session ID for tracking
         })
       });
       
       const data = await response.json();
       
       if (data.success) {
-        // Create a new bot message
-        const botMessage: Message = {
-          id: (Date.now() + 1).toString(),
-          content: data.response,
-          isUser: false,
-          timestamp: new Date()
-        };
-        
-        // Add the bot message to the chat
-        setMessages(prev => [...prev, botMessage]);
+        // Add the bot response using our hook (with persistence)
+        const botMessage = await addMessage(data.response, false);
         
         // Check if the response contains booking-related content
         const lowerCaseResponse = data.response.toLowerCase();
