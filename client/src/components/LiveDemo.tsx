@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Send, Volume2, VolumeX, Mic, MicOff } from "lucide-react";
-import { getBotResponse } from "@/lib/botResponses";
+import { Send, Volume2, VolumeX, Mic, MicOff, RefreshCw } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 
 interface Message {
@@ -124,7 +123,10 @@ const LiveDemo: React.FC = () => {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // State for loading indicator
+  const [isLoading, setIsLoading] = useState(false);
+  
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!inputValue.trim()) return;
@@ -136,27 +138,68 @@ const LiveDemo: React.FC = () => {
       id: `user-${Date.now()}`,
     };
     
+    const userInput = inputValue;
     setMessages((prev) => [...prev, userMessage]);
     setInputValue("");
+    setIsLoading(true);
     
-    // Add bot response after a delay
-    setTimeout(() => {
-      const botResponseId = `bot-${Date.now()}`;
-      const botResponseText = getBotResponse(inputValue);
+    try {
+      // Format conversation history for context
+      const conversationHistory = messages.slice(-6).map(msg => ({
+        role: msg.isUser ? "user" : "assistant",
+        content: msg.text
+      }));
       
+      // Call our OpenAI-powered API endpoint
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          message: userInput,
+          history: conversationHistory
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to get response from AI');
+      }
+      
+      const data = await response.json();
+      
+      if (data.success && data.response) {
+        const botResponseId = `bot-${Date.now()}`;
+        
+        const botResponse = {
+          text: data.response,
+          isUser: false,
+          id: botResponseId,
+        };
+        
+        setMessages((prev) => [...prev, botResponse]);
+        
+        // Speak the bot's response
+        if (audioEnabled) {
+          setTimeout(() => speakText(data.response), 100);
+        }
+      } else {
+        throw new Error('Invalid response format');
+      }
+    } catch (error) {
+      console.error('Error getting bot response:', error);
+      
+      // Add a fallback error response
       const botResponse = {
-        text: botResponseText,
+        text: "I'm sorry, I'm having trouble connecting right now. Please try again in a moment.",
         isUser: false,
-        id: botResponseId,
+        id: `bot-error-${Date.now()}`,
       };
       
       setMessages((prev) => [...prev, botResponse]);
-      
-      // Speak the bot's response
-      if (audioEnabled) {
-        setTimeout(() => speakText(botResponseText), 100);
-      }
-    }, 1000);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // Toggle speech recognition
@@ -233,7 +276,7 @@ const LiveDemo: React.FC = () => {
           setIsListening(true);
         };
         
-        recognition.onresult = (event: any) => {
+        recognition.onresult = async (event: any) => {
           console.log('Speech recognition result received');
           
           try {
@@ -252,25 +295,61 @@ const LiveDemo: React.FC = () => {
               };
               
               setMessages((prev) => [...prev, userMessage]);
+              setIsLoading(true);
               
-              // Generate and add bot response
-              setTimeout(() => {
-                const botResponseId = `bot-${Date.now()}`;
-                const botResponseText = getBotResponse(transcript);
+              try {
+                // Format conversation history for API
+                const conversationHistory = messages.slice(-6).map(msg => ({
+                  role: msg.isUser ? "user" : "assistant",
+                  content: msg.text
+                }));
                 
+                // Call our OpenAI-powered API endpoint
+                const response = await fetch('/api/chat', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ 
+                    message: transcript,
+                    history: conversationHistory
+                  }),
+                });
+                
+                if (!response.ok) {
+                  throw new Error('Failed to get AI response');
+                }
+                
+                const data = await response.json();
+                
+                if (data.success && data.response) {
+                  const botResponseId = `bot-${Date.now()}`;
+                  
+                  const botResponse = {
+                    text: data.response,
+                    isUser: false,
+                    id: botResponseId,
+                  };
+                  
+                  setMessages((prev) => [...prev, botResponse]);
+                  
+                  // Speak the bot's response
+                  if (audioEnabled) {
+                    setTimeout(() => speakText(data.response), 100);
+                  }
+                }
+              } catch (error) {
+                console.error('Speech input API error:', error);
+                
+                // Add a fallback error response
                 const botResponse = {
-                  text: botResponseText,
+                  text: "I'm sorry, I'm having trouble connecting right now. Please try again.",
                   isUser: false,
-                  id: botResponseId,
+                  id: `bot-error-${Date.now()}`,
                 };
                 
                 setMessages((prev) => [...prev, botResponse]);
-                
-                // Speak the bot's response
-                if (audioEnabled) {
-                  setTimeout(() => speakText(botResponseText), 100);
-                }
-              }, 1000);
+              } finally {
+                setIsLoading(false);
+              }
             }
           } catch (err) {
             console.error('Error processing speech result:', err);
@@ -436,6 +515,15 @@ const LiveDemo: React.FC = () => {
                 </div>
               </div>
             ))}
+            
+            {isLoading && (
+              <div className="flex items-start">
+                <div className="bg-gray-800 text-white rounded-lg rounded-tl-none p-3 max-w-md flex items-center">
+                  <RefreshCw className="h-4 w-4 text-blue-400 mr-2 animate-spin" />
+                  <span className="text-gray-300">Ella is thinking...</span>
+                </div>
+              </div>
+            )}
           </div>
           <div className="p-4 border-t border-gray-700">
             <form onSubmit={handleSubmit} className="flex items-center">

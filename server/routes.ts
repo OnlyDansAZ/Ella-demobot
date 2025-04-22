@@ -6,6 +6,7 @@ import ElevenLabs from "elevenlabs-node";
 import fs from 'fs-extra';
 import path from 'path';
 import os from 'os';
+import { generateResponse, getFallbackResponse } from './openai';
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // API Routes
@@ -35,7 +36,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
-  // Bot response API - used if you want to leverage server for generating responses
+  // OpenAI-powered chat API
+  app.post("/api/chat", async (req, res) => {
+    try {
+      const { message, history = [] } = req.body;
+      
+      if (!message) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Please provide a message" 
+        });
+      }
+      
+      // Check if OpenAI API key is available
+      if (!process.env.OPENAI_API_KEY) {
+        console.warn("OpenAI API key not found, using fallback responses");
+        const fallbackResponse = getFallbackResponse(message);
+        return res.json({ success: true, response: fallbackResponse });
+      }
+      
+      // Generate AI response using OpenAI
+      try {
+        console.log("Generating OpenAI response for:", message);
+        const aiResponse = await generateResponse(message, history);
+        
+        res.json({ 
+          success: true,
+          response: aiResponse 
+        });
+      } catch (openaiError) {
+        console.error("OpenAI API error:", openaiError);
+        
+        // If OpenAI fails, fall back to simple responses
+        const fallbackResponse = getFallbackResponse(message);
+        res.json({ 
+          success: true,
+          response: fallbackResponse 
+        });
+      }
+    } catch (err) {
+      console.error("Chat API error:", err);
+      res.status(500).json({ 
+        success: false, 
+        error: "Failed to generate response",
+        details: err instanceof Error ? err.message : String(err)
+      });
+    }
+  });
+  
+  // Legacy bot response API - kept for backward compatibility
   app.post("/api/bot/response", (req, res) => {
     const { message } = req.body;
     
@@ -54,7 +103,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       "hello": "Hello! How can I assist you today?",
       "hi": "Hi there! What would you like to know about YoBot?",
       "features": "YoBot offers calendar management, call handling, record keeping, bill payment, and custom personalities. The features vary by tier.",
-      "pricing": "We offer four tiers: Starter ($19/month), Pro ($49/month), Enterprise ($99/month), and Platinum ($199/month). Each tier has different features.",
+      "pricing": "We offer four tiers: Starter, Pro, Enterprise, and Platinum. Each tier has different features.",
       "help": "I'm here to help! You can ask about features, pricing, or try commands like 'schedule a meeting'."
     };
     
