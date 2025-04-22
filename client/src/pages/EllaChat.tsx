@@ -39,24 +39,70 @@ export default function EllaChat() {
   const inputRef = useRef<HTMLInputElement>(null);
   
   // Speech recognition setup
-  const startListening = () => {
+  const recognitionRef = useRef<any>(null);
+  
+  useEffect(() => {
+    // Initialize speech recognition when component mounts
     if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
-      setIsListening(true);
-      // In a real implementation, we would initialize the Web Speech API here
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      recognitionRef.current = new SpeechRecognition();
+      recognitionRef.current.continuous = false;
+      recognitionRef.current.interimResults = false;
+      recognitionRef.current.lang = 'en-US';
       
-      // Simulating speech recognition for demo
-      setTimeout(() => {
+      // Set up event handlers
+      recognitionRef.current.onresult = (event: any) => {
+        const transcript = event.results[0][0].transcript;
+        setInputMessage(transcript);
         setIsListening(false);
-        setInputMessage('Tell me about the features of YoBot');
-      }, 2000);
-    } else {
+      };
+      
+      recognitionRef.current.onerror = (event: any) => {
+        console.error('Speech recognition error:', event.error);
+        setIsListening(false);
+      };
+      
+      recognitionRef.current.onend = () => {
+        setIsListening(false);
+      };
+    }
+    
+    // Clean up on unmount
+    return () => {
+      if (recognitionRef.current) {
+        recognitionRef.current.onresult = null;
+        recognitionRef.current.onerror = null;
+        recognitionRef.current.onend = null;
+      }
+    };
+  }, []);
+  
+  const startListening = () => {
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.start();
+        setIsListening(true);
+      } catch (error) {
+        console.error('Failed to start speech recognition:', error);
+        alert('Failed to start speech recognition. Please try again.');
+        setIsListening(false);
+      }
+    } else if (!('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) {
       alert('Speech recognition is not supported in your browser');
+    } else {
+      alert('Speech recognition failed to initialize. Please refresh the page.');
     }
   };
   
   const stopListening = () => {
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.stop();
+      } catch (error) {
+        console.error('Error stopping speech recognition:', error);
+      }
+    }
     setIsListening(false);
-    // In a real implementation, we would stop the speech recognition here
   };
   
   // Function to send a message
