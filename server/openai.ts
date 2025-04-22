@@ -58,19 +58,53 @@ function extractSchedulingDetails(conversationHistory: ChatMessage[]): string | 
 
   // Keywords that might indicate scheduling information
   const schedulingKeywords = [
-    'schedule', 'appointment', 'meeting', 'call', 'time', 'date',
+    'schedule', 'appointment', 'meeting', 'call', 'time', 'date', 'book', 'reserve',
     'today', 'tomorrow', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday',
-    ':00', ' am', ' pm', 'o\'clock', 'morning', 'afternoon', 'evening'
+    ':00', ' am', ' pm', 'o\'clock', 'morning', 'afternoon', 'evening', 'calendly', 'calendar'
+  ];
+  
+  // Calendly specific keywords
+  const calendlyKeywords = [
+    'calendly', 'booking link', 'scheduling link', 'book a time', 'schedule time', 
+    'book a call', 'schedule a demo', 'appointment link', 'book online'
   ];
   
   // Pattern for detecting time (HH:MM or H:MM with optional am/pm)
   const timePattern = /\b(\d{1,2}):?(\d{2})?\s*(am|pm|a\.m\.|p\.m\.)?\b/i;
   
+  // Pattern for detecting meeting purpose
+  const purposePattern = /(?:(?:schedule|book|set up|arrange|plan)\s+(?:a|an)\s+)([^.!?]+)(?:[.!?]|$)/i;
+  
+  // Pattern for detecting meeting duration
+  const durationPattern = /\b(?:(\d{1,2})\s*(?:min(?:ute)?s?|hour(?:s)?)|half\s*hour|quarter\s*hour)\b/i;
+  
   // Look for messages that contain scheduling information
   const schedulingMessages: string[] = [];
   
+  // Track if Calendly was explicitly mentioned
+  let calendlyMentioned = false;
+  let meetingPurpose = '';
+  let meetingDuration = '';
+  
   for (const message of conversationHistory) {
     const lowerContent = message.content.toLowerCase();
+    
+    // Check for Calendly specific requests
+    if (calendlyKeywords.some(keyword => lowerContent.includes(keyword))) {
+      calendlyMentioned = true;
+      
+      // Try to extract meeting purpose
+      const purposeMatch = message.content.match(purposePattern);
+      if (purposeMatch && purposeMatch[1] && message.role === 'user') {
+        meetingPurpose = purposeMatch[1].trim();
+      }
+      
+      // Try to extract meeting duration
+      const durationMatch = message.content.match(durationPattern);
+      if (durationMatch && message.role === 'user') {
+        meetingDuration = durationMatch[0];
+      }
+    }
     
     // Check if the message contains any scheduling keywords
     if (schedulingKeywords.some(keyword => lowerContent.includes(keyword)) || 
@@ -89,9 +123,30 @@ function extractSchedulingDetails(conversationHistory: ChatMessage[]): string | 
     }
   }
   
-  // If we found scheduling information, return it
+  // Build the result string
+  const result = [];
+  
+  // If Calendly was mentioned, add that information first
+  if (calendlyMentioned) {
+    result.push("Calendly booking requested");
+    
+    if (meetingPurpose) {
+      result.push(`Purpose: ${meetingPurpose}`);
+    }
+    
+    if (meetingDuration) {
+      result.push(`Duration: ${meetingDuration}`);
+    }
+  }
+  
+  // Add scheduling messages
   if (schedulingMessages.length > 0) {
-    return schedulingMessages.join(' → ');
+    result.push(schedulingMessages.join(' → '));
+  }
+  
+  // If we found any scheduling information, return it
+  if (result.length > 0) {
+    return result.join('; ');
   }
   
   return null;
@@ -287,11 +342,11 @@ export async function generateResponse(
     const topicDetection = {
       scheduling: {
         keywords: [
-          'schedule', 'appointment', 'meeting', 'call', 'time', 'date', 'calendar',
-          'today', 'tomorrow', 'next week', 'am', 'pm', 'o\'clock',
-          'morning', 'afternoon', 'evening', 'reschedule', 'cancel'
+          'schedule', 'appointment', 'meeting', 'call', 'time', 'date', 'calendar', 'calendly',
+          'today', 'tomorrow', 'next week', 'am', 'pm', 'o\'clock', 'book', 'booking',
+          'morning', 'afternoon', 'evening', 'reschedule', 'cancel', 'availability'
         ],
-        instruction: "CRITICAL SCHEDULING INSTRUCTION: The user is discussing scheduling. Pay extremely close attention to ANY dates, times, or appointment details in BOTH this message AND all previous messages. ALWAYS confirm the EXACT date and time using the format 'Confirmed: [Day] at [Time] for [Purpose]'. Ensure you've reviewed the ENTIRE conversation history for all scheduling details."
+        instruction: "CRITICAL SCHEDULING INSTRUCTION: The user is discussing scheduling. Pay extremely close attention to ANY dates, times, or appointment details in BOTH this message AND all previous messages. If the user is asking to schedule a meeting or call, offer our Calendly link by saying: \"You can easily schedule a meeting with us using our Calendly booking system. Would you like me to share the booking link with you?\". If they agree, respond with: \"Great! Here's our Calendly link where you can select a time that works for you: [Calendly Booking URL would be shown here]\". Ensure you've reviewed the ENTIRE conversation history for all scheduling details."
       },
       productFeatures: {
         keywords: [

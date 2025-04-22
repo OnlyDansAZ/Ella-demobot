@@ -8,6 +8,7 @@ import path from 'path';
 import os from 'os';
 import { generateResponse, getFallbackResponse } from './openai';
 import documentRoutes from './routes/documentRoutes';
+import calendlyRouter from './routes/calendlyRoutes';
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // API Routes
