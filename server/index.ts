@@ -1,6 +1,8 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { initVectorDB } from "./vectordb";
+import { seedKnowledgeBase } from "./documentProcessor";
 
 const app = express();
 app.use(express.json());
@@ -37,6 +39,28 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // Initialize vector database for RAG capabilities
+  try {
+    log("Initializing vector database for RAG capabilities...");
+    const dbInitialized = await initVectorDB();
+    if (dbInitialized) {
+      log("Vector database initialized successfully");
+      
+      // Seed knowledge base with YoBot product information
+      log("Seeding knowledge base with YoBot product information...");
+      const seedResult = await seedKnowledgeBase();
+      if (seedResult.success) {
+        log(`Knowledge base seeded successfully with ${seedResult.count} document chunks`);
+      } else {
+        log("Warning: Failed to seed knowledge base");
+      }
+    } else {
+      log("Warning: Failed to initialize vector database");
+    }
+  } catch (error) {
+    log(`Error initializing RAG system: ${error.message}`);
+  }
+  
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {

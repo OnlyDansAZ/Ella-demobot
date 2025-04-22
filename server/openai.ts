@@ -1,9 +1,16 @@
 import OpenAI from "openai";
+import { getRelevantContext, createEnhancedSystemPrompt } from './rag';
 
 // Initialize OpenAI with API key from environment variables
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
 });
+
+// Export ChatMessage interface for use in other files
+export interface ChatMessage {
+  role: "system" | "user" | "assistant";
+  content: string;
+}
 
 // The newest OpenAI model is "gpt-4o" which was released May 13, 2024. Do not change this unless explicitly requested by the user
 const MODEL = "gpt-4o";
@@ -41,11 +48,7 @@ When asked about YoBot's services, pricing, or features, be enthusiastic and hig
 If asked something you don't know, admit your limitations and offer to connect the user with a YoBot representative.
 Keep responses under 2-3 sentences unless detailed information is requested.`;
 
-// Interface for chat message
-interface ChatMessage {
-  role: "system" | "user" | "assistant";
-  content: string;
-}
+// ChatMessage interface is already exported above
 
 // Extract scheduling-related details from conversation history
 function extractSchedulingDetails(conversationHistory: ChatMessage[]): string | null {
@@ -113,7 +116,7 @@ function summarizeOlderMessages(messages: ChatMessage[]): string {
   return `${userMessages.length} user messages and ${assistantMessages.length} assistant responses. The conversation was about YoBot's features and capabilities.`;
 }
 
-// Function to generate a response from OpenAI
+// Function to generate a response from OpenAI with RAG capabilities
 export async function generateResponse(userMessage: string, conversationHistory: ChatMessage[] = []): Promise<string> {
   try {
     // Extract scheduling details from conversation history for better memory
@@ -123,8 +126,17 @@ export async function generateResponse(userMessage: string, conversationHistory:
     const memoryPrompt = schedulingDetails ? 
       `IMPORTANT MEMORY CONTEXT: Based on the conversation history, the user has previously discussed scheduling: ${schedulingDetails}. Keep this information in mind when responding.` : '';
     
-    // Prepare the conversation for OpenAI with enhanced system prompt
-    const systemPromptWithMemory = memoryPrompt ? `${SYSTEM_PROMPT}\n\n${memoryPrompt}` : SYSTEM_PROMPT;
+    // Get relevant context from the knowledge base using RAG
+    const relevantContext = await getRelevantContext(userMessage, conversationHistory);
+    
+    // Create enhanced system prompt with both memory and knowledge base context
+    let systemPromptWithMemory = memoryPrompt ? `${SYSTEM_PROMPT}\n\n${memoryPrompt}` : SYSTEM_PROMPT;
+    
+    // If we have relevant context from the knowledge base, add it to the system prompt
+    if (relevantContext && relevantContext.trim().length > 0) {
+      systemPromptWithMemory = createEnhancedSystemPrompt(systemPromptWithMemory, relevantContext);
+      console.log("Retrieved relevant context from knowledge base for query");
+    }
     
     const messages: ChatMessage[] = [
       { role: "system", content: systemPromptWithMemory }
@@ -163,6 +175,21 @@ export async function generateResponse(userMessage: string, conversationHistory:
       messages.push({ 
         role: "system", 
         content: "CRITICAL SCHEDULING INSTRUCTION: The user is discussing scheduling. You MUST pay extremely close attention to ANY dates, times, or appointment details mentioned in BOTH this message AND previous messages. ALWAYS confirm the EXACT date and time in your response using the format 'Confirmed: [Day] at [Time] for [Purpose]'. You MUST look through the ENTIRE conversation history to ensure you have the correct details."
+      });
+    }
+    
+    // Check for product/feature related keywords to prioritize knowledge base information
+    const featureKeywords = [
+      'tier', 'feature', 'capability', 'difference', 'compare', 'plan', 'offer',
+      'starter', 'pro', 'enterprise', 'platinum', 'cost', 'price'
+    ];
+    
+    const isFeatureRelated = featureKeywords.some(keyword => lowerCaseMessage.includes(keyword));
+    
+    if (isFeatureRelated && relevantContext) {
+      messages.push({ 
+        role: "system", 
+        content: "The user is asking about YoBot's features, tiers, or capabilities. Prioritize the knowledge base information in your response. Be specific and accurate about the differences between tiers and what features are available in each."
       });
     }
     
