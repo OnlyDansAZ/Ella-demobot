@@ -1,6 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import ElevenLabs from "elevenlabs-node";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // API Routes
@@ -70,6 +71,82 @@ export async function registerRoutes(app: Express): Promise<Server> {
       success: true,
       response 
     });
+  });
+  
+  // ElevenLabs text-to-speech endpoint
+  app.post("/api/speech", async (req, res) => {
+    try {
+      // Access ElevenLabs API key from environment
+      const ELEVENLABS_API_KEY = process.env.ELEVENLABS_API_KEY;
+      
+      if (!ELEVENLABS_API_KEY) {
+        return res.status(500).json({ 
+          success: false,
+          error: "ElevenLabs API key is not configured" 
+        });
+      }
+      
+      const { text } = req.body;
+      
+      if (!text) {
+        return res.status(400).json({ 
+          success: false,
+          error: "Text parameter is required" 
+        });
+      }
+      
+      // Create temp file path for audio
+      const fs = require('fs-extra');
+      const path = require('path');
+      const os = require('os');
+      const tempFile = path.join(os.tmpdir(), `speech-${Date.now()}.mp3`);
+      
+      // Rachel voice (professional female voice)
+      const voiceId = "21m00Tcm4TlvDq8ikWAM";
+      
+      try {
+        // Initialize ElevenLabs
+        const elevenLabs = new ElevenLabs({
+          apiKey: ELEVENLABS_API_KEY,
+          voiceId: voiceId // Default voice
+        });
+        
+        // Generate audio from ElevenLabs
+        await elevenLabs.textToSpeech({
+          textInput: text,
+          fileName: tempFile,
+          stability: 0.5,
+          similarityBoost: 0.75
+        });
+        
+        // Read the audio file
+        const audioData = await fs.readFile(tempFile);
+        
+        // Set appropriate headers for audio streaming
+        res.setHeader('Content-Type', 'audio/mpeg');
+        res.setHeader('Cache-Control', 'no-cache');
+        
+        // Send the audio data
+        res.send(audioData);
+        
+        // Clean up the temp file after sending
+        await fs.remove(tempFile).catch(err => console.error('Error removing temp file:', err));
+      } catch (error) {
+        console.error("ElevenLabs API error:", error);
+        res.status(500).json({ 
+          success: false,
+          error: "Failed to generate speech", 
+          details: error instanceof Error ? error.message : String(error)
+        });
+      }
+    } catch (err) {
+      console.error("Speech generation error:", err);
+      res.status(500).json({ 
+        success: false,
+        error: "Internal server error", 
+        details: err instanceof Error ? err.message : String(err)
+      });
+    }
   });
 
   const httpServer = createServer(app);
