@@ -23,70 +23,47 @@ const LiveDemo: React.FC = () => {
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  // Speak text function using ElevenLabs API
-  const speakText = async (text: string) => {
-    if (!audioEnabled) return;
+  // Using the browser's built-in speech synthesis for now
+  const speakText = (text: string) => {
+    if (!audioEnabled || !window.speechSynthesis) return;
     
-    // Stop any currently playing audio
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.currentTime = 0;
+    // Cancel any ongoing speech
+    window.speechSynthesis.cancel();
+    
+    // Create a new utterance
+    const utterance = new SpeechSynthesisUtterance(text);
+    
+    // Configure voice properties
+    utterance.rate = 0.9; // Slightly slower for better clarity
+    utterance.pitch = 1.1; // Slightly higher pitch for a more natural female voice
+    utterance.volume = 1.0;
+    
+    // Try to use a female voice if available
+    const voices = window.speechSynthesis.getVoices();
+    const femaleVoice = voices.find(voice => 
+      voice.name.includes('female') || 
+      voice.name.includes('Samantha') || 
+      voice.name.includes('Victoria') ||
+      voice.name.includes('Ava')
+    );
+    
+    if (femaleVoice) {
+      utterance.voice = femaleVoice;
     }
     
-    try {
-      setIsSpeaking(true);
-      
-      // Call our API endpoint to get speech audio
-      const response = await fetch('/api/speech', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ text }),
-      });
-      
-      if (!response.ok) {
-        throw new Error('Speech generation failed');
-      }
-      
-      // Get audio blob from response
-      const audioBlob = await response.blob();
-      const audioUrl = URL.createObjectURL(audioBlob);
-      
-      // Create audio element if it doesn't exist
-      if (!audioRef.current) {
-        const audio = new Audio();
-        audio.onended = () => {
-          setIsSpeaking(false);
-          URL.revokeObjectURL(audio.src); // Clean up the URL
-        };
-        audio.onerror = () => setIsSpeaking(false);
-        audioRef.current = audio;
-      }
-      
-      // Set new audio source and play
-      audioRef.current.src = audioUrl;
-      await audioRef.current.play();
-    } catch (error) {
-      console.error('Error generating or playing speech:', error);
-      setIsSpeaking(false);
-      
-      // Fall back to browser's speech synthesis as backup
-      if (window.speechSynthesis) {
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.onend = () => setIsSpeaking(false);
-        utterance.onerror = () => setIsSpeaking(false);
-        setIsSpeaking(true);
-        window.speechSynthesis.speak(utterance);
-      }
-    }
+    // Event handlers
+    utterance.onstart = () => setIsSpeaking(true);
+    utterance.onend = () => setIsSpeaking(false);
+    utterance.onerror = () => setIsSpeaking(false);
+    
+    // Start speaking
+    window.speechSynthesis.speak(utterance);
   };
 
   // Toggle audio
   const toggleAudio = () => {
-    if (isSpeaking && audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.currentTime = 0;
+    if (isSpeaking && window.speechSynthesis) {
+      window.speechSynthesis.cancel();
       setIsSpeaking(false);
     }
     setAudioEnabled(!audioEnabled);
@@ -137,6 +114,13 @@ const LiveDemo: React.FC = () => {
 
   // Initialize and play welcome message
   useEffect(() => {
+    // Load voices for speech synthesis
+    if (window.speechSynthesis) {
+      window.speechSynthesis.onvoiceschanged = () => {
+        window.speechSynthesis.getVoices();
+      };
+    }
+    
     // Play the initial greeting message on load
     setTimeout(() => {
       if (audioEnabled && messages.length > 0 && messages[0].id === "intro") {
@@ -146,9 +130,8 @@ const LiveDemo: React.FC = () => {
     
     // Clean up on unmount
     return () => {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.src = '';
+      if (window.speechSynthesis) {
+        window.speechSynthesis.cancel();
       }
     };
   }, []);

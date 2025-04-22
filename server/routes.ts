@@ -106,19 +106,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const voiceId = "KgleQSAupUuS391XuXpI";
       
       try {
-        // Initialize ElevenLabs
+        // Initialize ElevenLabs with proper API key
         const elevenLabs = new ElevenLabs({
           apiKey: ELEVENLABS_API_KEY,
-          voiceId: voiceId // Default voice
+          voiceId: voiceId
         });
         
+        console.log(`Using voice ID: ${voiceId} with ElevenLabs`);
+        
         // Generate audio from ElevenLabs
-        await elevenLabs.textToSpeech({
+        const result = await elevenLabs.textToSpeech({
           textInput: text,
           fileName: tempFile,
           stability: 0.5,
           similarityBoost: 0.75
         });
+        
+        console.log("ElevenLabs response:", result);
         
         // Read the audio file
         const audioData = await fs.readFile(tempFile);
