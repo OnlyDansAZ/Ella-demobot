@@ -181,7 +181,7 @@ Ask clarifying questions in a conversational way when needed.
 Show enthusiasm and positivity throughout the interaction.`
 };
 
-// Function to generate a response from OpenAI with RAG capabilities
+// Function to generate a response from OpenAI with RAG capabilities and improved memory
 export async function generateResponse(
   userMessage: string, 
   conversationHistory: ChatMessage[] = [],
@@ -189,30 +189,55 @@ export async function generateResponse(
   customPersonaPrompt: string | null = null
 ): Promise<string> {
   try {
+    // STEP 1: EXTRACT CONTEXT AND MEMORY DETAILS
     // Extract scheduling details from conversation history for better memory
     const schedulingDetails = extractSchedulingDetails(conversationHistory);
     
-    // Create a memory prompt enhancement with extracted details
-    const memoryPrompt = schedulingDetails ? 
-      `IMPORTANT MEMORY CONTEXT: Based on the conversation history, the user has previously discussed scheduling: ${schedulingDetails}. Keep this information in mind when responding.` : '';
+    // Extract any specific entities mentioned (names, products, etc.) for memory enhancement
+    const entities = extractNamedEntities(userMessage, conversationHistory);
     
-    // Get relevant context from the knowledge base using RAG
+    // Detect user's apparent emotional state or tone to adjust response style
+    const userTone = detectUserTone(userMessage);
+    
+    // STEP 2: CREATE ENHANCED MEMORY CONTEXT
+    // Build a rich memory prompt that combines all contextual information
+    let memoryPrompt = '';
+    
+    if (schedulingDetails) {
+      memoryPrompt += `IMPORTANT SCHEDULING MEMORY: ${schedulingDetails}\n\n`;
+    }
+    
+    if (entities.length > 0) {
+      memoryPrompt += `ENTITY MEMORY: The user has mentioned these specific items: ${entities.join(', ')}.\n\n`;
+    }
+    
+    if (userTone) {
+      memoryPrompt += `USER TONE: The user appears to be ${userTone}. Adjust your response style accordingly.\n\n`;
+    }
+    
+    // STEP 3: GET KNOWLEDGE BASE CONTEXT
+    // Get relevant context from the knowledge base using enhanced RAG
     const relevantContext = await getRelevantContext(userMessage, conversationHistory);
     
-    // Determine which system prompt to use based on persona
+    // STEP 4: SELECT APPROPRIATE PERSONA
+    // Determine which system prompt to use based on persona selection
     let baseSystemPrompt = SYSTEM_PROMPT;
+    let personaDescription = "default";
     
     if (customPersonaPrompt) {
       // If a custom persona prompt is provided, use that
       baseSystemPrompt = customPersonaPrompt;
+      personaDescription = "custom";
       console.log("Using custom persona prompt");
     } else if (persona && personaSystemPrompts[persona]) {
       // If a predefined persona is specified, use its system prompt
       baseSystemPrompt = personaSystemPrompts[persona];
+      personaDescription = persona;
       console.log(`Using ${persona} persona system prompt`);
     }
     
-    // Create enhanced system prompt with both memory and knowledge base context
+    // STEP 5: BUILD COMPREHENSIVE SYSTEM PROMPT
+    // Create enhanced system prompt with memory and knowledge base context
     let systemPromptWithMemory = memoryPrompt ? `${baseSystemPrompt}\n\n${memoryPrompt}` : baseSystemPrompt;
     
     // If we have relevant context from the knowledge base, add it to the system prompt
@@ -221,84 +246,117 @@ export async function generateResponse(
       console.log("Retrieved relevant context from knowledge base for query");
     }
     
+    // STEP 6: CONSTRUCT MESSAGE ARRAY WITH OPTIMIZED HISTORY
     const messages: ChatMessage[] = [
       { role: "system", content: systemPromptWithMemory }
     ];
     
-    // Always include ALL conversation history but make sure we don't exceed the token limit
-    // by prioritizing the most recent messages when we have too many
+    // Optimize conversation history to balance context and token usage
     if (conversationHistory.length > 0) {
-      // For very long conversations, keep all messages but summarize older ones
-      if (conversationHistory.length > 30) {
-        // First, add a summary of older messages
+      // For very long conversations, use a more sophisticated history management approach
+      if (conversationHistory.length > 25) {
+        // First add any critical context messages identified by content type
+        const criticalMessages = identifyCriticalMessages(conversationHistory);
+        if (criticalMessages.length > 0) {
+          messages.push({ 
+            role: "system", 
+            content: `CRITICAL PREVIOUS CONTEXT: The following exchanges contain important information: ${criticalMessages.join(' | ')}`
+          });
+        }
+        
+        // Then add a more detailed summary of older messages
+        const olderMessages = conversationHistory.slice(0, conversationHistory.length - 20);
+        const summary = createDetailedConversationSummary(olderMessages);
         messages.push({ 
           role: "system", 
-          content: `This is a long conversation. Earlier in the conversation (${conversationHistory.length - 30} messages ago), the user discussed: ${summarizeOlderMessages(conversationHistory.slice(0, conversationHistory.length - 30))}`
+          content: `CONVERSATION SUMMARY (${olderMessages.length} earlier messages): ${summary}`
         });
         
-        // Then add the most recent 30 messages in full
-        messages.push(...conversationHistory.slice(-30));
+        // Then add the most recent 20 messages in full for immediate context
+        messages.push(...conversationHistory.slice(-20));
       } else {
         // For shorter conversations, include all messages
         messages.push(...conversationHistory);
       }
     }
     
-    // Check for scheduling-related keywords to add a reminder about scheduling importance
+    // STEP 7: ADD CONTEXTUAL AWARENESS FOR SPECIFIC TOPICS
     const lowerCaseMessage = userMessage.toLowerCase();
-    const schedulingKeywords = [
-      'schedule', 'appointment', 'meeting', 'time', 'today', 'tomorrow', ':', 'am', 'pm', 
-      'hour', 'minute', 'o\'clock', 'morning', 'afternoon', 'evening'
-    ];
     
-    const isSchedulingRelated = schedulingKeywords.some(keyword => lowerCaseMessage.includes(keyword));
+    // Enhanced topic detection with more specific categories and triggers
+    const topicDetection = {
+      scheduling: {
+        keywords: [
+          'schedule', 'appointment', 'meeting', 'call', 'time', 'date', 'calendar',
+          'today', 'tomorrow', 'next week', 'am', 'pm', 'o\'clock',
+          'morning', 'afternoon', 'evening', 'reschedule', 'cancel'
+        ],
+        instruction: "CRITICAL SCHEDULING INSTRUCTION: The user is discussing scheduling. Pay extremely close attention to ANY dates, times, or appointment details in BOTH this message AND all previous messages. ALWAYS confirm the EXACT date and time using the format 'Confirmed: [Day] at [Time] for [Purpose]'. Ensure you've reviewed the ENTIRE conversation history for all scheduling details."
+      },
+      productFeatures: {
+        keywords: [
+          'tier', 'feature', 'capability', 'difference', 'compare', 'plan', 'offer',
+          'starter', 'pro', 'enterprise', 'platinum', 'cost', 'price', 'subscription',
+          'upgrade', 'downgrade', 'package', 'level', 'service', 'options'
+        ],
+        instruction: "PRODUCT KNOWLEDGE INSTRUCTION: The user is asking about YoBot's features, tiers, or capabilities. Prioritize the knowledge base information in your response. Be specific and accurate about the differences between tiers and what features are available in each. Include specific details about which tier offers which capabilities."
+      },
+      problemSolving: {
+        keywords: [
+          'problem', 'issue', 'error', 'trouble', 'help', 'fix', 'broken', 'doesn\'t work',
+          'not working', 'struggling', 'difficulty', 'can\'t', 'unable', 'how do i',
+          'how to', 'solution'
+        ],
+        instruction: "PROBLEM-SOLVING INSTRUCTION: The user appears to be experiencing an issue or needs specific help. First, express empathy for their situation. Then, provide clear, step-by-step assistance. Break down the solution into manageable steps. Ask clarifying questions if you need more information to properly address their concern."
+      },
+      memoryRecall: {
+        keywords: [
+          'again', 'mentioned', 'told you', 'already said', 'repeat', 'remember', 
+          'forgot', 'i just said', 'we just', 'earlier', 'previous', 'before',
+          'last time', 'you don\'t remember', 'i told you', 'as i said'
+        ],
+        instruction: "CRITICAL MEMORY RECALL INSTRUCTION: The user is indicating you may have forgotten or missed something previously mentioned. Carefully review the ENTIRE conversation history before responding. Your response should begin with an acknowledgment like 'You're right, I apologize...' followed by the correct information. Show that you value accuracy and their time by addressing the information they've already shared."
+      },
+      technicalDetails: {
+        keywords: [
+          'how does', 'technically', 'backend', 'frontend', 'system', 'architecture',
+          'database', 'server', 'api', 'integration', 'security', 'encrypt',
+          'technology', 'technical', 'stack', 'implementation', 'algorithm'
+        ],
+        instruction: "TECHNICAL EXPLANATION INSTRUCTION: The user is asking about technical details. Provide accurate technical information about YoBot's capabilities while keeping explanations clear and accessible. Balance technical accuracy with understandable explanations based on their apparent technical knowledge level. Use analogies when helpful for complex concepts."
+      }
+    };
     
-    if (isSchedulingRelated) {
-      // Add a very clear scheduling instruction
-      messages.push({ 
-        role: "system", 
-        content: "CRITICAL SCHEDULING INSTRUCTION: The user is discussing scheduling. You MUST pay extremely close attention to ANY dates, times, or appointment details mentioned in BOTH this message AND previous messages. ALWAYS confirm the EXACT date and time in your response using the format 'Confirmed: [Day] at [Time] for [Purpose]'. You MUST look through the ENTIRE conversation history to ensure you have the correct details."
-      });
+    // Check each topic and add relevant instructions
+    for (const [topic, data] of Object.entries(topicDetection)) {
+      const isTopicRelated = data.keywords.some(keyword => lowerCaseMessage.includes(keyword));
+      if (isTopicRelated) {
+        messages.push({ role: "system", content: data.instruction });
+        console.log(`Detected ${topic} related question`);
+      }
     }
     
-    // Check for product/feature related keywords to prioritize knowledge base information
-    const featureKeywords = [
-      'tier', 'feature', 'capability', 'difference', 'compare', 'plan', 'offer',
-      'starter', 'pro', 'enterprise', 'platinum', 'cost', 'price'
-    ];
-    
-    const isFeatureRelated = featureKeywords.some(keyword => lowerCaseMessage.includes(keyword));
-    
-    if (isFeatureRelated && relevantContext) {
-      messages.push({ 
-        role: "system", 
-        content: "The user is asking about YoBot's features, tiers, or capabilities. Prioritize the knowledge base information in your response. Be specific and accurate about the differences between tiers and what features are available in each."
-      });
-    }
-    
+    // STEP 8: ADD USER MESSAGE
     // Add the new user message
     messages.push({ role: "user", content: userMessage });
     
-    // Check if the user is indicating we missed or forgot something
-    const remindContextKeywords = [
-      'again', 'mentioned', 'told you', 'already said', 'repeat', 'remember', 
-      'forgot', 'i just said', 'we just', 'earlier', 'previous'
-    ];
-    const needsContextReminder = remindContextKeywords.some(keyword => lowerCaseMessage.includes(keyword));
+    // STEP 9: GENERATE RESPONSE WITH OPTIMIZED PARAMETERS
+    // Adjust temperature based on the nature of the query for optimal response style
+    let temperature = 0.3; // Default low temperature for factual responses
     
-    if (needsContextReminder) {
-      messages.push({ 
-        role: "system", 
-        content: "CRITICAL MEMORY ALERT: The user is indicating you have missed or forgotten something they previously mentioned. You MUST very carefully read through the ENTIRE conversation history again before responding. Your response should begin with 'You're right, I apologize for missing that...' followed by the correct information. This is extremely important for maintaining user trust."
-      });
+    // For casual conversation or emotional support, use slightly higher temperature
+    if (userTone === 'casual' || userTone === 'seeking reassurance' || personaDescription === 'casual') {
+      temperature = 0.5;
     }
     
-    // Call OpenAI API with low temperature for more precise responses on factual matters
+    // Call OpenAI API with optimized parameters
     const completion = await openai.chat.completions.create({
       model: MODEL,
       messages: messages,
-      max_tokens: 300,
-      temperature: 0.3, // Even lower temperature for more consistent/precise responses when scheduling
+      max_tokens: 400, // Increased max tokens for more detailed responses
+      temperature: temperature,
+      // Add top_p for more controlled response diversity
+      top_p: 0.95
     });
     
     // Extract and return the response
@@ -308,6 +366,227 @@ export async function generateResponse(
     console.error("OpenAI API error:", error);
     return "I apologize, but I'm experiencing a technical issue. Please try again in a moment.";
   }
+}
+
+/**
+ * Extract named entities from user messages to improve memory
+ */
+function extractNamedEntities(currentMessage: string, history: ChatMessage[]): string[] {
+  // Extract entities from the current message
+  const namedEntities = new Set<string>();
+  
+  // Common patterns for entities (names, products, locations, etc.)
+  const namePattern = /\b([A-Z][a-z]+(?:\s[A-Z][a-z]+)*)\b/g;
+  const emailPattern = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/g;
+  const websitePattern = /\b(?:https?:\/\/)?(?:www\.)?([A-Za-z0-9-]+\.[A-Za-z]{2,}(?:\.[A-Za-z]{2,})?)\b/g;
+  const phonePattern = /\b(?:\+\d{1,2}\s?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}\b/g;
+  const companyPattern = /\b([A-Z][A-Za-z0-9]*(?:\s[A-Z][A-Za-z0-9]*)*)\b/g;
+  
+  // Messages to analyze - current message and recent user messages
+  const messagesToAnalyze = [
+    currentMessage,
+    ...history.filter(msg => msg.role === 'user').slice(-5).map(msg => msg.content)
+  ];
+  
+  // Extract entities from each message
+  for (const message of messagesToAnalyze) {
+    // Extract names and companies - exclude common words
+    const commonWords = new Set([
+      'I', 'You', 'He', 'She', 'It', 'We', 'They', 'A', 'An', 'The', 'This', 'That',
+      'YoBot', 'Ella', 'AI', 'Assistant', 'Help', 'Hello', 'Hi', 'Thanks', 'Thank'
+    ]);
+    
+    // Use Array.from instead of spread operator with matchAll for better compatibility
+    const nameMatches = Array.from(message.matchAll(namePattern));
+    for (const match of nameMatches) {
+      if (!commonWords.has(match[1])) {
+        namedEntities.add(match[1]);
+      }
+    }
+    
+    // Extract other entity types
+    const emailMatches = Array.from(message.matchAll(emailPattern));
+    for (const match of emailMatches) {
+      namedEntities.add(`email: ${match[0]}`);
+    }
+    
+    const websiteMatches = Array.from(message.matchAll(websitePattern));
+    for (const match of websiteMatches) {
+      namedEntities.add(`website: ${match[0]}`);
+    }
+    
+    const phoneMatches = Array.from(message.matchAll(phonePattern));
+    for (const match of phoneMatches) {
+      namedEntities.add(`phone: ${match[0]}`);
+    }
+    
+    const companyMatches = Array.from(message.matchAll(companyPattern));
+    for (const match of companyMatches) {
+      // Exclude names already found and common words
+      if (!namedEntities.has(match[1]) && !commonWords.has(match[1])) {
+        namedEntities.add(match[1]);
+      }
+    }
+  }
+  
+  return Array.from(namedEntities);
+}
+
+/**
+ * Detect the user's tone or emotional state from their message
+ */
+function detectUserTone(message: string): string | null {
+  const lowerCaseMessage = message.toLowerCase();
+  
+  // Define tone indicators with associated keywords
+  const toneIndicators = {
+    'urgent': ['urgent', 'immediately', 'asap', 'emergency', 'right now', 'quickly'],
+    'frustrated': ['frustrated', 'annoying', 'not working', 'issue', 'problem', 'wrong', 'error', 'doesn\'t', 'doesn\'t work'],
+    'curious': ['curious', 'wonder', 'interested', 'tell me more', 'how does', 'why is', 'what if'],
+    'excited': ['excited', 'amazing', 'great', 'awesome', 'fantastic', 'excellent', 'love'],
+    'confused': ['confused', 'don\'t understand', 'unclear', 'what do you mean', 'explain'],
+    'seeking reassurance': ['worried', 'concerned', 'afraid', 'not sure', 'hope', 'hopefully'],
+    'casual': ['hey', 'just', 'like', 'kind of', 'you know', 'so', 'anyway']
+  };
+  
+  // Check for question marks (indicating inquiry)
+  const hasQuestion = message.includes('?');
+  
+  // Check for specific tone indicators
+  for (const [tone, keywords] of Object.entries(toneIndicators)) {
+    if (keywords.some(keyword => lowerCaseMessage.includes(keyword))) {
+      return tone;
+    }
+  }
+  
+  // Check for exclamation marks (indicating excitement or urgency)
+  if (message.includes('!')) {
+    return 'emphatic';
+  }
+  
+  // Default for questions
+  if (hasQuestion) {
+    return 'inquisitive';
+  }
+  
+  return null;
+}
+
+/**
+ * Create a more detailed summary of past conversation exchanges
+ */
+function createDetailedConversationSummary(messages: ChatMessage[]): string {
+  if (!messages || messages.length === 0) {
+    return "No earlier conversation.";
+  }
+  
+  // First check for scheduling-related content as highest priority
+  const schedulingDetails = extractSchedulingDetails(messages);
+  if (schedulingDetails) {
+    return `Most importantly, the conversation included scheduling details: ${schedulingDetails}. `;
+  }
+  
+  // Extract topics and create a coherent summary
+  const topicsSummary = summarizeConversationTopics(messages);
+  
+  return topicsSummary || `The conversation included ${messages.filter(m => m.role === 'user').length} user messages about YoBot's features and capabilities.`;
+}
+
+/**
+ * Summarize the main topics of a conversation
+ */
+function summarizeConversationTopics(messages: ChatMessage[]): string {
+  if (messages.length < 3) return "";
+  
+  // Get only user messages for topic analysis
+  const userMessages = messages.filter(m => m.role === 'user').map(m => m.content);
+  
+  // Define key topic areas to track
+  const topicAreas = {
+    'product_features': ['feature', 'capabilities', 'tier', 'plan', 'offering'],
+    'pricing': ['price', 'cost', 'subscription', 'payment', 'expensive', 'cheap'],
+    'technical': ['technical', 'integration', 'api', 'setup', 'implement'],
+    'comparison': ['competitor', 'compare', 'vs', 'better', 'different', 'alternative'],
+    'support': ['help', 'support', 'assistance', 'troubleshoot', 'issue', 'problem']
+  };
+  
+  // Track topics mentioned
+  const topicCounts: Record<string, number> = {};
+  
+  for (const message of userMessages) {
+    const lowerMessage = message.toLowerCase();
+    
+    for (const [topic, keywords] of Object.entries(topicAreas)) {
+      if (keywords.some(kw => lowerMessage.includes(kw))) {
+        topicCounts[topic] = (topicCounts[topic] || 0) + 1;
+      }
+    }
+  }
+  
+  // Get the main topics (mentioned more than once)
+  const mainTopics = Object.entries(topicCounts)
+    .filter(([_, count]) => count > 0)
+    .sort((a, b) => b[1] - a[1])
+    .map(([topic]) => topic);
+  
+  if (mainTopics.length === 0) return "";
+  
+  // Create a readable summary
+  const topicMap: Record<string, string> = {
+    'product_features': 'YoBot features and capabilities',
+    'pricing': 'pricing and subscription plans',
+    'technical': 'technical aspects and implementation',
+    'comparison': 'comparisons with other solutions',
+    'support': 'help and support options'
+  };
+  
+  const readableTopics = mainTopics.map(t => topicMap[t] || t);
+  
+  if (readableTopics.length === 1) {
+    return `The conversation focused on ${readableTopics[0]}.`;
+  } else if (readableTopics.length === 2) {
+    return `The conversation covered ${readableTopics[0]} and ${readableTopics[1]}.`;
+  } else {
+    const lastTopic = readableTopics.pop();
+    return `The conversation covered ${readableTopics.join(', ')}, and ${lastTopic}.`;
+  }
+}
+
+/**
+ * Identify critical messages that contain important information
+ */
+function identifyCriticalMessages(messages: ChatMessage[]): string[] {
+  const criticalMessages: string[] = [];
+  
+  // Patterns that indicate important information
+  const criticalPatterns = [
+    // Scheduling patterns
+    { regex: /\b(\d{1,2})[:.]\d{2}\s*([ap]\.?m\.?|hours)\b/i, type: 'scheduling time' },
+    { regex: /\b(today|tomorrow|monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/i, type: 'scheduling day' },
+    { regex: /\b(\d{1,2})(st|nd|rd|th)?\s+(jan|feb|mar|apr|may|jun|jul|aug|sept?|oct|nov|dec)/i, type: 'scheduling date' },
+    
+    // Contact information
+    { regex: /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/, type: 'email' },
+    { regex: /\b(?:\+\d{1,2}\s?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}\b/, type: 'phone number' },
+    
+    // Decision points
+    { regex: /\b(yes|no|confirm|agree|disagree|approve|reject)\b/i, type: 'decision' },
+    
+    // References to previous messages
+    { regex: /\b(as\s+(?:I|we)\s+(?:said|mentioned|discussed)|(?:I|we)\s+(?:told|asked)\s+you|(?:I|we)\s+already\s+(?:said|mentioned|told))\b/i, type: 'reference' }
+  ];
+  
+  // Check each message for critical patterns
+  for (const message of messages.filter(m => m.role === 'user')) {
+    for (const pattern of criticalPatterns) {
+      if (pattern.regex.test(message.content)) {
+        criticalMessages.push(`[${pattern.type}]: "${message.content}"`);
+        break; // Once we've identified a message as critical, we can move to the next one
+      }
+    }
+  }
+  
+  return criticalMessages;
 }
 
 // For testing without making API calls
