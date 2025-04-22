@@ -57,8 +57,8 @@ app.use((req, res, next) => {
     } else {
       log("Warning: Failed to initialize vector database");
     }
-  } catch (error) {
-    log(`Error initializing RAG system: ${error.message}`);
+  } catch (error: unknown) {
+    log(`Error initializing RAG system: ${error instanceof Error ? error.message : String(error)}`);
   }
   
   const server = await registerRoutes(app);
