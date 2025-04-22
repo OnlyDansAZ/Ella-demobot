@@ -1,5 +1,6 @@
 import OpenAI from "openai";
 import { getRelevantContext, createEnhancedSystemPrompt } from './rag';
+import { appointmentStorage } from './appointmentStorage';
 
 // Initialize OpenAI with API key from environment variables
 const openai = new OpenAI({
@@ -265,6 +266,84 @@ function extractSchedulingDetails(conversationHistory: ChatMessage[]): string | 
   return null;
 }
 
+// Check for appointment conflicts and get existing appointments
+async function checkAppointmentConflicts(date: Date, startTime: string, endTime?: string): Promise<any> {
+  try {
+    // Check if there are any conflicting appointments
+    const conflicts = await appointmentStorage.checkForConflicts(date, startTime, endTime);
+    return {
+      hasConflicts: conflicts.length > 0,
+      conflicts,
+      error: null
+    };
+  } catch (error) {
+    console.error("Error checking appointment conflicts:", error);
+    return {
+      hasConflicts: false,
+      conflicts: [],
+      error: error instanceof Error ? error.message : String(error)
+    };
+  }
+}
+
+// Create a new appointment from detected information
+async function createAppointmentFromDetails(schedulingDetails: any): Promise<any> {
+  try {
+    // We need at least a date, time, and title to create an appointment
+    if (!schedulingDetails.date || !schedulingDetails.startTime || !schedulingDetails.title) {
+      return {
+        success: false,
+        error: "Missing required appointment details"
+      };
+    }
+
+    const appointment = {
+      title: schedulingDetails.title,
+      description: schedulingDetails.description || "",
+      date: schedulingDetails.date,
+      startTime: schedulingDetails.startTime,
+      endTime: schedulingDetails.endTime,
+      location: schedulingDetails.location || "Virtual",
+      status: "confirmed"
+    };
+
+    // Create the appointment in the database
+    const result = await appointmentStorage.createAppointment(appointment);
+    
+    return {
+      success: true,
+      appointment: result,
+      error: null
+    };
+  } catch (error) {
+    console.error("Error creating appointment:", error);
+    return {
+      success: false,
+      appointment: null,
+      error: error instanceof Error ? error.message : String(error)
+    };
+  }
+}
+
+// Get upcoming appointments
+async function getUpcomingAppointments(limit: number = 3): Promise<any> {
+  try {
+    const appointments = await appointmentStorage.getUpcomingAppointments(limit);
+    return {
+      success: true,
+      appointments,
+      error: null
+    };
+  } catch (error) {
+    console.error("Error getting upcoming appointments:", error);
+    return {
+      success: false,
+      appointments: [],
+      error: error instanceof Error ? error.message : String(error)
+    };
+  }
+}
+
 // Summarize older messages to provide context without exceeding token limits
 function summarizeOlderMessages(messages: ChatMessage[]): string {
   if (!messages || messages.length === 0) {
@@ -451,6 +530,34 @@ export async function generateResponse(
     // STEP 7: ADD CONTEXTUAL AWARENESS FOR SPECIFIC TOPICS
     const lowerCaseMessage = userMessage.toLowerCase();
     
+    // Check for appointment-related queries and add database information
+    if (lowerCaseMessage.includes('appointment') || 
+        lowerCaseMessage.includes('meeting') || 
+        lowerCaseMessage.includes('schedule') ||
+        lowerCaseMessage.includes('calendar')) {
+      
+      try {
+        // Check for upcoming appointments
+        const upcomingAppointmentsResult = await getUpcomingAppointments(3);
+        
+        if (upcomingAppointmentsResult.success && upcomingAppointmentsResult.appointments.length > 0) {
+          // Format appointment information for the model
+          const appointmentData = upcomingAppointmentsResult.appointments.map((appt: any) => {
+            return `- ${appt.title} on ${new Date(appt.date).toLocaleDateString()} at ${appt.startTime}${appt.location ? ` at ${appt.location}` : ''}`;
+          }).join('\n');
+          
+          messages.push({ 
+            role: "system", 
+            content: `APPOINTMENT DATABASE INFO: We found the following upcoming appointments in our system:\n${appointmentData}\n\nIf the user is asking about existing appointments, reference this information.`
+          });
+          
+          console.log('Found scheduled appointments in database, adding to context');
+        }
+      } catch (error) {
+        console.error('Error retrieving appointment data:', error);
+      }
+    }
+    
     // Enhanced topic detection with more specific categories and triggers
     const topicDetection = {
       scheduling: {
@@ -459,7 +566,7 @@ export async function generateResponse(
           'today', 'tomorrow', 'next week', 'am', 'pm', 'o\'clock', 'book', 'booking',
           'morning', 'afternoon', 'evening', 'reschedule', 'cancel', 'availability'
         ],
-        instruction: "CRITICAL SCHEDULING INSTRUCTION: The user is discussing scheduling. Pay extremely close attention to ANY dates, times, or appointment details in BOTH this message AND all previous messages. If the user is asking to schedule a meeting or call, offer our Calendly link by saying: \"You can easily schedule a meeting with us using our Calendly booking system. Would you like me to share the booking link with you?\". If they agree, respond with: \"Great! Here's our Calendly link where you can select a time that works for you: [Calendly Booking URL would be shown here]\". Ensure you've reviewed the ENTIRE conversation history for all scheduling details."
+        instruction: "CRITICAL SCHEDULING INSTRUCTION: The user is discussing scheduling. Pay extremely close attention to ANY dates, times, or appointment details in BOTH this message AND all previous messages. First check if we have a database appointment entry. If the user is specifically requesting to view, change or cancel an existing appointment, mention that these operations can be handled through our appointment system and that you'll relay their request. If the user is asking to schedule a new meeting or call, offer our Calendly link by saying: \"You can easily schedule a meeting with us using our Calendly booking system. Would you like me to share the booking link with you?\". If they agree, respond with: \"Great! Here's our Calendly link where you can select a time that works for you: [Calendly Booking URL would be shown here]\". Ensure you've reviewed the ENTIRE conversation history for all scheduling details."
       },
       productFeatures: {
         keywords: [
