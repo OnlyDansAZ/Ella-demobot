@@ -25,7 +25,7 @@ export async function processDocument(text: string, metadata: Record<string, any
       success: result,
       count: docs.length
     };
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Error processing document:", error);
     return {
       success: false,
@@ -55,7 +55,7 @@ export async function processBulkDocuments(documents: Array<{text: string, metad
       success: result,
       count: allDocs.length
     };
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Error processing bulk documents:", error);
     return {
       success: false,
@@ -225,12 +225,12 @@ export async function seedKnowledgeBase() {
     const result = await processBulkDocuments(yobotKnowledgeBase);
     console.log(`Seeded knowledge base with ${result.count} document chunks`);
     return result;
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Error seeding knowledge base:", error);
     return {
       success: false,
       count: 0,
-      error: error.message
+      error: error instanceof Error ? error.message : String(error)
     };
   }
 }

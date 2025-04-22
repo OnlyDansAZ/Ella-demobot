@@ -30,7 +30,8 @@ export async function initVectorDB() {
     // Direct connection config for PGVector which expects a direct client config, not a pool
     vectorStore = await PGVectorStore.initialize(embeddings, {
       postgresConnectionOptions: {
-        type: "neon",
+        // TypeScript error: 'type' is not a recognized property in PoolConfig
+        // Removing 'type' property as it's not needed for connection to work
         connectionString: process.env.DATABASE_URL,
       },
       tableName: "documents", // Table name to use
