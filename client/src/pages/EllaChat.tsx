@@ -183,20 +183,12 @@ export default function EllaChat() {
           (lowerCaseResponse.includes('calendly') || 
            lowerCaseResponse.includes('schedule a meeting') || 
            lowerCaseResponse.includes('booking link') ||
-           lowerCaseResponse.includes('book a time')) && 
+           lowerCaseResponse.includes('book a time') ||
+           lowerCaseResponse.includes('appointment')) && 
           !showCalendly
         ) {
-          // Get the calendly URL from the API
-          try {
-            const calendlyResponse = await fetch('/api/calendly/url');
-            const calendlyData = await calendlyResponse.json();
-            if (calendlyData.success && calendlyData.url) {
-              setCalendlyUrl(calendlyData.url);
-              setShowCalendly(true);
-            }
-          } catch (error) {
-            console.error('Error fetching Calendly URL:', error);
-          }
+          // Show the Calendly interface
+          setShowCalendly(true);
         }
         
         // If not muted, play the audio
@@ -376,16 +368,29 @@ export default function EllaChat() {
                       </Button>
                     </div>
                     <p className="text-[10px] sm:text-xs text-muted-foreground mb-2">
-                      Ella has detected you might want to schedule a meeting. Use the button below to open the scheduling page.
+                      Ella has detected you'd like to schedule a meeting. Select a meeting type below, and you'll be able to pick a convenient time slot.
                     </p>
                     <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
-                      <ScheduleMeeting 
-                        buttonText="Schedule Meeting"
-                        buttonVariant="default"
-                        calendlyUrl={calendlyUrl}
-                        popupTitle="Select a time to meet"
-                        size="md"
-                      />
+                      {meetingTypes && meetingTypes.length > 0 ? (
+                        meetingTypes.map(type => (
+                          <ScheduleMeeting 
+                            key={type.id}
+                            buttonText={type.name}
+                            buttonVariant="default"
+                            calendlyUrl={type.url}
+                            popupTitle={`Schedule: ${type.name}`}
+                            size="md"
+                          />
+                        ))
+                      ) : (
+                        <ScheduleMeeting 
+                          buttonText="Schedule Meeting"
+                          buttonVariant="default"
+                          calendlyUrl={calendlyUrl}
+                          popupTitle="Select a time to meet"
+                          size="md"
+                        />
+                      )}
                     </div>
                   </div>
                 )}

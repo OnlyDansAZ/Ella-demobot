@@ -1,8 +1,15 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { CalendlyEmbed } from './CalendlyEmbed';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 import { Calendar } from 'lucide-react';
+import { CalendlyEmbed } from './CalendlyEmbed';
 
 interface ScheduleMeetingProps {
   buttonText?: string;
@@ -17,45 +24,41 @@ interface ScheduleMeetingProps {
  */
 export function ScheduleMeeting({
   buttonText = 'Schedule a Meeting',
-  buttonVariant = 'outline',
+  buttonVariant = 'default',
   calendlyUrl = 'https://calendly.com/yourbusiness/30min',
   popupTitle = 'Schedule a Meeting',
   size = 'lg'
 }: ScheduleMeetingProps) {
   const [open, setOpen] = useState(false);
 
-  // Define dialog width based on size prop
-  const getDialogWidth = () => {
-    switch (size) {
-      case 'sm': return 'max-w-sm';
-      case 'md': return 'max-w-md';
-      case 'lg': return 'max-w-lg';
-      case 'xl': return 'max-w-xl';
-      case 'full': return 'max-w-screen-md';
-      default: return 'max-w-lg';
-    }
+  // Calculate the size classes based on the size prop
+  const sizeClasses = {
+    sm: 'max-w-sm',
+    md: 'max-w-md',
+    lg: 'max-w-lg',
+    xl: 'max-w-xl',
+    full: 'max-w-full'
   };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant={buttonVariant} className="flex items-center gap-1 text-xs sm:text-sm">
-          <Calendar className="h-3 w-3 sm:h-4 sm:w-4" />
+        <Button variant={buttonVariant} size="sm" className="flex items-center gap-1.5">
+          <Calendar className="h-3.5 w-3.5" />
           {buttonText}
         </Button>
       </DialogTrigger>
-      <DialogContent className={`${getDialogWidth()} h-[75vh] sm:h-[80vh] p-0`}>
-        <DialogHeader className="px-4 pt-4">
+      <DialogContent className={`${sizeClasses[size]} p-0 overflow-hidden h-[90vh] max-h-[700px]`}>
+        <DialogHeader className="px-4 pt-4 pb-2">
           <DialogTitle>{popupTitle}</DialogTitle>
+          <DialogDescription>
+            Select a date and time that works for you
+          </DialogDescription>
         </DialogHeader>
-        <div className="px-1 sm:px-2 pb-1 sm:pb-2 h-full overflow-hidden">
+        <div className="h-full">
           <CalendlyEmbed 
             url={calendlyUrl} 
-            styles={{ 
-              height: '100%', 
-              width: '100%', 
-              overflow: 'hidden' 
-            }} 
+            styles={{ height: 'calc(100% - 30px)', width: '100%', minHeight: '550px' }}
           />
         </div>
       </DialogContent>
