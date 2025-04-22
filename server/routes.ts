@@ -106,40 +106,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const voiceId = "KgleQSAupUuS391XuXpI";
       
       try {
-        // First check if we can get user info to validate the API key
-        console.log("Attempting to use ElevenLabs with API key");
+        console.log("Attempting to use ElevenLabs with new API key");
         
-        // Use axios directly for better debugging
-        const axios = require('axios');
-        const audioResponse = await axios({
-          method: 'post',
-          url: `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,
-          headers: {
-            'Accept': 'audio/mpeg',
-            'Content-Type': 'application/json',
-            'xi-api-key': 'sk_9ef05054f89dae4c84c4ae5c4217da2098fce71818a98dc5'
-          },
-          data: {
-            text: text,
-            voice_settings: {
-              stability: 0.5,
-              similarity_boost: 0.75
-            }
-          },
-          responseType: 'stream'
+        // Initialize ElevenLabs with the new API key
+        const elevenLabs = new ElevenLabs({
+          apiKey: 'sk_9ef05054f89dae4c84c4ae5c4217da2098fce71818a98dc5',
+          voiceId: voiceId
         });
         
-        console.log("ElevenLabs API direct response status:", audioResponse.status);
+        console.log(`Using voice ID: ${voiceId} with ElevenLabs`);
         
-        // Write the audio data to a temporary file
-        const writer = fs.createWriteStream(tempFile);
-        audioResponse.data.pipe(writer);
-        
-        // Wait for the file to be written
-        await new Promise((resolve, reject) => {
-          writer.on('finish', resolve);
-          writer.on('error', reject);
+        // Generate audio from ElevenLabs
+        const result = await elevenLabs.textToSpeech({
+          textInput: text,
+          fileName: tempFile,
+          stability: 0.5,
+          similarityBoost: 0.75
         });
+        
+        console.log("ElevenLabs response:", result);
         
         // Read the audio file
         const audioData = await fs.readFile(tempFile);
