@@ -74,13 +74,15 @@ export const useConversation = () => {
           setMessages([initialGreeting]);
           
           // Save this initial greeting to the server
-          await apiRequest({
-            url: `/api/conversations/${sessionId}/messages`,
+          await fetch(`/api/conversations/${sessionId}/messages`, {
             method: 'POST',
-            data: {
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
               content: initialGreeting.content,
               isUser: initialGreeting.isUser
-            }
+            })
           });
         }
         
@@ -119,13 +121,15 @@ export const useConversation = () => {
     
     // Persist to server
     try {
-      await apiRequest({
-        url: `/api/conversations/${sessionId}/messages`,
+      await fetch(`/api/conversations/${sessionId}/messages`, {
         method: 'POST',
-        data: {
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
           content,
           isUser
-        }
+        })
       });
     } catch (err) {
       console.error('Error saving message:', err);
@@ -139,8 +143,7 @@ export const useConversation = () => {
   // Function to clear conversation
   const clearConversation = useCallback(async () => {
     try {
-      await apiRequest({
-        url: `/api/conversations/${sessionId}`,
+      await fetch(`/api/conversations/${sessionId}`, {
         method: 'DELETE'
       });
       
@@ -155,13 +158,15 @@ export const useConversation = () => {
       setMessages([initialGreeting]);
       
       // Save this initial greeting to the server
-      await apiRequest({
-        url: `/api/conversations/${sessionId}/messages`,
+      await fetch(`/api/conversations/${sessionId}/messages`, {
         method: 'POST',
-        data: {
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
           content: initialGreeting.content,
           isUser: initialGreeting.isUser
-        }
+        })
       });
     } catch (err) {
       console.error('Error clearing conversation:', err);
