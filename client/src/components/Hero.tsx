@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "wouter";
 
 const Hero: React.FC = () => {
   return (
@@ -15,18 +16,23 @@ const Hero: React.FC = () => {
               Experience the future of automated assistance with YoBot's Ella.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
-              <a
-                href="#demo"
+              <Link
+                href="/chat"
                 className="bg-[#0D82DA] hover:bg-blue-600 text-white font-medium px-6 py-3 rounded-md text-center transition-colors"
               >
-                Try Demo Chat
-              </a>
-              <a
-                href="#tiers"
+                Chat with Ella
+              </Link>
+              <Link
+                href="/admin"
                 className="border border-gray-500 hover:border-white text-white font-medium px-6 py-3 rounded-md text-center transition-colors"
               >
-                View Plans
-              </a>
+                Admin Panel
+              </Link>
+            </div>
+            <div className="mt-4 text-sm text-gray-400">
+              <span className="opacity-80">✓ Client-facing chat</span>
+              <span className="mx-2">|</span>
+              <span className="opacity-80">✓ Admin backend for knowledge uploads</span>
             </div>
           </div>
           <div className="md:w-1/2">
