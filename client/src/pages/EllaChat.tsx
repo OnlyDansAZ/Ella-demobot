@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { predefinedPersonas, customPersonaTemplate } from '@/lib/personas';
+import yobotLogo from "../assets/yobot-logo.png";
 
 // Define the structure for chat messages
 interface Message {
@@ -266,8 +267,8 @@ export default function EllaChat() {
     <div className="max-w-5xl mx-auto p-1 sm:p-4">
       <div className="flex items-center justify-between mb-2 sm:mb-6">
         <div className="flex items-center">
-          <Avatar className="h-6 w-6 sm:h-10 sm:w-10 bg-blue-500 text-white mr-1 sm:mr-3">
-            <span className="font-semibold text-xs sm:text-lg">E</span>
+          <Avatar className="h-8 w-8 sm:h-10 sm:w-10 mr-1 sm:mr-3 overflow-hidden p-0">
+            <img src={yobotLogo} alt="YoBot Logo" className="h-full w-full object-contain" />
           </Avatar>
           <div>
             <h1 className="text-base sm:text-xl font-bold">Ella</h1>

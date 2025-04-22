@@ -1,5 +1,6 @@
 import React from "react";
 import { Facebook, Twitter, Github } from "lucide-react";
+import yobotLogo from "../assets/yobot-logo.png";
 
 const Footer: React.FC = () => {
   return (
