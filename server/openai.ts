@@ -113,7 +113,8 @@ function extractSchedulingDetails(conversationHistory: ChatMessage[]): string | 
     scheduledTime: '',
     scheduledDate: '',
     isConfirmed: false,
-    lastConfirmation: ''
+    lastConfirmation: '',
+    itemsToBring: '', // New field to track items user needs to bring
   };
   
   // Patterns for extracting specific day references
@@ -121,6 +122,9 @@ function extractSchedulingDetails(conversationHistory: ChatMessage[]): string | 
   const tomorrowPattern = /\btomorrow\b/i;
   const dayOfWeekPattern = /\b(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/i;
   
+  // Pattern for detecting items to bring
+  const bringItemsPattern = /(?:bring|take|carry|pack|need|require)\s+([^.!?]+)(?:\s+(?:to|for|with)\s+(?:the|this|your|our)\s+(?:meeting|appointment|session|call))?/i;
+
   // Process every message to extract scheduling information
   for (const message of conversationHistory) {
     const lowerContent = message.content.toLowerCase();
@@ -140,6 +144,17 @@ function extractSchedulingDetails(conversationHistory: ChatMessage[]): string | 
     const durationMatch = message.content.match(durationPattern);
     if (durationMatch && message.role === 'user' && !schedulingDetails.meetingDuration) {
       schedulingDetails.meetingDuration = durationMatch[0];
+    }
+    
+    // Try to extract items to bring
+    const bringItemsMatch = message.content.match(bringItemsPattern);
+    if (bringItemsMatch && bringItemsMatch[1] && message.role === 'user') {
+      // Either set it for the first time or append to existing items
+      if (!schedulingDetails.itemsToBring) {
+        schedulingDetails.itemsToBring = bringItemsMatch[1].trim();
+      } else {
+        schedulingDetails.itemsToBring += `, ${bringItemsMatch[1].trim()}`;
+      }
     }
     
     // Try to extract day information
@@ -242,6 +257,11 @@ function extractSchedulingDetails(conversationHistory: ChatMessage[]): string | 
       result.push("CONFIRMED: Not explicitly confirmed yet");
     }
     
+    // Add items to bring if specified
+    if (schedulingDetails.itemsToBring) {
+      result.push(`ITEMS TO BRING: ${schedulingDetails.itemsToBring}`);
+    }
+    
     // Add Calendly information if relevant
     if (schedulingDetails.calendlyMentioned) {
       result.push("Calendly booking requested");
@@ -304,7 +324,8 @@ async function createAppointmentFromDetails(schedulingDetails: any): Promise<any
       startTime: schedulingDetails.startTime,
       endTime: schedulingDetails.endTime,
       location: schedulingDetails.location || "Virtual",
-      status: "confirmed"
+      status: "confirmed",
+      details: schedulingDetails.itemsToBring || null // Add the items to bring to appointment details
     };
 
     // Create the appointment in the database

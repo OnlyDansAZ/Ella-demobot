@@ -536,6 +536,13 @@ export default function EllaChat() {
                                   <span>{appointment.location}</span>
                                 </div>
                               )}
+                              
+                              {appointment.details && (
+                                <div className="flex items-center text-[10px] sm:text-xs text-muted-foreground mt-1 bg-gray-50 dark:bg-gray-900 p-1 rounded border border-gray-100 dark:border-gray-800">
+                                  <Briefcase className="h-2.5 w-2.5 mr-1 text-blue-500" />
+                                  <span className="font-medium">Bring: {appointment.details}</span>
+                                </div>
+                              )}
                             </div>
                           </div>
                         ))}

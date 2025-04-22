@@ -10,6 +10,7 @@ import { generateResponse, getFallbackResponse } from './openai';
 import documentRoutes from './routes/documentRoutes';
 import calendlyRouter from './routes/calendlyRoutes';
 import appointmentRoutes from './routes/appointmentRoutes';
+import conversationRoutes from './routes/conversationRoutes';
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // API Routes
@@ -25,6 +26,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Appointment management routes
   app.use("/api/appointments", appointmentRoutes);
+  
+  // Conversation history routes
+  app.use("/api/conversations", conversationRoutes);
 
   // Contact form submission endpoint
   app.post("/api/contact", (req, res) => {
