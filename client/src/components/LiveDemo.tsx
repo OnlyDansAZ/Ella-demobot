@@ -170,7 +170,10 @@ const LiveDemo: React.FC = () => {
 
   // Start speech recognition
   const startSpeechRecognition = () => {
-    if (!recognitionRef.current) return;
+    if (!recognitionRef.current) {
+      alert("Speech recognition is not available in your browser or could not be initialized. Please try a modern browser like Chrome, Edge, or Safari.");
+      return;
+    }
     
     // Stop any speaking before starting listening
     if (isSpeaking) {
@@ -186,8 +189,20 @@ const LiveDemo: React.FC = () => {
       setIsSpeaking(false);
     }
     
-    recognitionRef.current.start();
-    setIsListening(true);
+    try {
+      // Show a helpful message the first time
+      if (!localStorage.getItem('micPermissionAsked')) {
+        localStorage.setItem('micPermissionAsked', 'true');
+        alert("YoBot needs microphone access to hear you. Please allow microphone access when prompted.");
+      }
+      
+      recognitionRef.current.start();
+      setIsListening(true);
+    } catch (err) {
+      console.error("Error starting speech recognition:", err);
+      alert("Could not access your microphone. Please check your browser permissions and try again.");
+      setIsListening(false);
+    }
   };
 
   // Stop speech recognition
@@ -204,62 +219,89 @@ const LiveDemo: React.FC = () => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     
     if (SpeechRecognition) {
-      setVoiceInputSupported(true);
-      const recognition = new SpeechRecognition();
-      
-      recognition.continuous = false;
-      recognition.interimResults = false;
-      recognition.lang = 'en-US';
-      
-      recognition.onresult = (event: any) => {
-        const transcript = event.results[0][0].transcript;
-        setInputValue(transcript);
+      try {
+        setVoiceInputSupported(true);
+        const recognition = new SpeechRecognition();
         
-        // Automatically submit the form with the transcript
-        setTimeout(() => {
-          if (transcript.trim()) {
-            const userMessage = {
-              text: transcript,
-              isUser: true,
-              id: `user-${Date.now()}`,
-            };
+        recognition.continuous = false;
+        recognition.interimResults = false;
+        recognition.lang = 'en-US';
+        
+        // Log when recognition starts
+        recognition.onstart = () => {
+          console.log('Speech recognition started');
+          setIsListening(true);
+        };
+        
+        recognition.onresult = (event: any) => {
+          console.log('Speech recognition result received');
+          
+          try {
+            const transcript = event.results[0][0].transcript;
+            console.log('Transcript:', transcript);
             
-            setMessages((prev) => [...prev, userMessage]);
+            setInputValue(transcript);
             
-            // Add bot response after a delay
-            setTimeout(() => {
-              const botResponseId = `bot-${Date.now()}`;
-              const botResponseText = getBotResponse(transcript);
-              
-              const botResponse = {
-                text: botResponseText,
-                isUser: false,
-                id: botResponseId,
+            // Process the transcript
+            if (transcript && transcript.trim()) {
+              // Create and add user message
+              const userMessage = {
+                text: transcript,
+                isUser: true,
+                id: `user-${Date.now()}`,
               };
               
-              setMessages((prev) => [...prev, botResponse]);
+              setMessages((prev) => [...prev, userMessage]);
               
-              // Speak the bot's response
-              if (audioEnabled) {
-                setTimeout(() => speakText(botResponseText), 100);
-              }
-            }, 1000);
+              // Generate and add bot response
+              setTimeout(() => {
+                const botResponseId = `bot-${Date.now()}`;
+                const botResponseText = getBotResponse(transcript);
+                
+                const botResponse = {
+                  text: botResponseText,
+                  isUser: false,
+                  id: botResponseId,
+                };
+                
+                setMessages((prev) => [...prev, botResponse]);
+                
+                // Speak the bot's response
+                if (audioEnabled) {
+                  setTimeout(() => speakText(botResponseText), 100);
+                }
+              }, 1000);
+            }
+          } catch (err) {
+            console.error('Error processing speech result:', err);
           }
-        }, 500);
+          
+          setIsListening(false);
+        };
         
-        setIsListening(false);
-      };
-      
-      recognition.onend = () => {
-        setIsListening(false);
-      };
-      
-      recognition.onerror = (event: any) => {
-        console.error('Speech recognition error', event.error);
-        setIsListening(false);
-      };
-      
-      recognitionRef.current = recognition;
+        recognition.onend = () => {
+          console.log('Speech recognition ended');
+          setIsListening(false);
+        };
+        
+        recognition.onerror = (event: any) => {
+          console.error('Speech recognition error:', event.error);
+          setIsListening(false);
+          
+          // Show a message to the user if permission is denied
+          if (event.error === 'not-allowed') {
+            alert('Microphone access is required for voice input. Please enable microphone permissions in your browser settings.');
+          }
+        };
+        
+        recognitionRef.current = recognition;
+      } catch (error) {
+        console.error('Error setting up speech recognition:', error);
+        setVoiceInputSupported(false);
+      }
+    } else {
+      console.log('Speech recognition not supported in this browser');
+      setVoiceInputSupported(false);
     }
     
     // Play the initial greeting message on load
@@ -305,10 +347,20 @@ const LiveDemo: React.FC = () => {
       <div className="container mx-auto max-w-6xl">
         <div className="text-center mb-12">
           <h2 className="text-3xl font-bold mb-4">Try YoBot's Ella in Action</h2>
-          <p className="text-gray-300 max-w-2xl mx-auto">
+          <p className="text-gray-300 max-w-2xl mx-auto mb-4">
             Experience our AI assistant with this live demo. Ask questions,
             schedule meetings, or explore other features.
           </p>
+          {voiceInputSupported && (
+            <div className="bg-gray-700 p-3 rounded-md max-w-md mx-auto text-left flex items-start border-l-4 border-blue-500">
+              <Mic className="h-5 w-5 text-blue-400 mt-0.5 mr-2 flex-shrink-0" />
+              <p className="text-sm text-gray-300">
+                <span className="font-semibold text-white block mb-1">Voice Control Available!</span>
+                Click the microphone button below the chat window to speak to Ella.
+                Your browser will ask for microphone permission the first time you try this.
+              </p>
+            </div>
+          )}
         </div>
 
         <div className="mx-auto max-w-2xl bg-gray-900 rounded-xl overflow-hidden shadow-2xl border border-gray-700">
@@ -388,22 +440,30 @@ const LiveDemo: React.FC = () => {
           <div className="p-4 border-t border-gray-700">
             <form onSubmit={handleSubmit} className="flex items-center">
               {voiceInputSupported && (
-                <button
-                  type="button"
-                  onClick={toggleSpeechRecognition}
-                  className={`p-2 mr-2 rounded-full ${
-                    isListening 
-                      ? 'bg-red-500 hover:bg-red-600' 
-                      : 'bg-gray-700 hover:bg-gray-600'
-                  } transition-colors`}
-                  title={isListening ? "Stop listening" : "Start voice input"}
-                >
-                  {isListening ? (
-                    <MicOff className="h-5 w-5 text-white" />
-                  ) : (
-                    <Mic className="h-5 w-5 text-white" />
+                <div className="relative mr-2">
+                  <button
+                    type="button"
+                    onClick={toggleSpeechRecognition}
+                    className={`p-3 rounded-full ${
+                      isListening 
+                        ? 'bg-red-500 hover:bg-red-600' 
+                        : 'bg-blue-600 hover:bg-blue-700'
+                    } transition-colors shadow-lg transform hover:scale-105 active:scale-95`}
+                    title={isListening ? "Stop listening" : "Start voice input"}
+                  >
+                    {isListening ? (
+                      <MicOff className="h-5 w-5 text-white" />
+                    ) : (
+                      <Mic className="h-5 w-5 text-white" />
+                    )}
+                  </button>
+                  {!isListening && (
+                    <span className="absolute -top-2 -right-2 flex h-4 w-4">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-4 w-4 bg-blue-500"></span>
+                    </span>
                   )}
-                </button>
+                </div>
               )}
               <div className="relative flex-1">
                 <input
