@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Mic, MicOff, Send, Volume2, VolumeX, ArrowLeft, User, Brain, Edit, Calendar, Clock, MapPin, AlertCircle } from 'lucide-react';
+import { Mic, MicOff, Send, Volume2, VolumeX, ArrowLeft, User, Brain, Edit, Calendar, Clock, MapPin, AlertCircle, Briefcase, Trash2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar } from '@/components/ui/avatar';
 import { Slider } from '@/components/ui/slider';
@@ -22,17 +22,10 @@ import { ScheduleMeeting } from '@/components/ScheduleMeeting';
 import { Badge } from '@/components/ui/badge';
 import { useCalendly } from '@/hooks/use-calendly';
 import { apiRequest } from '@/lib/queryClient';
+import { useConversation, ChatMessage } from '@/hooks/use-conversation';
 import yobotLogo from "../assets/yobot-logo.png";
 import yobotHeadLogo from "../assets/yobot-head-logo.png";
 import yobotTransparentLogo from "../assets/yobot-transparent-logo.png";
-
-// Define the structure for chat messages
-interface Message {
-  id: string;
-  content: string;
-  isUser: boolean;
-  timestamp: Date;
-}
 
 // Define appointment interface matching the database schema
 interface Appointment {
@@ -46,6 +39,7 @@ interface Appointment {
   status: 'confirmed' | 'pending' | 'cancelled' | 'completed';
   reminderSent: boolean;
   timeZone?: string;
+  details?: string; // Additional details like items to bring
 }
 
 export default function EllaChat() {
