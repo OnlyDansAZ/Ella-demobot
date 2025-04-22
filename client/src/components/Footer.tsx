@@ -2,6 +2,7 @@ import React from "react";
 import { Facebook, Twitter, Github } from "lucide-react";
 import yobotLogo from "../assets/yobot-logo.png";
 import yobotHeadLogo from "../assets/yobot-head-logo.png";
+import yobotTransparentLogo from "../assets/yobot-transparent-logo.png";
 
 const Footer: React.FC = () => {
   return (
@@ -11,7 +12,7 @@ const Footer: React.FC = () => {
           <div>
             <div className="flex items-center mb-4">
               <img
-                src={yobotHeadLogo}
+                src={yobotTransparentLogo}
                 alt="YoBot Logo"
                 className="h-10 mr-3"
               />
