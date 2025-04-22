@@ -1,11 +1,11 @@
-import type { Express, Request, Response } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 // @ts-ignore
 import ElevenLabs from "elevenlabs-node";
-import * as fs from 'fs-extra';
-import * as path from 'path';
-import * as os from 'os';
+import fs from 'fs-extra';
+import path from 'path';
+import os from 'os';
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // API Routes
