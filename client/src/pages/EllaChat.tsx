@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Mic, MicOff, Send, Volume2, VolumeX, ArrowLeft, User, Brain, Edit } from 'lucide-react';
+import { Mic, MicOff, Send, Volume2, VolumeX, ArrowLeft, User, Brain, Edit, Calendar } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar } from '@/components/ui/avatar';
 import { Slider } from '@/components/ui/slider';
@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { predefinedPersonas, customPersonaTemplate } from '@/lib/personas';
+import { ScheduleMeeting } from '@/components/ScheduleMeeting';
 import yobotLogo from "../assets/yobot-logo.png";
 import yobotHeadLogo from "../assets/yobot-head-logo.png";
 import yobotTransparentLogo from "../assets/yobot-transparent-logo.png";
@@ -45,6 +46,10 @@ export default function EllaChat() {
   const [isMuted, setIsMuted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [volume, setVolume] = useState(80);
+  
+  // Scheduling state
+  const [showCalendly, setShowCalendly] = useState(false);
+  const [calendlyUrl, setCalendlyUrl] = useState('https://calendly.com/yourbusiness/30min');
   
   // Persona state
   const [selectedPersona, setSelectedPersona] = useState<string>("default");
@@ -170,6 +175,28 @@ export default function EllaChat() {
         
         // Add the bot message to the chat
         setMessages(prev => [...prev, botMessage]);
+        
+        // Check if the response contains Calendly booking references
+        const lowerCaseResponse = data.response.toLowerCase();
+        if (
+          (lowerCaseResponse.includes('calendly') || 
+           lowerCaseResponse.includes('schedule a meeting') || 
+           lowerCaseResponse.includes('booking link') ||
+           lowerCaseResponse.includes('book a time')) && 
+          !showCalendly
+        ) {
+          // Get the calendly URL from the API
+          try {
+            const calendlyResponse = await fetch('/api/calendly/url');
+            const calendlyData = await calendlyResponse.json();
+            if (calendlyData.success && calendlyData.url) {
+              setCalendlyUrl(calendlyData.url);
+              setShowCalendly(true);
+            }
+          } catch (error) {
+            console.error('Error fetching Calendly URL:', error);
+          }
+        }
         
         // If not muted, play the audio
         if (!isMuted) {
@@ -328,6 +355,36 @@ export default function EllaChat() {
                         <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-blue-500 animate-bounce" style={{ animationDelay: '150ms' }} />
                         <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-blue-500 animate-bounce" style={{ animationDelay: '300ms' }} />
                       </div>
+                    </div>
+                  </div>
+                )}
+                {showCalendly && (
+                  <div className="my-4 p-2 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
+                    <div className="flex justify-between items-center mb-2">
+                      <h3 className="text-xs sm:text-sm font-medium flex items-center gap-1">
+                        <Calendar className="h-3 w-3 sm:h-4 sm:w-4" />
+                        Schedule a Meeting
+                      </h3>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="h-6 w-6 p-0" 
+                        onClick={() => setShowCalendly(false)}
+                      >
+                        ✕
+                      </Button>
+                    </div>
+                    <p className="text-[10px] sm:text-xs text-muted-foreground mb-2">
+                      Ella has detected you might want to schedule a meeting. Use the button below to open the scheduling page.
+                    </p>
+                    <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
+                      <ScheduleMeeting 
+                        buttonText="Schedule Meeting"
+                        buttonVariant="default"
+                        calendlyUrl={calendlyUrl}
+                        popupTitle="Select a time to meet"
+                        size="md"
+                      />
                     </div>
                   </div>
                 )}

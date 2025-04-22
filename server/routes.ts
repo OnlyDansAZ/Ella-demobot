@@ -18,6 +18,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Document routes for RAG knowledge base management
   app.use("/api/documents", documentRoutes);
+  
+  // Calendly scheduling routes
+  app.use("/api/calendly", calendlyRouter);
 
   // Contact form submission endpoint
   app.post("/api/contact", (req, res) => {
