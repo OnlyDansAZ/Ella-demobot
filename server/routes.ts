@@ -100,9 +100,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Create temp file path for audio
-      const fs = require('fs-extra');
-      const path = require('path');
-      const os = require('os');
       const tempFile = path.join(os.tmpdir(), `speech-${Date.now()}.mp3`);
       
       // Using the user-provided voice ID
