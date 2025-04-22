@@ -220,14 +220,31 @@ export default function EllaChat() {
         // Add the bot message to the chat
         setMessages(prev => [...prev, botMessage]);
         
-        // Check if the response contains Calendly booking references
+        // Check if the response contains booking-related content
         const lowerCaseResponse = data.response.toLowerCase();
+        const lowerCaseUserMessage = userMessage.content.toLowerCase();
+        
+        // Show appointments view if user asked about their appointments
         if (
+          (lowerCaseUserMessage.includes('my appointment') || 
+           lowerCaseUserMessage.includes('my meeting') || 
+           lowerCaseUserMessage.includes('meeting that i have') ||
+           lowerCaseUserMessage.includes('do i have any appointment') ||
+           lowerCaseUserMessage.includes('upcoming appointment') ||
+           lowerCaseUserMessage.includes('check appointment') ||
+           lowerCaseUserMessage.includes('view appointment')) && 
+          !showAppointments
+        ) {
+          // Show the appointments interface
+          setShowAppointments(true);
+        }
+        // Show Calendly widget if response suggests booking a meeting
+        else if (
           (lowerCaseResponse.includes('calendly') || 
            lowerCaseResponse.includes('schedule a meeting') || 
            lowerCaseResponse.includes('booking link') ||
            lowerCaseResponse.includes('book a time') ||
-           lowerCaseResponse.includes('appointment')) && 
+           (lowerCaseResponse.includes('appointment') && !lowerCaseResponse.includes('existing appointment'))) && 
           !showCalendly
         ) {
           // Show the Calendly interface
@@ -355,6 +372,15 @@ export default function EllaChat() {
             onClick={() => setShowSettingsOnMobile(!showSettingsOnMobile)}
           >
             {showSettingsOnMobile ? "Chat" : "Settings"}
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="text-xs px-2 py-1 h-7 hidden sm:flex items-center gap-1"
+            onClick={() => setShowAppointments(true)}
+          >
+            <Calendar className="h-3.5 w-3.5 mr-1" />
+            <span className="hidden sm:inline">Appointments</span>
           </Button>
           <Link href="/">
             <Button variant="ghost" size="sm" className="hidden sm:flex items-center gap-1">
