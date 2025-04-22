@@ -21,43 +21,50 @@ const LiveDemo: React.FC = () => {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [audioEnabled, setAudioEnabled] = useState(true);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const audio = useRef<HTMLAudioElement | null>(null);
 
-  // Using the browser's built-in speech synthesis for now
+  // Basic speech synthesis function
   const speakText = (text: string) => {
-    if (!audioEnabled || !window.speechSynthesis) return;
+    if (!audioEnabled) return;
     
-    // Cancel any ongoing speech
-    window.speechSynthesis.cancel();
-    
-    // Create a new utterance
-    const utterance = new SpeechSynthesisUtterance(text);
-    
-    // Configure voice properties
-    utterance.rate = 0.9; // Slightly slower for better clarity
-    utterance.pitch = 1.1; // Slightly higher pitch for a more natural female voice
-    utterance.volume = 1.0;
-    
-    // Try to use a female voice if available
-    const voices = window.speechSynthesis.getVoices();
-    const femaleVoice = voices.find(voice => 
-      voice.name.includes('female') || 
-      voice.name.includes('Samantha') || 
-      voice.name.includes('Victoria') ||
-      voice.name.includes('Ava')
-    );
-    
-    if (femaleVoice) {
-      utterance.voice = femaleVoice;
+    try {
+      // Set speaking state
+      setIsSpeaking(true);
+      
+      // Make sure we have access to the SpeechSynthesis API
+      if (!('speechSynthesis' in window)) {
+        console.error('Speech synthesis not supported');
+        setIsSpeaking(false);
+        return;
+      }
+      
+      // Cancel any ongoing speech
+      window.speechSynthesis.cancel();
+      
+      // Create a new speech utterance
+      const utterance = new SpeechSynthesisUtterance(text);
+      
+      // Set properties
+      utterance.volume = 1;
+      utterance.rate = 1;
+      utterance.pitch = 1;
+      
+      // Add event handlers
+      utterance.onend = () => {
+        setIsSpeaking(false);
+      };
+      
+      utterance.onerror = () => {
+        console.error('SpeechSynthesis error');
+        setIsSpeaking(false);
+      };
+      
+      // Speak
+      window.speechSynthesis.speak(utterance);
+    } catch (err) {
+      console.error('Speech error:', err);
+      setIsSpeaking(false);
     }
-    
-    // Event handlers
-    utterance.onstart = () => setIsSpeaking(true);
-    utterance.onend = () => setIsSpeaking(false);
-    utterance.onerror = () => setIsSpeaking(false);
-    
-    // Start speaking
-    window.speechSynthesis.speak(utterance);
   };
 
   // Toggle audio
