@@ -43,7 +43,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // OpenAI-powered chat API
   app.post("/api/chat", async (req, res) => {
     try {
-      const { message, history = [] } = req.body;
+      const { message, history = [], persona = null, customPersonaPrompt = null } = req.body;
       
       if (!message) {
         return res.status(400).json({ 
@@ -67,10 +67,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
           history.map((msg: any) => `${msg.role}: ${msg.content.substring(0, 50)}${msg.content.length > 50 ? '...' : ''}`));
       }
       
+      // Log if a custom persona is being used
+      if (persona) {
+        console.log(`Using persona: ${persona}`);
+      }
+      
+      if (customPersonaPrompt) {
+        console.log("Using custom persona instructions");
+      }
+      
       // Generate AI response using OpenAI
       try {
         console.log("Generating OpenAI response for:", message);
-        const aiResponse = await generateResponse(message, history);
+        const aiResponse = await generateResponse(message, history, persona, customPersonaPrompt);
         
         // Log the AI's response for important queries to help diagnose context issues
         if (message.toLowerCase().includes("schedule") || 
