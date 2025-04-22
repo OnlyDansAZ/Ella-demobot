@@ -1,7 +1,11 @@
-import type { Express } from "express";
+import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+// @ts-ignore
 import ElevenLabs from "elevenlabs-node";
+import * as fs from 'fs-extra';
+import * as path from 'path';
+import * as os from 'os';
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // API Routes
@@ -101,8 +105,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const os = require('os');
       const tempFile = path.join(os.tmpdir(), `speech-${Date.now()}.mp3`);
       
-      // Rachel voice (professional female voice)
-      const voiceId = "21m00Tcm4TlvDq8ikWAM";
+      // Using the user-provided voice ID
+      const voiceId = "KgleQSAupUuS391XuXpI";
       
       try {
         // Initialize ElevenLabs
@@ -130,7 +134,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.send(audioData);
         
         // Clean up the temp file after sending
-        await fs.remove(tempFile).catch(err => console.error('Error removing temp file:', err));
+        await fs.remove(tempFile).catch((err: any) => console.error('Error removing temp file:', err));
       } catch (error) {
         console.error("ElevenLabs API error:", error);
         res.status(500).json({ 
