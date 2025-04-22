@@ -1,74 +1,9 @@
 import React, { useEffect, useRef } from 'react';
 
-interface CalendlyEmbedProps {
-  url: string;
-  styles?: React.CSSProperties;
-  prefill?: {
-    name?: string;
-    email?: string;
-    customAnswers?: {
-      [key: string]: string;
-    };
-  };
-  utm?: {
-    utmSource?: string;
-    utmMedium?: string;
-    utmCampaign?: string;
-    utmTerm?: string;
-    utmContent?: string;
-  };
-}
-
-export function CalendlyEmbed({ 
-  url, 
-  styles = {}, 
-  prefill,
-  utm
-}: CalendlyEmbedProps) {
-  const calendlyRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    // Make sure Calendly script is loaded
-    const script = document.createElement('script');
-    script.src = 'https://assets.calendly.com/assets/external/widget.js';
-    script.async = true;
-    document.body.appendChild(script);
-
-    // Clean up
-    return () => {
-      document.body.removeChild(script);
-    };
-  }, []);
-
-  useEffect(() => {
-    // Initialize Calendly when the component mounts or URL changes
-    if (calendlyRef.current && typeof window !== 'undefined' && window.Calendly) {
-      window.Calendly.initInlineWidget({
-        url: url,
-        parentElement: calendlyRef.current,
-        prefill: prefill,
-        utm: utm
-      });
-    }
-  }, [url, prefill, utm]);
-
-  return (
-    <div 
-      className="calendly-inline-widget" 
-      ref={calendlyRef}
-      style={{ 
-        minWidth: '320px', 
-        height: '630px',
-        ...styles 
-      }} 
-    />
-  );
-}
-
-// Add type for Calendly global
+// Define the Calendly global object type
 declare global {
   interface Window {
-    Calendly: {
+    Calendly?: {
       initInlineWidget: (options: {
         url: string;
         parentElement: HTMLElement;
@@ -89,4 +24,93 @@ declare global {
       }) => void;
     };
   }
+}
+
+interface CalendlyEmbedProps {
+  url: string;
+  styles?: React.CSSProperties;
+  prefill?: {
+    name?: string;
+    email?: string;
+    customAnswers?: {
+      [key: string]: string;
+    };
+  };
+  utm?: {
+    utmSource?: string;
+    utmMedium?: string;
+    utmCampaign?: string;
+    utmTerm?: string;
+    utmContent?: string;
+  };
+}
+
+/**
+ * Component for embedding Calendly scheduling widget within the application
+ */
+export function CalendlyEmbed({ 
+  url, 
+  styles = {}, 
+  prefill = {}, 
+  utm = {} 
+}: CalendlyEmbedProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    // Load Calendly inline script if it's not already loaded
+    if (!document.getElementById('calendly-script')) {
+      const script = document.createElement('script');
+      script.id = 'calendly-script';
+      script.src = 'https://assets.calendly.com/assets/external/widget.js';
+      script.async = true;
+      document.body.appendChild(script);
+
+      // Clean up script on unmount if we added it
+      return () => {
+        document.body.removeChild(script);
+      };
+    }
+
+    // Initialize the Calendly widget once the script is loaded
+    const initializeCalendly = () => {
+      if (containerRef.current && window.Calendly) {
+        window.Calendly.initInlineWidget({
+          url,
+          parentElement: containerRef.current,
+          prefill,
+          utm
+        });
+      }
+    };
+
+    // Check if Calendly is already loaded, if not, wait for the script to load
+    if (window.Calendly) {
+      initializeCalendly();
+    } else {
+      const calendlyScript = document.getElementById('calendly-script');
+      if (calendlyScript) {
+        calendlyScript.addEventListener('load', initializeCalendly);
+      }
+    }
+
+    // Clean up event listener
+    return () => {
+      const calendlyScript = document.getElementById('calendly-script');
+      if (calendlyScript) {
+        calendlyScript.removeEventListener('load', initializeCalendly);
+      }
+    };
+  }, [url, prefill, utm]);
+
+  return (
+    <div 
+      ref={containerRef} 
+      className="calendly-inline-widget" 
+      style={{ 
+        minWidth: '320px', 
+        height: '630px', 
+        ...styles 
+      }} 
+    />
+  );
 }

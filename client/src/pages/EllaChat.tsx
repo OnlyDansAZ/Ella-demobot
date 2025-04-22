@@ -19,6 +19,7 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { predefinedPersonas, customPersonaTemplate } from '@/lib/personas';
 import { ScheduleMeeting } from '@/components/ScheduleMeeting';
+import { useCalendly } from '@/hooks/use-calendly';
 import yobotLogo from "../assets/yobot-logo.png";
 import yobotHeadLogo from "../assets/yobot-head-logo.png";
 import yobotTransparentLogo from "../assets/yobot-transparent-logo.png";
@@ -49,7 +50,7 @@ export default function EllaChat() {
   
   // Scheduling state
   const [showCalendly, setShowCalendly] = useState(false);
-  const [calendlyUrl, setCalendlyUrl] = useState('https://calendly.com/yourbusiness/30min');
+  const { calendlyUrl, meetingTypes } = useCalendly();
   
   // Persona state
   const [selectedPersona, setSelectedPersona] = useState<string>("default");

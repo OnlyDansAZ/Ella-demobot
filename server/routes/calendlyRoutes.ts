@@ -1,10 +1,6 @@
 import { Router } from 'express';
 
-const calendlyRouter = Router();
-
-// Default Calendly URL - this would typically come from environment variables or a database
-// We're keeping it in-code for this example, but in production it should be configurable
-const DEFAULT_CALENDLY_URL = 'https://calendly.com/yourbusiness/30min';
+const router = Router();
 
 /**
  * API endpoint to get the Calendly URL
@@ -12,15 +8,14 @@ const DEFAULT_CALENDLY_URL = 'https://calendly.com/yourbusiness/30min';
  * 
  * Returns the URL needed to embed the Calendly scheduling widget
  */
-calendlyRouter.get('/url', (req, res) => {
-  // Here you could add logic to return different Calendly URLs 
-  // based on the user, tier, or other criteria
+router.get('/url', (req, res) => {
+  // In a production app, this URL could be stored in a database or environment variable
+  // For now, we'll use a default example URL
+  const calendlyUrl = 'https://calendly.com/yourbusiness/30min';
   
-  // For now we'll return the default URL
-  return res.json({
+  res.json({
     success: true,
-    url: DEFAULT_CALENDLY_URL,
-    message: 'Calendly URL retrieved successfully'
+    url: calendlyUrl
   });
 });
 
@@ -30,35 +25,34 @@ calendlyRouter.get('/url', (req, res) => {
  * 
  * Returns available meeting types with their respective URLs
  */
-calendlyRouter.get('/meeting-types', (req, res) => {
-  // In a real application, these would come from your Calendly integration
-  // or be stored in a database
+router.get('/meeting-types', (req, res) => {
+  // In a production app, these would be dynamically fetched from Calendly's API
+  // For now, we'll return some example meeting types
   const meetingTypes = [
     {
-      id: 'intro',
-      name: 'Introductory Call',
-      duration: 30,
+      id: '30min',
+      name: '30 Minute Meeting',
+      description: 'A short consultation or introduction call',
       url: 'https://calendly.com/yourbusiness/30min'
     },
     {
-      id: 'demo',
-      name: 'Product Demo',
-      duration: 45,
-      url: 'https://calendly.com/yourbusiness/45min'
+      id: '60min',
+      name: '60 Minute Meeting',
+      description: 'A comprehensive consultation or demo session',
+      url: 'https://calendly.com/yourbusiness/60min'
     },
     {
-      id: 'consultation',
-      name: 'Consultation',
-      duration: 60,
-      url: 'https://calendly.com/yourbusiness/60min'
+      id: 'product-demo',
+      name: 'Product Demo',
+      description: 'Get a full demonstration of the YoBot platform',
+      url: 'https://calendly.com/yourbusiness/product-demo'
     }
   ];
   
-  return res.json({
+  res.json({
     success: true,
-    meetingTypes,
-    message: 'Meeting types retrieved successfully'
+    meetingTypes
   });
 });
 
-export default calendlyRouter;
+export default router;
