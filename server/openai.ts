@@ -26,23 +26,41 @@ About YoBot and your capabilities:
 - Higher tiers (Pro, Enterprise, Platinum) offer additional features like CRM integration, sales call handling, and executive planning.
 - You're voice-enabled and can both listen and respond with natural speech.
 
-CRITICAL INSTRUCTIONS FOR MEMORY AND SCHEDULING (HIGHEST PRIORITY):
-- Your primary goal is to maintain PERFECT MEMORY throughout the conversation.
-- ALWAYS remember specific details mentioned previously, especially dates, times, and appointments.
-- When a user mentions a specific time (like "3:00 today" or "an hour from now"), you MUST remember this exact time.
-- When scheduling, ALWAYS repeat back the EXACT day, time, and purpose in your response.
-- NEVER ask for information that the user has already provided at any point in the conversation.
-- If the user says they told you something earlier, always apologize and confirm you now remember.
-- For scheduling, use the format: "Confirmed: [day] at [time] for [purpose]" to make it absolutely clear.
-- READ THE ENTIRE CONVERSATION HISTORY before responding to any scheduling request.
+ABSOLUTELY CRITICAL INSTRUCTIONS FOR SCHEDULING AND APPOINTMENTS (HIGHEST PRIORITY):
+- Your #1 most important feature is PERFECT SCHEDULING MEMORY - this is critical for business use.
+- Perfect scheduling memory means you MUST ALWAYS remember:
+  * Exact dates (e.g., "May 15th", "Next Tuesday", "Tomorrow")
+  * Exact times (e.g., "3:00 PM", "15:00", "Quarter past 10")
+  * Exact purposes (e.g., "Sales call", "Demo meeting", "Consultation")
+  * Commitments the user has made (e.g., "I'll send you the report before our meeting")
 
-Example of proper scheduling:
-User: "Let's set up a meeting for 3pm today"
-Ella: "Confirmed: Today at 3:00 PM for our meeting. I've noted this appointment. What topics would you like to discuss during our meeting?"
+- When a user mentions ANY date, time, or scheduling-related term:
+  1. IMMEDIATELY pay close attention and store this information
+  2. ALWAYS confirm by repeating back the EXACT details in this format:
+     "Confirmed: [Day/Date] at [Exact Time] for [Specific Purpose]"
+  3. If any scheduling detail is unclear, ask for clarification IMMEDIATELY
+  4. When scheduling, add a follow-up question about preparations needed
 
-Example of proper memory:
-User: "I told you earlier we'd meet at 3:00"
-Ella: "You're absolutely right. I apologize for the confusion. I have your appointment confirmed for today at 3:00 PM. Is there anything specific you'd like me to prepare for our meeting?"
+- GOLDEN RULE OF FOLLOW-THROUGH:
+  * If a previously scheduled time/date is mentioned again at ANY point in the conversation,
+    immediately acknowledge that you remember it without being prompted.
+  * ALWAYS, WITHOUT FAIL, respond with "I remember our scheduled [appointment type] on [exact day] at [exact time]"
+  * ALWAYS check if the user would like any changes to the existing appointment
+  * NEVER act confused about previously mentioned dates or appointments
+
+EXAMPLES OF PERFECT SCHEDULING (FOLLOW THESE EXACTLY):
+
+Example 1: Initial Scheduling
+User: "Let's set up a meeting for 3pm tomorrow"
+Ella: "Confirmed: Tomorrow at 3:00 PM for our meeting. I've noted this appointment. Is there anything specific you'd like me to prepare for this meeting?"
+
+Example 2: When User References Previous Scheduling
+User: "What time are we meeting tomorrow again?"
+Ella: "We're scheduled to meet tomorrow at 3:00 PM. I have it noted in my memory. Would you like to make any changes to this appointment?"
+
+Example 3: When User Tests Memory
+User: "Did I tell you when we're meeting?"
+Ella: "Yes, you did. We're scheduled to meet tomorrow at 3:00 PM. I've kept this in my memory. Is there anything else you'd like me to remember about this appointment?"
 
 When asked about YoBot's services, pricing, or features, be enthusiastic and highlight the benefits.
 If asked something you don't know, admit your limitations and offer to connect the user with a YoBot representative.
@@ -50,27 +68,31 @@ Keep responses under 2-3 sentences unless detailed information is requested.`;
 
 // ChatMessage interface is already exported above
 
-// Extract scheduling-related details from conversation history
+// Extract scheduling-related details from conversation history with enhanced memory
 function extractSchedulingDetails(conversationHistory: ChatMessage[]): string | null {
   if (!conversationHistory || conversationHistory.length === 0) {
     return null;
   }
 
-  // Keywords that might indicate scheduling information
+  // Keywords that might indicate scheduling information - expanded for better detection
   const schedulingKeywords = [
     'schedule', 'appointment', 'meeting', 'call', 'time', 'date', 'book', 'reserve',
     'today', 'tomorrow', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday',
-    ':00', ' am', ' pm', 'o\'clock', 'morning', 'afternoon', 'evening', 'calendly', 'calendar'
+    ':00', ' am', ' pm', 'o\'clock', 'morning', 'afternoon', 'evening', 'calendly', 'calendar',
+    'remind', 'reminder', 'remember', 'follow-up', 'follow up', 'scheduled', 'booking'
   ];
   
   // Calendly specific keywords
   const calendlyKeywords = [
     'calendly', 'booking link', 'scheduling link', 'book a time', 'schedule time', 
-    'book a call', 'schedule a demo', 'appointment link', 'book online'
+    'book a call', 'schedule a demo', 'appointment link', 'book online', 'scheduling tool'
   ];
   
   // Pattern for detecting time (HH:MM or H:MM with optional am/pm)
   const timePattern = /\b(\d{1,2}):?(\d{2})?\s*(am|pm|a\.m\.|p\.m\.)?\b/i;
+  
+  // Pattern for detecting dates (May 1, May 1st, 1st of May, etc.)
+  const datePattern = /\b(?:(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:tember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\s+\d{1,2}(?:st|nd|rd|th)?|\d{1,2}(?:st|nd|rd|th)?\s+(?:of\s+)?(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:tember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?))\b/i;
   
   // Pattern for detecting meeting purpose
   const purposePattern = /(?:(?:schedule|book|set up|arrange|plan)\s+(?:a|an)\s+)([^.!?]+)(?:[.!?]|$)/i;
@@ -81,34 +103,82 @@ function extractSchedulingDetails(conversationHistory: ChatMessage[]): string | 
   // Look for messages that contain scheduling information
   const schedulingMessages: string[] = [];
   
-  // Track if Calendly was explicitly mentioned
-  let calendlyMentioned = false;
-  let meetingPurpose = '';
-  let meetingDuration = '';
+  // Track scheduling details in structured format for better memory
+  let schedulingDetails = {
+    calendlyMentioned: false,
+    meetingPurpose: '',
+    meetingDuration: '',
+    scheduledDay: '',
+    scheduledTime: '',
+    scheduledDate: '',
+    isConfirmed: false,
+    lastConfirmation: ''
+  };
   
+  // Patterns for extracting specific day references
+  const todayPattern = /\b(?:today|tonight)\b/i;
+  const tomorrowPattern = /\btomorrow\b/i;
+  const dayOfWeekPattern = /\b(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/i;
+  
+  // Process every message to extract scheduling information
   for (const message of conversationHistory) {
     const lowerContent = message.content.toLowerCase();
     
     // Check for Calendly specific requests
     if (calendlyKeywords.some(keyword => lowerContent.includes(keyword))) {
-      calendlyMentioned = true;
-      
-      // Try to extract meeting purpose
-      const purposeMatch = message.content.match(purposePattern);
-      if (purposeMatch && purposeMatch[1] && message.role === 'user') {
-        meetingPurpose = purposeMatch[1].trim();
+      schedulingDetails.calendlyMentioned = true;
+    }
+    
+    // Try to extract meeting purpose
+    const purposeMatch = message.content.match(purposePattern);
+    if (purposeMatch && purposeMatch[1] && message.role === 'user' && !schedulingDetails.meetingPurpose) {
+      schedulingDetails.meetingPurpose = purposeMatch[1].trim();
+    }
+    
+    // Try to extract meeting duration
+    const durationMatch = message.content.match(durationPattern);
+    if (durationMatch && message.role === 'user' && !schedulingDetails.meetingDuration) {
+      schedulingDetails.meetingDuration = durationMatch[0];
+    }
+    
+    // Try to extract day information
+    if (todayPattern.test(lowerContent) && !schedulingDetails.scheduledDay) {
+      schedulingDetails.scheduledDay = 'today';
+    } else if (tomorrowPattern.test(lowerContent) && !schedulingDetails.scheduledDay) {
+      schedulingDetails.scheduledDay = 'tomorrow';
+    } else {
+      const dayMatch = lowerContent.match(dayOfWeekPattern);
+      if (dayMatch && dayMatch[1] && !schedulingDetails.scheduledDay) {
+        schedulingDetails.scheduledDay = dayMatch[1];
       }
-      
-      // Try to extract meeting duration
-      const durationMatch = message.content.match(durationPattern);
-      if (durationMatch && message.role === 'user') {
-        meetingDuration = durationMatch[0];
-      }
+    }
+    
+    // Try to extract time information
+    const timeMatch = lowerContent.match(timePattern);
+    if (timeMatch && !schedulingDetails.scheduledTime) {
+      const hour = timeMatch[1];
+      const minute = timeMatch[2] || '00';
+      const ampm = timeMatch[3] || '';
+      schedulingDetails.scheduledTime = `${hour}:${minute}${ampm ? ' ' + ampm : ''}`;
+    }
+    
+    // Try to extract date information
+    const dateMatch = lowerContent.match(datePattern);
+    if (dateMatch && dateMatch[0] && !schedulingDetails.scheduledDate) {
+      schedulingDetails.scheduledDate = dateMatch[0];
+    }
+    
+    // Check if this is a confirmation message from the assistant
+    if (message.role === 'assistant' && 
+        (lowerContent.includes('confirm') || lowerContent.includes('scheduled') || 
+         lowerContent.includes('booked') || lowerContent.includes('appointment'))) {
+      schedulingDetails.isConfirmed = true;
+      schedulingDetails.lastConfirmation = message.content;
     }
     
     // Check if the message contains any scheduling keywords
     if (schedulingKeywords.some(keyword => lowerContent.includes(keyword)) || 
-        timePattern.test(lowerContent)) {
+        timePattern.test(lowerContent) || datePattern.test(lowerContent)) {
       // For user messages, add the whole message
       if (message.role === 'user') {
         schedulingMessages.push(`User said: "${message.content}"`);
@@ -123,30 +193,73 @@ function extractSchedulingDetails(conversationHistory: ChatMessage[]): string | 
     }
   }
   
-  // Build the result string
+  // Build the result string with enhanced memory details
   const result = [];
   
-  // If Calendly was mentioned, add that information first
-  if (calendlyMentioned) {
-    result.push("Calendly booking requested");
+  // Add structured scheduling information
+  if (schedulingDetails.calendlyMentioned || 
+      schedulingDetails.meetingPurpose || 
+      schedulingDetails.scheduledDay || 
+      schedulingDetails.scheduledTime || 
+      schedulingDetails.scheduledDate) {
     
-    if (meetingPurpose) {
-      result.push(`Purpose: ${meetingPurpose}`);
+    // Start with a clear memory marker
+    result.push("SCHEDULING MEMORY:");
+    
+    // Add a complete appointment description if we have the key details
+    if ((schedulingDetails.scheduledDay || schedulingDetails.scheduledDate) && 
+        (schedulingDetails.scheduledTime || schedulingDetails.meetingPurpose)) {
+      
+      const when = schedulingDetails.scheduledDate || schedulingDetails.scheduledDay;
+      const time = schedulingDetails.scheduledTime || '';
+      const purpose = schedulingDetails.meetingPurpose ? ` for ${schedulingDetails.meetingPurpose}` : '';
+      
+      result.push(`APPOINTMENT: ${when} ${time}${purpose}`);
+    } else {
+      // Otherwise add the individual pieces we have
+      if (schedulingDetails.meetingPurpose) {
+        result.push(`Purpose: ${schedulingDetails.meetingPurpose}`);
+      }
+      
+      if (schedulingDetails.scheduledDay) {
+        result.push(`Day: ${schedulingDetails.scheduledDay}`);
+      }
+      
+      if (schedulingDetails.scheduledDate) {
+        result.push(`Date: ${schedulingDetails.scheduledDate}`);
+      }
+      
+      if (schedulingDetails.scheduledTime) {
+        result.push(`Time: ${schedulingDetails.scheduledTime}`);
+      }
     }
     
-    if (meetingDuration) {
-      result.push(`Duration: ${meetingDuration}`);
+    // Add information about whether it was confirmed
+    if (schedulingDetails.isConfirmed) {
+      result.push(`CONFIRMED: Yes. Last confirmation: "${schedulingDetails.lastConfirmation}"`);
+    } else if (schedulingDetails.scheduledDay || schedulingDetails.scheduledTime) {
+      result.push("CONFIRMED: Not explicitly confirmed yet");
+    }
+    
+    // Add Calendly information if relevant
+    if (schedulingDetails.calendlyMentioned) {
+      result.push("Calendly booking requested");
+      
+      if (schedulingDetails.meetingDuration) {
+        result.push(`Duration: ${schedulingDetails.meetingDuration}`);
+      }
     }
   }
   
-  // Add scheduling messages
+  // Add raw scheduling messages for full context
   if (schedulingMessages.length > 0) {
+    result.push("CONVERSATION HISTORY ABOUT SCHEDULING:");
     result.push(schedulingMessages.join(' → '));
   }
   
   // If we found any scheduling information, return it
   if (result.length > 0) {
-    return result.join('; ');
+    return result.join('\n');
   }
   
   return null;
@@ -613,30 +726,68 @@ function summarizeConversationTopics(messages: ChatMessage[]): string {
 function identifyCriticalMessages(messages: ChatMessage[]): string[] {
   const criticalMessages: string[] = [];
   
-  // Patterns that indicate important information
+  // Enhanced patterns that indicate important information
   const criticalPatterns = [
-    // Scheduling patterns
-    { regex: /\b(\d{1,2})[:.]\d{2}\s*([ap]\.?m\.?|hours)\b/i, type: 'scheduling time' },
-    { regex: /\b(today|tomorrow|monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/i, type: 'scheduling day' },
-    { regex: /\b(\d{1,2})(st|nd|rd|th)?\s+(jan|feb|mar|apr|may|jun|jul|aug|sept?|oct|nov|dec)/i, type: 'scheduling date' },
+    // Scheduling patterns - higher priority for perfect memory
+    { regex: /\b(\d{1,2})[:.]\d{2}\s*([ap]\.?m\.?|hours|am|pm)\b/i, type: 'SCHEDULING_TIME', priority: 10 },
+    { regex: /\b(today|tomorrow|monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/i, type: 'SCHEDULING_DAY', priority: 10 },
+    { regex: /\b(\d{1,2})(st|nd|rd|th)?\s+(jan|feb|mar|apr|may|jun|jul|aug|sept?|oct|nov|dec)/i, type: 'SCHEDULING_DATE', priority: 10 },
+    { regex: /\b(next|this)\s+(week|month|day|morning|afternoon|evening)\b/i, type: 'SCHEDULING_RELATIVE', priority: 9 },
+    
+    // Direct scheduling verbs
+    { regex: /\b(schedule|book|appointment|meeting|call|session)\b/i, type: 'SCHEDULING_INTENT', priority: 8 },
+    { regex: /\b(remind|reminder|remember|follow.?up|agenda)\b/i, type: 'SCHEDULING_FOLLOWUP', priority: 8 },
+    { regex: /\b(calendar|calendly|booking)\b/i, type: 'SCHEDULING_METHOD', priority: 7 },
+    
+    // Questions about previous scheduling - extremely high priority
+    { regex: /\b(when|what time|which day).+\b(meet|call|talk|appointment|scheduled)\b/i, type: 'SCHEDULING_QUERY', priority: 11 },
+    { regex: /\b(did|do)\s+(you|we|I)\s+(remember|forget|recall|say|mention|schedule|book)\b/i, type: 'MEMORY_TEST', priority: 11 },
     
     // Contact information
-    { regex: /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/, type: 'email' },
-    { regex: /\b(?:\+\d{1,2}\s?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}\b/, type: 'phone number' },
+    { regex: /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/, type: 'CONTACT_EMAIL', priority: 6 },
+    { regex: /\b(?:\+\d{1,2}\s?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}\b/, type: 'CONTACT_PHONE', priority: 6 },
     
     // Decision points
-    { regex: /\b(yes|no|confirm|agree|disagree|approve|reject)\b/i, type: 'decision' },
+    { regex: /\b(yes|no|confirm|agree|disagree|approve|reject)\b/i, type: 'DECISION', priority: 5 },
     
     // References to previous messages
-    { regex: /\b(as\s+(?:I|we)\s+(?:said|mentioned|discussed)|(?:I|we)\s+(?:told|asked)\s+you|(?:I|we)\s+already\s+(?:said|mentioned|told))\b/i, type: 'reference' }
+    { regex: /\b(as\s+(?:I|we)\s+(?:said|mentioned|discussed)|(?:I|we)\s+(?:told|asked)\s+you|(?:I|we)\s+already\s+(?:said|mentioned|told))\b/i, type: 'REFERENCE', priority: 7 },
+    
+    // Topics for remembering user context
+    { regex: /\bmy\s+(name|company|business|position|role)\s+is\s+([A-Za-z0-9\s]+)\b/i, type: 'USER_IDENTITY', priority: 8 },
+    { regex: /\bI\s+(work|am)\s+(at|with|for)\s+([A-Za-z0-9\s]+)\b/i, type: 'USER_WORKPLACE', priority: 7 }
   ];
   
-  // Check each message for critical patterns
-  for (const message of messages.filter(m => m.role === 'user')) {
+  // Enhanced message scanning with priority-based selection
+  for (const message of messages) {
+    // Track the highest priority pattern that matched this message
+    let highestPriority = 0;
+    let highestPriorityType = '';
+    let matchedMessage = false;
+    
+    // Check each pattern against the message
     for (const pattern of criticalPatterns) {
       if (pattern.regex.test(message.content)) {
-        criticalMessages.push(`[${pattern.type}]: "${message.content}"`);
-        break; // Once we've identified a message as critical, we can move to the next one
+        matchedMessage = true;
+        
+        // If this pattern has higher priority than previous matches, replace them
+        if (pattern.priority > highestPriority) {
+          highestPriority = pattern.priority;
+          highestPriorityType = pattern.type;
+        }
+      }
+    }
+    
+    // If we found any matches, add the message with its highest priority type
+    if (matchedMessage) {
+      // Special handling for scheduling-related memories from both user and assistant
+      if (highestPriorityType.startsWith('SCHEDULING_') || highestPriorityType === 'MEMORY_TEST') {
+        const rolePrefix = message.role === 'user' ? 'USER' : 'ELLA';
+        criticalMessages.push(`[${rolePrefix}_${highestPriorityType}]: "${message.content}"`);
+      }
+      // For non-scheduling messages, only keep user messages
+      else if (message.role === 'user') {
+        criticalMessages.push(`[${highestPriorityType}]: "${message.content}"`);
       }
     }
   }
