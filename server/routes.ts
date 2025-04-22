@@ -108,9 +108,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         console.log("Attempting to use ElevenLabs with new API key");
         
-        // Initialize ElevenLabs with the new API key
+        // Initialize ElevenLabs with the API key from environment
         const elevenLabs = new ElevenLabs({
-          apiKey: 'sk_9ef05054f89dae4c84c4ae5c4217da2098fce71818a98dc5',
+          apiKey: ELEVENLABS_API_KEY, // Use the environment variable
           voiceId: voiceId
         });
         
