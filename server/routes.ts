@@ -158,7 +158,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      const { text } = req.body;
+      let { text } = req.body;
       
       if (!text) {
         return res.status(400).json({ 
@@ -166,6 +166,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           error: "Text parameter is required" 
         });
       }
+      
+      // Process text to improve speech readability
+      // Replace bullet points (asterisks) with proper phrases for better speech
+      text = text.replace(/•\s*/g, "");  // Remove bullet points without saying "asterisk"
+      text = text.replace(/-\s*/g, "");  // Remove hyphens at the start of lines
       
       // Create temp file path for audio
       const tempFile = path.join(os.tmpdir(), `speech-${Date.now()}.mp3`);
