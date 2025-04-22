@@ -16,7 +16,6 @@ const Footer: React.FC = () => {
                 alt="YoBot Logo"
                 className="h-10 mr-3"
               />
-              <h3 className="text-white text-xl font-bold">YoBot</h3>
             </div>
             <p>
               Engage smarter. Not harder. AI-powered assistants designed for

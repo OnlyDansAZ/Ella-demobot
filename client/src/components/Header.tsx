@@ -14,7 +14,6 @@ const Header: React.FC = () => {
             className="h-12 mr-3"
           />
           <div>
-            <h1 className="text-2xl font-bold text-white">YoBot</h1>
             <p className="text-sm text-blue-100">Engage smarter. Not harder.</p>
           </div>
         </div>
