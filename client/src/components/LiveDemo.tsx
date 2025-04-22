@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Send, Volume2, VolumeX } from "lucide-react";
+import { Send, Volume2, VolumeX, Mic, MicOff } from "lucide-react";
 import { getBotResponse } from "@/lib/botResponses";
 import { apiRequest } from "@/lib/queryClient";
 
@@ -20,8 +20,11 @@ const LiveDemo: React.FC = () => {
   const [inputValue, setInputValue] = useState("");
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [audioEnabled, setAudioEnabled] = useState(true);
+  const [isListening, setIsListening] = useState(false);
+  const [voiceInputSupported, setVoiceInputSupported] = useState(false);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const audio = useRef<HTMLAudioElement | null>(null);
+  const recognitionRef = useRef<any>(null);
 
   // Speak text function using ElevenLabs API
   const speakText = async (text: string) => {
@@ -156,8 +159,109 @@ const LiveDemo: React.FC = () => {
     }, 1000);
   };
 
-  // Initialize and play welcome message
+  // Toggle speech recognition
+  const toggleSpeechRecognition = () => {
+    if (isListening) {
+      stopSpeechRecognition();
+    } else {
+      startSpeechRecognition();
+    }
+  };
+
+  // Start speech recognition
+  const startSpeechRecognition = () => {
+    if (!recognitionRef.current) return;
+    
+    // Stop any speaking before starting listening
+    if (isSpeaking) {
+      if (audio.current) {
+        audio.current.pause();
+        audio.current.currentTime = 0;
+      }
+      
+      if (window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
+      
+      setIsSpeaking(false);
+    }
+    
+    recognitionRef.current.start();
+    setIsListening(true);
+  };
+
+  // Stop speech recognition
+  const stopSpeechRecognition = () => {
+    if (!recognitionRef.current) return;
+    
+    recognitionRef.current.stop();
+    setIsListening(false);
+  };
+
+  // Initialize speech recognition and play welcome message
   useEffect(() => {
+    // Check if the browser supports speech recognition
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    
+    if (SpeechRecognition) {
+      setVoiceInputSupported(true);
+      const recognition = new SpeechRecognition();
+      
+      recognition.continuous = false;
+      recognition.interimResults = false;
+      recognition.lang = 'en-US';
+      
+      recognition.onresult = (event: any) => {
+        const transcript = event.results[0][0].transcript;
+        setInputValue(transcript);
+        
+        // Automatically submit the form with the transcript
+        setTimeout(() => {
+          if (transcript.trim()) {
+            const userMessage = {
+              text: transcript,
+              isUser: true,
+              id: `user-${Date.now()}`,
+            };
+            
+            setMessages((prev) => [...prev, userMessage]);
+            
+            // Add bot response after a delay
+            setTimeout(() => {
+              const botResponseId = `bot-${Date.now()}`;
+              const botResponseText = getBotResponse(transcript);
+              
+              const botResponse = {
+                text: botResponseText,
+                isUser: false,
+                id: botResponseId,
+              };
+              
+              setMessages((prev) => [...prev, botResponse]);
+              
+              // Speak the bot's response
+              if (audioEnabled) {
+                setTimeout(() => speakText(botResponseText), 100);
+              }
+            }, 1000);
+          }
+        }, 500);
+        
+        setIsListening(false);
+      };
+      
+      recognition.onend = () => {
+        setIsListening(false);
+      };
+      
+      recognition.onerror = (event: any) => {
+        console.error('Speech recognition error', event.error);
+        setIsListening(false);
+      };
+      
+      recognitionRef.current = recognition;
+    }
+    
     // Play the initial greeting message on load
     setTimeout(() => {
       if (audioEnabled && messages.length > 0 && messages[0].id === "intro") {
@@ -167,6 +271,15 @@ const LiveDemo: React.FC = () => {
     
     // Clean up on unmount
     return () => {
+      // Stop speech recognition
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.stop();
+        } catch (e) {
+          // Ignore errors during cleanup
+        }
+      }
+      
       // Cancel any speech synthesis
       if (window.speechSynthesis) {
         window.speechSynthesis.cancel();
@@ -273,18 +386,52 @@ const LiveDemo: React.FC = () => {
             ))}
           </div>
           <div className="p-4 border-t border-gray-700">
-            <form onSubmit={handleSubmit} className="flex">
-              <input
-                type="text"
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                placeholder="Type your message..."
-                className="flex-1 bg-gray-700 text-white placeholder-gray-400 rounded-l-md px-4 py-2 focus:outline-none"
-                required
-              />
+            <form onSubmit={handleSubmit} className="flex items-center">
+              {voiceInputSupported && (
+                <button
+                  type="button"
+                  onClick={toggleSpeechRecognition}
+                  className={`p-2 mr-2 rounded-full ${
+                    isListening 
+                      ? 'bg-red-500 hover:bg-red-600' 
+                      : 'bg-gray-700 hover:bg-gray-600'
+                  } transition-colors`}
+                  title={isListening ? "Stop listening" : "Start voice input"}
+                >
+                  {isListening ? (
+                    <MicOff className="h-5 w-5 text-white" />
+                  ) : (
+                    <Mic className="h-5 w-5 text-white" />
+                  )}
+                </button>
+              )}
+              <div className="relative flex-1">
+                <input
+                  type="text"
+                  value={inputValue}
+                  onChange={(e) => setInputValue(e.target.value)}
+                  placeholder={isListening ? "Listening..." : "Type your message..."}
+                  className={`w-full bg-gray-700 text-white placeholder-gray-400 ${
+                    voiceInputSupported ? 'rounded-l-md' : 'rounded-l-md'
+                  } px-4 py-2 focus:outline-none ${
+                    isListening ? 'animate-pulse border border-red-500' : ''
+                  }`}
+                  required
+                  disabled={isListening}
+                />
+                {isListening && (
+                  <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
+                    <span className="flex h-3 w-3">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                    </span>
+                  </div>
+                )}
+              </div>
               <button
                 type="submit"
                 className="bg-[#0D82DA] hover:bg-blue-600 text-white px-4 py-2 rounded-r-md transition-colors"
+                disabled={isListening}
               >
                 <Send className="h-5 w-5" />
               </button>
