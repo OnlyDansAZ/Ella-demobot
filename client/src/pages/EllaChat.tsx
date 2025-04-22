@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Mic, MicOff, Send, Volume2, VolumeX, ArrowLeft } from 'lucide-react';
+import { Mic, MicOff, Send, Volume2, VolumeX, ArrowLeft, User, Brain, Edit } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar } from '@/components/ui/avatar';
 import { Slider } from '@/components/ui/slider';
@@ -9,6 +9,15 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Link } from 'wouter';
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import { predefinedPersonas, customPersonaTemplate } from '@/lib/personas';
 
 // Define the structure for chat messages
 interface Message {
@@ -33,6 +42,11 @@ export default function EllaChat() {
   const [isMuted, setIsMuted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [volume, setVolume] = useState(80);
+  
+  // Persona state
+  const [selectedPersona, setSelectedPersona] = useState<string>("default");
+  const [useCustomPersona, setUseCustomPersona] = useState(false);
+  const [customPersonaText, setCustomPersonaText] = useState(customPersonaTemplate);
   
   // Refs
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -134,7 +148,9 @@ export default function EllaChat() {
           history: messages.map(msg => ({
             role: msg.isUser ? 'user' : 'assistant',
             content: msg.content
-          }))
+          })),
+          persona: useCustomPersona ? null : selectedPersona,
+          customPersonaPrompt: useCustomPersona ? customPersonaText : null
         })
       });
       
@@ -404,6 +420,77 @@ export default function EllaChat() {
                       />
                     </div>
                   )}
+                </div>
+                
+                <Separator />
+                
+                {/* Persona Settings Section */}
+                <div className="space-y-2 sm:space-y-4">
+                  <div className="flex items-center gap-1 sm:gap-2">
+                    <Brain className="h-3 w-3 sm:h-4 sm:w-4 text-blue-500" />
+                    <h3 className="text-xs sm:text-sm font-medium">Ella's Persona</h3>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    {/* Predefined persona selector */}
+                    <div className={useCustomPersona ? "opacity-50" : ""}>
+                      <Label htmlFor="persona-select" className="text-[10px] sm:text-xs mb-1 block">
+                        Select Predefined Persona
+                      </Label>
+                      <Select 
+                        value={selectedPersona} 
+                        onValueChange={setSelectedPersona}
+                        disabled={useCustomPersona}
+                      >
+                        <SelectTrigger id="persona-select" className="text-[10px] sm:text-xs h-7 sm:h-9">
+                          <SelectValue placeholder="Choose persona" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {predefinedPersonas.map(persona => (
+                            <SelectItem 
+                              key={persona.id} 
+                              value={persona.id}
+                              className="text-[10px] sm:text-xs"
+                            >
+                              {persona.name} - {persona.description}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    {/* Toggle for custom persona */}
+                    <div className="flex items-center justify-between mt-2">
+                      <Label htmlFor="custom-persona-toggle" className="text-[10px] sm:text-xs flex items-center gap-1">
+                        <Edit className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                        Use Custom Persona
+                      </Label>
+                      <Switch 
+                        id="custom-persona-toggle"
+                        checked={useCustomPersona}
+                        onCheckedChange={setUseCustomPersona}
+                      />
+                    </div>
+                    
+                    {/* Custom persona text area */}
+                    {useCustomPersona && (
+                      <div className="mt-2">
+                        <Label htmlFor="custom-persona-text" className="text-[10px] sm:text-xs mb-1 block">
+                          Custom Persona Instructions
+                        </Label>
+                        <Textarea 
+                          id="custom-persona-text"
+                          value={customPersonaText}
+                          onChange={(e) => setCustomPersonaText(e.target.value)}
+                          placeholder="Describe how Ella should behave..."
+                          className="text-[10px] sm:text-xs min-h-[100px] resize-none"
+                        />
+                        <p className="text-[8px] sm:text-[10px] text-muted-foreground mt-1">
+                          These instructions will override Ella's default personality.
+                        </p>
+                      </div>
+                    )}
+                  </div>
                 </div>
                 
                 <Separator />
