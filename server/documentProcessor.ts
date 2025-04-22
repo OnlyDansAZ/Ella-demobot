@@ -30,7 +30,7 @@ export async function processDocument(text: string, metadata: Record<string, any
     return {
       success: false,
       count: 0,
-      error: error.message
+      error: error instanceof Error ? error.message : String(error)
     };
   }
 }
@@ -60,7 +60,7 @@ export async function processBulkDocuments(documents: Array<{text: string, metad
     return {
       success: false,
       count: 0,
-      error: error.message
+      error: error instanceof Error ? error.message : String(error)
     };
   }
 }

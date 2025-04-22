@@ -7,12 +7,16 @@ import fs from 'fs-extra';
 import path from 'path';
 import os from 'os';
 import { generateResponse, getFallbackResponse } from './openai';
+import documentRoutes from './routes/documentRoutes';
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // API Routes
   app.get("/api/health", (_req, res) => {
     res.json({ status: "ok", message: "YoBot API is running" });
   });
+  
+  // Document routes for RAG knowledge base management
+  app.use("/api/documents", documentRoutes);
 
   // Contact form submission endpoint
   app.post("/api/contact", (req, res) => {
