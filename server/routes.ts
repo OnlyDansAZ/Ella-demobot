@@ -168,9 +168,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Process text to improve speech readability
-      // Replace bullet points (asterisks) with proper phrases for better speech
-      text = text.replace(/•\s*/g, "");  // Remove bullet points without saying "asterisk"
-      text = text.replace(/-\s*/g, "");  // Remove hyphens at the start of lines
+      // Replace bullet points and similar characters with proper phrases for better speech
+      text = text
+        .replace(/•\s*/g, "")      // Remove bullet points completely
+        .replace(/\*/g, "")        // Remove asterisks completely
+        .replace(/-\s+/g, "")      // Remove hyphens followed by whitespace
+        .replace(/^\s*-\s*/gm, "") // Remove hyphens at the beginning of each line
+        .replace(/\n\s*-\s*/g, "\n"); // Replace newline-hyphen patterns with just newlines
       
       // Create temp file path for audio
       const tempFile = path.join(os.tmpdir(), `speech-${Date.now()}.mp3`);

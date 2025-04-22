@@ -123,20 +123,54 @@ export default function EllaChat() {
   // Function to play audio response
   const playAudio = async (text: string) => {
     try {
+      // Process text on client side to also remove bullet points and asterisks
+      // This is a second layer of defense in case server-side processing doesn't catch all
+      const processedText = text
+        .replace(/•\s*/g, "") // Remove bullet points
+        .replace(/\*/g, "") // Remove asterisks completely
+        .replace(/-\s+/g, "") // Remove hyphens at the start of lines
+        .replace(/^\s*-\s*/gm, ""); // Remove hyphens at the start of each line in multiline text
+      
+      console.log("Original text:", text);
+      console.log("Processed text for speech:", processedText);
+      
       const response = await fetch('/api/speech', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ text })
+        body: JSON.stringify({ text: processedText })
       });
       
       if (response.ok) {
         const audioBlob = await response.blob();
         const audioUrl = URL.createObjectURL(audioBlob);
-        const audio = new Audio(audioUrl);
-        audio.volume = volume / 100;
-        await audio.play();
+        const audioElement = new Audio(audioUrl);
+        audioElement.volume = volume / 100;
+        
+        // Properly handle cleanup when audio finishes
+        audioElement.onended = () => {
+          URL.revokeObjectURL(audioUrl);
+        };
+        
+        // Handle errors properly
+        audioElement.onerror = (e) => {
+          console.error('Audio playback error:', e);
+          URL.revokeObjectURL(audioUrl);
+        };
+        
+        // Use a more robust play mechanism with better error handling for mobile
+        try {
+          await audioElement.play();
+        } catch (playError) {
+          console.error('Failed to play audio - likely a mobile autoplay restriction:', playError);
+          // Fallback to browser speech synthesis if available
+          if (window.speechSynthesis) {
+            const utterance = new SpeechSynthesisUtterance(processedText);
+            utterance.volume = volume / 100;
+            window.speechSynthesis.speak(utterance);
+          }
+        }
       } else {
         console.error('Failed to get speech:', await response.text());
       }
