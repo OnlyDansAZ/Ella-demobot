@@ -376,11 +376,14 @@ export default function EllaChat() {
           <Button 
             variant="outline" 
             size="sm" 
-            className="text-xs px-2 py-1 h-7 hidden sm:flex items-center gap-1"
-            onClick={() => setShowAppointments(true)}
+            className="text-xs px-2 py-1 h-7 flex items-center gap-1"
+            onClick={() => {
+              setShowAppointments(true);
+              setShowSettingsOnMobile(false); // Hide settings panel on mobile when viewing appointments
+            }}
           >
-            <Calendar className="h-3.5 w-3.5 mr-1" />
-            <span className="hidden sm:inline">Appointments</span>
+            <Calendar className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline ml-1">Appointments</span>
           </Button>
           <Link href="/">
             <Button variant="ghost" size="sm" className="hidden sm:flex items-center gap-1">
