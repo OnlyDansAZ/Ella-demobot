@@ -1,5 +1,6 @@
 import React from "react";
 import { Link } from "wouter";
+import yobotLogo from "../assets/yobot-logo.png";
 
 const Header: React.FC = () => {
   return (
@@ -7,9 +8,9 @@ const Header: React.FC = () => {
       <div className="container mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center">
         <div className="flex items-center mb-4 md:mb-0">
           <img
-            src="https://www.yobot.store/images/yobot-logo-blue.png"
+            src={yobotLogo}
             alt="YoBot Logo"
-            className="h-10 mr-3 bg-white rounded-full p-1"
+            className="h-12 mr-3"
           />
           <div>
             <h1 className="text-2xl font-bold text-white">YoBot</h1>
