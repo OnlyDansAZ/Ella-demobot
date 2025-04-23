@@ -1,5 +1,5 @@
 import { Router, Request, Response } from "express";
-import { conversationStorage, ChatMessage } from "../conversationStorage";
+import { conversationStorage, ChatMessage, ConversationSession } from "../conversationStorage";
 import { v4 as uuidv4 } from "uuid";
 
 const router = Router();
@@ -61,7 +61,7 @@ router.post('/:sessionId/messages', async (req: Request, res: Response) => {
     return res.status(200).json({
       success: true,
       message,
-      messageCount: (session.messages as any[]).length
+      messageCount: session.messages.length
     });
   } catch (error) {
     console.error('Error saving message to conversation history:', error);
@@ -92,7 +92,7 @@ router.put('/:sessionId', async (req: Request, res: Response) => {
     
     return res.status(200).json({
       success: true,
-      messageCount: (session.messages as any[]).length
+      messageCount: session.messages.length
     });
   } catch (error) {
     console.error('Error saving conversation history:', error);

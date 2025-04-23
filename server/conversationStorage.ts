@@ -1,12 +1,3 @@
-import { db } from "./db";
-import { 
-  conversationHistory, 
-  type ConversationHistory, 
-  type InsertConversation,
-  type UpdateConversation 
-} from "@shared/schema";
-import { eq, and } from "drizzle-orm";
-
 // Define the message structure
 export interface ChatMessage {
   id: string;
@@ -15,130 +6,63 @@ export interface ChatMessage {
   timestamp: string;
 }
 
-// In-memory fallback for when database is unavailable
-class MemoryFallback {
-  private sessions: Map<string, any> = new Map();
-  
-  getSession(sessionId: string): any {
-    return this.sessions.get(sessionId);
-  }
-  
-  setSession(sessionId: string, data: any): void {
-    this.sessions.set(sessionId, data);
-  }
-  
-  clearSession(sessionId: string): void {
-    const session = this.sessions.get(sessionId);
-    if (session) {
-      session.messages = [];
-      this.sessions.set(sessionId, session);
-    }
-  }
-  
-  deleteSession(sessionId: string): void {
-    this.sessions.delete(sessionId);
-  }
+// Define the conversation session structure
+export interface ConversationSession {
+  id: number;
+  sessionId: string;
+  userId: number | null;
+  messages: ChatMessage[];
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 /**
- * Service for managing persistent conversation storage
- * with fallback to memory when database is unavailable
+ * Pure in-memory implementation of conversation storage
  */
 export class ConversationStorage {
-  private memoryFallback: MemoryFallback = new MemoryFallback();
-  private useMemoryFallback: boolean = false;
+  // Map to store conversation sessions by sessionId
+  private sessions: Map<string, ConversationSession> = new Map();
   
   /**
    * Get or create a conversation session
    */
-  async getOrCreateSession(sessionId: string, userId?: number): Promise<ConversationHistory> {
-    try {
-      if (this.useMemoryFallback) {
-        throw new Error("Using memory fallback");
-      }
-      
-      // First try to find an existing session
-      const [existingSession] = await db
-        .select()
-        .from(conversationHistory)
-        .where(eq(conversationHistory.sessionId, sessionId));
-      
-      if (existingSession) {
-        return existingSession;
-      }
-      
-      // Create a new session if one doesn't exist
-      const newSession: InsertConversation = {
+  async getOrCreateSession(sessionId: string, userId?: number): Promise<ConversationSession> {
+    // Check if the session already exists
+    let session = this.sessions.get(sessionId);
+    
+    // Create a new session if it doesn't exist
+    if (!session) {
+      session = {
+        id: Date.now(), // Use timestamp as a simple ID
         sessionId,
         userId: userId || null,
         messages: [],
+        createdAt: new Date(),
+        updatedAt: new Date()
       };
       
-      const [createdSession] = await db
-        .insert(conversationHistory)
-        .values(newSession)
-        .returning();
-        
-      return createdSession;
-    } catch (error) {
-      console.warn("Database error, using memory fallback:", error);
-      this.useMemoryFallback = true;
-      
-      // Use memory fallback
-      let session = this.memoryFallback.getSession(sessionId);
-      if (!session) {
-        session = {
-          id: Math.floor(Math.random() * 10000),
-          sessionId,
-          userId: userId || null,
-          messages: [],
-          createdAt: new Date(),
-          updatedAt: new Date()
-        };
-        this.memoryFallback.setSession(sessionId, session);
-      }
-      
-      return session;
+      // Store the new session
+      this.sessions.set(sessionId, session);
     }
+    
+    return session;
   }
   
   /**
    * Save messages to a conversation session
    */
-  async saveMessages(sessionId: string, messages: ChatMessage[]): Promise<ConversationHistory> {
-    try {
-      if (this.useMemoryFallback) {
-        throw new Error("Using memory fallback");
-      }
-      
-      // Get or create session
-      const session = await this.getOrCreateSession(sessionId);
-      
-      // Update the messages
-      const [updatedSession] = await db
-        .update(conversationHistory)
-        .set({ 
-          messages: messages as any, // TypeScript workaround for JSONB
-          updatedAt: new Date()
-        })
-        .where(eq(conversationHistory.id, session.id))
-        .returning();
-        
-      return updatedSession;
-    } catch (error) {
-      console.warn("Database error in saveMessages, using memory fallback:", error);
-      this.useMemoryFallback = true;
-      
-      // Get existing session or create new one
-      const session = await this.getOrCreateSession(sessionId);
-      
-      // Update the messages in memory
-      session.messages = messages;
-      session.updatedAt = new Date();
-      this.memoryFallback.setSession(sessionId, session);
-      
-      return session;
-    }
+  async saveMessages(sessionId: string, messages: ChatMessage[]): Promise<ConversationSession> {
+    // Get or create the session
+    const session = await this.getOrCreateSession(sessionId);
+    
+    // Update the messages
+    session.messages = messages;
+    session.updatedAt = new Date();
+    
+    // Update the session in the map
+    this.sessions.set(sessionId, session);
+    
+    return session;
   }
   
   /**
@@ -146,103 +70,50 @@ export class ConversationStorage {
    */
   async getMessages(sessionId: string): Promise<ChatMessage[]> {
     const session = await this.getOrCreateSession(sessionId);
-    return session.messages as unknown as ChatMessage[];
+    return session.messages;
   }
   
   /**
    * Add a message to the conversation
    */
-  async addMessage(sessionId: string, message: ChatMessage): Promise<ConversationHistory> {
-    try {
-      if (this.useMemoryFallback) {
-        throw new Error("Using memory fallback");
-      }
-      
-      const session = await this.getOrCreateSession(sessionId);
-      
-      // Get existing messages and add the new one
-      const messages = [...(session.messages as unknown as ChatMessage[] || []), message];
-      
-      // Update the session with new messages
-      const [updatedSession] = await db
-        .update(conversationHistory)
-        .set({ 
-          messages: messages as any,
-          updatedAt: new Date()
-        })
-        .where(eq(conversationHistory.id, session.id))
-        .returning();
-        
-      return updatedSession;
-    } catch (error) {
-      console.warn("Database error in addMessage, using memory fallback:", error);
-      this.useMemoryFallback = true;
-      
-      // Get existing session or create new one
-      const session = await this.getOrCreateSession(sessionId);
-      
-      // Add the message to existing messages
-      const messages = [...(session.messages as unknown as ChatMessage[] || []), message];
-      session.messages = messages;
-      session.updatedAt = new Date();
-      this.memoryFallback.setSession(sessionId, session);
-      
-      return session;
-    }
+  async addMessage(sessionId: string, message: ChatMessage): Promise<ConversationSession> {
+    // Get or create the session
+    const session = await this.getOrCreateSession(sessionId);
+    
+    // Add the new message to the existing messages
+    session.messages = [...session.messages, message];
+    session.updatedAt = new Date();
+    
+    // Update the session in the map
+    this.sessions.set(sessionId, session);
+    
+    return session;
   }
   
   /**
    * Clear messages from a conversation session
    */
   async clearMessages(sessionId: string): Promise<boolean> {
-    try {
-      if (this.useMemoryFallback) {
-        throw new Error("Using memory fallback");
-      }
-      
-      const session = await this.getOrCreateSession(sessionId);
-      
-      await db
-        .update(conversationHistory)
-        .set({ 
-          messages: [],
-          updatedAt: new Date()
-        })
-        .where(eq(conversationHistory.id, session.id));
-        
-      return true;
-    } catch (error) {
-      console.warn("Database error in clearMessages, using memory fallback:", error);
-      this.useMemoryFallback = true;
-      
-      // Clear messages in memory
-      this.memoryFallback.clearSession(sessionId);
-      return true;
-    }
+    // Get the session
+    const session = await this.getOrCreateSession(sessionId);
+    
+    // Clear the messages
+    session.messages = [];
+    session.updatedAt = new Date();
+    
+    // Update the session in the map
+    this.sessions.set(sessionId, session);
+    
+    return true;
   }
   
   /**
    * Delete a conversation session
    */
   async deleteSession(sessionId: string): Promise<boolean> {
-    try {
-      if (this.useMemoryFallback) {
-        throw new Error("Using memory fallback");
-      }
-      
-      await db
-        .delete(conversationHistory)
-        .where(eq(conversationHistory.sessionId, sessionId));
-        
-      return true;
-    } catch (error) {
-      console.warn("Database error in deleteSession, using memory fallback:", error);
-      this.useMemoryFallback = true;
-      
-      // Delete session from memory
-      this.memoryFallback.deleteSession(sessionId);
-      return true;
-    }
+    // Remove the session from the map
+    this.sessions.delete(sessionId);
+    return true;
   }
 }
 
