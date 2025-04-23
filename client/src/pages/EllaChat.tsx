@@ -107,29 +107,75 @@ export default function EllaChat() {
   // Speech recognition setup
   const recognitionRef = useRef<any>(null);
   
+  const [isVoiceEnabled, setIsVoiceEnabled] = useState<boolean>(true);
+  const [voiceConfidence, setVoiceConfidence] = useState<number>(0);
+  
   useEffect(() => {
     // Initialize speech recognition when component mounts
     if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       recognitionRef.current = new SpeechRecognition();
-      recognitionRef.current.continuous = false;
-      recognitionRef.current.interimResults = false;
+      recognitionRef.current.continuous = true; // Allow continuous listening
+      recognitionRef.current.interimResults = true; // Get interim results for more responsive UI
       recognitionRef.current.lang = 'en-US';
       
-      // Set up event handlers
+      // Set up event handlers with enhanced error recovery
       recognitionRef.current.onresult = (event: any) => {
-        const transcript = event.results[0][0].transcript;
-        setInputMessage(transcript);
-        setIsListening(false);
+        // Get the last result (most recent speech)
+        const lastResult = event.results[event.results.length - 1];
+        
+        // Check if this is a final result
+        if (lastResult.isFinal) {
+          const transcript = lastResult[0].transcript.trim();
+          const confidence = lastResult[0].confidence;
+          setVoiceConfidence(confidence);
+          
+          console.log(`Speech recognized with ${Math.round(confidence * 100)}% confidence: "${transcript}"`);
+          
+          // Set the recognized speech as input message
+          setInputMessage(transcript);
+          
+          // If confidence is high enough and we're in listening mode, auto-send the message
+          if (confidence > 0.85 && isListening) {
+            // Use a timeout to give visual feedback before sending
+            setTimeout(() => {
+              if (transcript && transcript.length > 0) {
+                sendMessageWithText(transcript);
+              }
+            }, 300);
+          }
+        }
       };
       
       recognitionRef.current.onerror = (event: any) => {
         console.error('Speech recognition error:', event.error);
-        setIsListening(false);
+        
+        // Only stop listening on critical errors, try to recover from transient ones
+        if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+          setIsListening(false);
+          alert('Speech recognition permission was denied. Please allow microphone access.');
+        } else if (event.error === 'aborted') {
+          // User likely aborted manually, just stop
+          setIsListening(false);
+        } else if (event.error === 'network') {
+          console.warn('Network error in speech recognition, trying to restart...');
+          // Try to restart after a brief delay
+          setTimeout(() => {
+            if (isListening) restartListening();
+          }, 1000);
+        } else {
+          // For other errors, we might try to restart recognition if still in listening mode
+          setTimeout(() => {
+            if (isListening) restartListening();
+          }, 1000);
+        }
       };
       
       recognitionRef.current.onend = () => {
-        setIsListening(false);
+        // Attempt to restart if still in listening mode
+        if (isListening) {
+          restartListening();
+        }
       };
     }
     
@@ -139,9 +185,28 @@ export default function EllaChat() {
         recognitionRef.current.onresult = null;
         recognitionRef.current.onerror = null;
         recognitionRef.current.onend = null;
+        
+        try {
+          recognitionRef.current.stop();
+        } catch (e) {
+          // Ignore errors during cleanup
+        }
       }
     };
-  }, []);
+  }, [isListening]);
+  
+  // Helper function to restart recognition
+  const restartListening = () => {
+    if (recognitionRef.current && isListening) {
+      try {
+        recognitionRef.current.start();
+        console.log('Speech recognition restarted');
+      } catch (error) {
+        console.error('Failed to restart speech recognition:', error);
+        setIsListening(false);
+      }
+    }
+  };
   
   const startListening = () => {
     if (recognitionRef.current) {
@@ -150,13 +215,20 @@ export default function EllaChat() {
         setIsListening(true);
       } catch (error) {
         console.error('Failed to start speech recognition:', error);
-        alert('Failed to start speech recognition. Please try again.');
+        
+        // More informative error messages
+        if (error instanceof DOMException && error.name === 'NotAllowedError') {
+          alert('Microphone permission was denied. Please allow microphone access in your browser settings.');
+        } else {
+          alert('Failed to start speech recognition. Please try again or use text input instead.');
+        }
         setIsListening(false);
       }
     } else if (!('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) {
-      alert('Speech recognition is not supported in your browser');
+      alert('Speech recognition is not supported in your browser. Please try using a modern browser like Chrome, Edge, or Safari.');
+      setIsVoiceEnabled(false);
     } else {
-      alert('Speech recognition failed to initialize. Please refresh the page.');
+      alert('Speech recognition failed to initialize. Please refresh the page and try again.');
     }
   };
   
@@ -171,12 +243,12 @@ export default function EllaChat() {
     setIsListening(false);
   };
   
-  // Function to send a message using the persistence hook
-  const sendMessage = async () => {
-    if (!inputMessage.trim()) return;
+  // Function to send a message with specific text (for voice input)
+  const sendMessageWithText = async (text: string) => {
+    if (!text.trim()) return;
     
     // Add the user message using our hook (this handles persistence)
-    const userMessage = await addMessage(inputMessage, true);
+    const userMessage = await addMessage(text, true);
     
     setInputMessage('');
     setIsLoading(true);
@@ -196,7 +268,8 @@ export default function EllaChat() {
           })),
           persona: useCustomPersona ? null : selectedPersona,
           customPersonaPrompt: useCustomPersona ? customPersonaText : null,
-          sessionId: sessionId // Include the session ID for tracking
+          sessionId: sessionId, // Include the session ID for tracking
+          isVoiceInput: true // Flag to indicate this came from voice input
         })
       });
       
@@ -206,36 +279,7 @@ export default function EllaChat() {
         // Add the bot response using our hook (with persistence)
         const botMessage = await addMessage(data.response, false);
         
-        // Check if the response contains booking-related content
-        const lowerCaseResponse = data.response.toLowerCase();
-        const lowerCaseUserMessage = userMessage.content.toLowerCase();
-        
-        // Show appointments view if user asked about their appointments
-        if (
-          (lowerCaseUserMessage.includes('my appointment') || 
-           lowerCaseUserMessage.includes('my meeting') || 
-           lowerCaseUserMessage.includes('meeting that i have') ||
-           lowerCaseUserMessage.includes('do i have any appointment') ||
-           lowerCaseUserMessage.includes('upcoming appointment') ||
-           lowerCaseUserMessage.includes('check appointment') ||
-           lowerCaseUserMessage.includes('view appointment')) && 
-          !showAppointments
-        ) {
-          // Show the appointments interface
-          setShowAppointments(true);
-        }
-        // Show Calendly widget if response suggests booking a meeting
-        else if (
-          (lowerCaseResponse.includes('calendly') || 
-           lowerCaseResponse.includes('schedule a meeting') || 
-           lowerCaseResponse.includes('booking link') ||
-           lowerCaseResponse.includes('book a time') ||
-           (lowerCaseResponse.includes('appointment') && !lowerCaseResponse.includes('existing appointment'))) && 
-          !showCalendly
-        ) {
-          // Show the Calendly interface
-          setShowCalendly(true);
-        }
+        processResponseActions(data.response, userMessage.content);
         
         // If not muted, play the audio
         if (!isMuted) {
@@ -251,62 +295,202 @@ export default function EllaChat() {
     }
   };
   
-  // Function to play audio response
+  // Function to process response actions (shared between text and voice input)
+  const processResponseActions = (response: string, userMessage: string) => {
+    // Check if the response contains booking-related content
+    const lowerCaseResponse = response.toLowerCase();
+    const lowerCaseUserMessage = userMessage.toLowerCase();
+    
+    // Show appointments view if user asked about their appointments
+    if (
+      (lowerCaseUserMessage.includes('my appointment') || 
+       lowerCaseUserMessage.includes('my meeting') || 
+       lowerCaseUserMessage.includes('meeting that i have') ||
+       lowerCaseUserMessage.includes('do i have any appointment') ||
+       lowerCaseUserMessage.includes('upcoming appointment') ||
+       lowerCaseUserMessage.includes('check appointment') ||
+       lowerCaseUserMessage.includes('view appointment')) && 
+      !showAppointments
+    ) {
+      // Show the appointments interface
+      setShowAppointments(true);
+    }
+    // Show Calendly widget if response suggests booking a meeting
+    else if (
+      (lowerCaseResponse.includes('calendly') || 
+       lowerCaseResponse.includes('schedule a meeting') || 
+       lowerCaseResponse.includes('booking link') ||
+       lowerCaseResponse.includes('book a time') ||
+       (lowerCaseResponse.includes('appointment') && !lowerCaseResponse.includes('existing appointment'))) && 
+      !showCalendly
+    ) {
+      // Show the Calendly interface
+      setShowCalendly(true);
+    }
+  };
+  
+  // Function to send a message using the persistence hook (for text input)
+  const sendMessage = async () => {
+    if (!inputMessage.trim()) return;
+    
+    // Delegate to the shared function
+    await sendMessageWithText(inputMessage);
+  };
+  
+  // Keep track of audio playback state
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const currentAudioRef = useRef<HTMLAudioElement | null>(null);
+  
+  // Function to play audio response with enhanced handling
   const playAudio = async (text: string) => {
     try {
-      // Process text on client side to also remove bullet points and asterisks
+      // If currently speaking, stop the current audio first
+      if (isSpeaking && currentAudioRef.current) {
+        currentAudioRef.current.pause();
+        currentAudioRef.current = null;
+      }
+      
+      // Process text on client side to improve voice quality and handle formatting
       // This is a second layer of defense in case server-side processing doesn't catch all
-      const processedText = text
+      let processedText = text
         .replace(/•\s*/g, "") // Remove bullet points
         .replace(/\*/g, "") // Remove asterisks completely
         .replace(/-\s+/g, "") // Remove hyphens at the start of lines
-        .replace(/^\s*-\s*/gm, ""); // Remove hyphens at the start of each line in multiline text
+        .replace(/^\s*-\s*/gm, "") // Remove hyphens at the start of each line in multiline text
+        .replace(/\n+/g, ". ") // Replace multiple newlines with periods for better speech flow
+        .replace(/\s{2,}/g, " "); // Replace multiple spaces with a single space
+      
+      // Add natural pauses for better speech rhythm
+      processedText = processedText
+        .replace(/\. /g, ". <break time='0.5s'/> ")
+        .replace(/\? /g, "? <break time='0.6s'/> ")
+        .replace(/! /g, "! <break time='0.5s'/> ")
+        .replace(/: /g, ": <break time='0.3s'/> ")
+        .replace(/; /g, "; <break time='0.3s'/> ");
       
       console.log("Original text:", text);
       console.log("Processed text for speech:", processedText);
       
-      const response = await fetch('/api/speech', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ text: processedText })
-      });
+      setIsSpeaking(true);
       
-      if (response.ok) {
-        const audioBlob = await response.blob();
-        const audioUrl = URL.createObjectURL(audioBlob);
-        const audioElement = new Audio(audioUrl);
-        audioElement.volume = volume / 100;
+      try {
+        const response = await fetch('/api/speech', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ 
+            text: processedText,
+            // Add additional parameters for more expressive speech
+            options: {
+              stability: 0.5,
+              similarityBoost: 0.75,
+              style: 0.5 // Add more expressiveness to the voice
+            }
+          })
+        });
         
-        // Properly handle cleanup when audio finishes
-        audioElement.onended = () => {
-          URL.revokeObjectURL(audioUrl);
-        };
-        
-        // Handle errors properly
-        audioElement.onerror = (e) => {
-          console.error('Audio playback error:', e);
-          URL.revokeObjectURL(audioUrl);
-        };
-        
-        // Use a more robust play mechanism with better error handling for mobile
-        try {
-          await audioElement.play();
-        } catch (playError) {
-          console.error('Failed to play audio - likely a mobile autoplay restriction:', playError);
-          // Fallback to browser speech synthesis if available
-          if (window.speechSynthesis) {
-            const utterance = new SpeechSynthesisUtterance(processedText);
-            utterance.volume = volume / 100;
-            window.speechSynthesis.speak(utterance);
+        if (response.ok) {
+          const audioBlob = await response.blob();
+          const audioUrl = URL.createObjectURL(audioBlob);
+          const audioElement = new Audio(audioUrl);
+          
+          // Save reference to the audio element
+          currentAudioRef.current = audioElement;
+          
+          audioElement.volume = volume / 100;
+          
+          // Properly handle state and cleanup when audio finishes
+          audioElement.onended = () => {
+            URL.revokeObjectURL(audioUrl);
+            setIsSpeaking(false);
+            currentAudioRef.current = null;
+          };
+          
+          // Handle errors properly
+          audioElement.onerror = (e) => {
+            console.error('Audio playback error:', e);
+            URL.revokeObjectURL(audioUrl);
+            setIsSpeaking(false);
+            currentAudioRef.current = null;
+            
+            // Attempt fallback for seamless experience
+            useBrowserFallbackSpeech(text);
+          };
+          
+          // Use a more robust play mechanism with better error handling for mobile
+          try {
+            await audioElement.play();
+          } catch (playError) {
+            console.error('Failed to play audio - likely a mobile autoplay restriction:', playError);
+            setIsSpeaking(false);
+            currentAudioRef.current = null;
+            
+            // Fallback to browser speech synthesis
+            useBrowserFallbackSpeech(text);
           }
+        } else {
+          console.error('Failed to get speech:', await response.text());
+          setIsSpeaking(false);
+          
+          // Fallback to browser speech synthesis
+          useBrowserFallbackSpeech(text);
         }
-      } else {
-        console.error('Failed to get speech:', await response.text());
+      } catch (fetchError) {
+        console.error('Error fetching speech from server:', fetchError);
+        setIsSpeaking(false);
+        
+        // Fallback to browser speech synthesis
+        useBrowserFallbackSpeech(text);
       }
     } catch (error) {
       console.error('Error playing audio:', error);
+      setIsSpeaking(false);
+    }
+  };
+  
+  // Helper function for browser speech synthesis fallback
+  const useBrowserFallbackSpeech = (text: string) => {
+    if (window.speechSynthesis) {
+      try {
+        // Cancel any ongoing speech
+        window.speechSynthesis.cancel();
+        
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.volume = volume / 100;
+        
+        // Attempt to find a female voice for better match to Ella
+        const voices = window.speechSynthesis.getVoices();
+        const femaleVoice = voices.find(voice => 
+          voice.name.includes('female') || 
+          voice.name.includes('Samantha') || 
+          voice.name.includes('Victoria') || 
+          voice.name.includes('Karen')
+        );
+        
+        if (femaleVoice) {
+          utterance.voice = femaleVoice;
+        }
+        
+        // Set state for speaking indicator
+        setIsSpeaking(true);
+        
+        // Handle when speech is done
+        utterance.onend = () => {
+          setIsSpeaking(false);
+        };
+        
+        // Handle errors
+        utterance.onerror = () => {
+          console.error('Browser speech synthesis error');
+          setIsSpeaking(false);
+        };
+        
+        window.speechSynthesis.speak(utterance);
+      } catch (e) {
+        console.error('Browser speech synthesis failed:', e);
+        setIsSpeaking(false);
+      }
     }
   };
   
