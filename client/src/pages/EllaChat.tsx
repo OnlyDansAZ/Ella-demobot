@@ -98,6 +98,81 @@ export default function EllaChat() {
   const recognitionRef = useRef<any>(null);
   const currentAudioRef = useRef<HTMLAudioElement | null>(null);
   
+  // Effect to load and apply theme settings
+  useEffect(() => {
+    // Load saved theme settings from localStorage
+    const savedSettings = loadThemeSettings();
+    
+    // Update component state with loaded settings
+    setCurrentThemeId(savedSettings.themeId);
+    setBubbleOpacity(savedSettings.bubbleOpacity);
+    setUsePrimaryColor(savedSettings.usePrimaryColor);
+    setAnimationsEnabled(savedSettings.animationsEnabled);
+    setFontScale(savedSettings.fontScale);
+    
+    // Find the theme object that corresponds to the saved theme ID
+    const defaultThemes = [
+      {
+        id: 'default',
+        name: 'Default',
+        primaryColor: '#3b82f6',
+        secondaryColor: '#f3f4f6',
+        accentColor: '#10b981',
+        description: 'The standard YoBot theme with a clean, professional look'
+      },
+      {
+        id: 'modern',
+        name: 'Modern Blue',
+        primaryColor: '#2563eb',
+        secondaryColor: '#e0f2fe',
+        accentColor: '#06b6d4',
+        description: 'A sleek and modern blue theme with light accents'
+      },
+      {
+        id: 'night',
+        name: 'Night Mode',
+        primaryColor: '#6366f1',
+        secondaryColor: '#1e1e2d',
+        accentColor: '#8b5cf6',
+        description: 'Dark theme with vibrant purple accents for low-light environments'
+      },
+      {
+        id: 'nature',
+        name: 'Natural Green',
+        primaryColor: '#10b981',
+        secondaryColor: '#ecfdf5',
+        accentColor: '#059669',
+        description: 'Calm and natural green theme inspired by nature'
+      },
+      {
+        id: 'sunset',
+        name: 'Sunset Orange',
+        primaryColor: '#f97316',
+        secondaryColor: '#fff7ed',
+        accentColor: '#ea580c',
+        description: 'Warm and energetic theme with sunset-inspired colors'
+      },
+    ];
+    
+    const theme = defaultThemes.find(t => t.id === savedSettings.themeId) || defaultThemes[0];
+    
+    // Apply all theme settings
+    applyTheme(theme);
+    applyFontScale(savedSettings.fontScale);
+    setAnimationsEnabled(savedSettings.animationsEnabled);
+    setBubbleOpacity(savedSettings.bubbleOpacity);
+    
+    // Update user bubble colors based on settings
+    const root = document.documentElement;
+    if (savedSettings.usePrimaryColor) {
+      root.style.setProperty('--user-bubble-bg', 'var(--theme-primary)');
+      root.style.setProperty('--user-bubble-text', 'white');
+    } else {
+      root.style.setProperty('--user-bubble-bg', '#E5E7EB');
+      root.style.setProperty('--user-bubble-text', '#1a1a1a');
+    }
+  }, []);
+  
   // Fetch upcoming appointments
   const fetchAppointments = async () => {
     setIsLoadingAppointments(true);
@@ -122,6 +197,145 @@ export default function EllaChat() {
     }
   };
   
+  // Theme handling functions
+  const handleThemeChange = (themeId: string) => {
+    setCurrentThemeId(themeId);
+    
+    // Find the theme object that corresponds to the selected theme ID
+    const defaultThemes = [
+      {
+        id: 'default',
+        name: 'Default',
+        primaryColor: '#3b82f6',
+        secondaryColor: '#f3f4f6',
+        accentColor: '#10b981',
+        description: 'The standard YoBot theme with a clean, professional look'
+      },
+      {
+        id: 'modern',
+        name: 'Modern Blue',
+        primaryColor: '#2563eb',
+        secondaryColor: '#e0f2fe',
+        accentColor: '#06b6d4',
+        description: 'A sleek and modern blue theme with light accents'
+      },
+      {
+        id: 'night',
+        name: 'Night Mode',
+        primaryColor: '#6366f1',
+        secondaryColor: '#1e1e2d',
+        accentColor: '#8b5cf6',
+        description: 'Dark theme with vibrant purple accents for low-light environments'
+      },
+      {
+        id: 'nature',
+        name: 'Natural Green',
+        primaryColor: '#10b981',
+        secondaryColor: '#ecfdf5',
+        accentColor: '#059669',
+        description: 'Calm and natural green theme inspired by nature'
+      },
+      {
+        id: 'sunset',
+        name: 'Sunset Orange',
+        primaryColor: '#f97316',
+        secondaryColor: '#fff7ed',
+        accentColor: '#ea580c',
+        description: 'Warm and energetic theme with sunset-inspired colors'
+      },
+    ];
+    
+    const theme = defaultThemes.find(t => t.id === themeId) || defaultThemes[0];
+    
+    // Apply the theme
+    applyTheme(theme);
+    
+    // Save updated settings
+    saveThemeSettings({
+      themeId,
+      bubbleOpacity,
+      usePrimaryColor,
+      animationsEnabled,
+      fontScale
+    });
+  };
+  
+  const handleBubbleOpacityChange = (opacity: number) => {
+    setBubbleOpacity(opacity);
+    setBubbleOpacity(opacity);
+    
+    // Save updated settings
+    saveThemeSettings({
+      themeId: currentThemeId,
+      bubbleOpacity: opacity,
+      usePrimaryColor,
+      animationsEnabled,
+      fontScale
+    });
+  };
+  
+  const handleUsePrimaryColorChange = (use: boolean) => {
+    setUsePrimaryColor(use);
+    
+    // Update CSS variables directly since we're in the component
+    const root = document.documentElement;
+    if (use) {
+      root.style.setProperty('--user-bubble-bg', 'var(--theme-primary)');
+      root.style.setProperty('--user-bubble-text', 'white');
+    } else {
+      root.style.setProperty('--user-bubble-bg', '#E5E7EB');
+      root.style.setProperty('--user-bubble-text', '#1a1a1a');
+    }
+    
+    // Save updated settings
+    saveThemeSettings({
+      themeId: currentThemeId,
+      bubbleOpacity,
+      usePrimaryColor: use,
+      animationsEnabled,
+      fontScale
+    });
+  };
+  
+  const handleAnimationsEnabledChange = (enabled: boolean) => {
+    setAnimationsEnabled(enabled);
+    
+    // Apply the animations setting
+    const root = document.documentElement;
+    if (enabled) {
+      root.style.setProperty('--animation-duration', '300ms');
+      root.style.setProperty('--transition-duration', '150ms');
+      document.body.classList.remove('animations-disabled');
+    } else {
+      root.style.setProperty('--animation-duration', '0ms');
+      root.style.setProperty('--transition-duration', '0ms');
+      document.body.classList.add('animations-disabled');
+    }
+    
+    // Save updated settings
+    saveThemeSettings({
+      themeId: currentThemeId,
+      bubbleOpacity,
+      usePrimaryColor,
+      animationsEnabled: enabled,
+      fontScale
+    });
+  };
+  
+  const handleFontScaleChange = (scale: number) => {
+    setFontScale(scale);
+    applyFontScale(scale);
+    
+    // Save updated settings
+    saveThemeSettings({
+      themeId: currentThemeId,
+      bubbleOpacity,
+      usePrimaryColor,
+      animationsEnabled,
+      fontScale: scale
+    });
+  };
+
   // Function to process response actions (shared between text and voice input)
   const processResponseActions = (response: string, userMessage: string) => {
     // Check if the response contains booking-related content
