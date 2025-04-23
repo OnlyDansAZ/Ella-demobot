@@ -718,6 +718,44 @@ export default function EllaChat() {
                 
                 <Separator />
                 
+                {/* Memory Management Section */}
+                <div className="space-y-2 sm:space-y-4">
+                  <div className="flex items-center gap-1 sm:gap-2">
+                    <Trash2 className="h-3 w-3 sm:h-4 sm:w-4 text-red-500" />
+                    <h3 className="text-xs sm:text-sm font-medium">Memory Management</h3>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Button 
+                      variant="destructive" 
+                      size="sm" 
+                      className="text-xs w-full"
+                      onClick={() => {
+                        if (window.confirm('Are you sure you want to clear this conversation? This cannot be undone.')) {
+                          clearConversation();
+                        }
+                      }}
+                    >
+                      Clear Conversation
+                    </Button>
+                    
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="text-xs w-full"
+                      onClick={() => {
+                        if (window.confirm('Start a completely new conversation? This will generate a new session ID.')) {
+                          startNewConversation();
+                        }
+                      }}
+                    >
+                      New Conversation
+                    </Button>
+                  </div>
+                </div>
+                
+                <Separator />
+                
                 <div>
                   <h3 className="text-[10px] sm:text-sm font-medium mb-1 sm:mb-2">Conversation Tips</h3>
                   <ul className="text-[10px] sm:text-sm text-muted-foreground space-y-0.5 sm:space-y-2">
@@ -733,7 +771,7 @@ export default function EllaChat() {
                 
                 <div className="text-[8px] sm:text-xs text-muted-foreground">
                   <p>Using OpenAI GPT-4o and ElevenLabs.</p>
-                  <p className="mt-1">Conversations are not stored.</p>
+                  <p className="mt-1">Conversations are securely stored for your convenience.</p>
                   
                   <div className="md:hidden mt-3">
                     <Link href="/">
