@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { predefinedPersonas, customPersonaTemplate } from '@/lib/personas';
+import { motion } from 'framer-motion';
 import { ScheduleMeeting } from '@/components/ScheduleMeeting';
 import { Badge } from '@/components/ui/badge';
 import { useCalendly } from '@/hooks/use-calendly';
@@ -733,18 +734,28 @@ export default function EllaChat() {
               </div>
             </CardContent>
             <div className="p-1 sm:p-3 border-t relative">
-              {/* Voice activity indicator - visible when voice is active */}
+              {/* Voice activity indicators - microanimations */}
               {isListening && (
                 <div className="absolute left-0 top-0 w-full flex items-center justify-center">
                   <div className="bg-blue-500/90 text-white px-3 py-1 rounded-b-lg text-xs shadow-md flex items-center gap-2 transform -translate-y-1">
                     <div className="flex gap-1">
-                      <div className="w-1 h-3 bg-white rounded-full animate-pulse" style={{ animationDelay: '0ms' }}></div>
-                      <div className="w-1 h-4 bg-white rounded-full animate-pulse" style={{ animationDelay: '250ms' }}></div>
-                      <div className="w-1 h-2 bg-white rounded-full animate-pulse" style={{ animationDelay: '500ms' }}></div>
-                      <div className="w-1 h-5 bg-white rounded-full animate-pulse" style={{ animationDelay: '750ms' }}></div>
-                      <div className="w-1 h-3 bg-white rounded-full animate-pulse" style={{ animationDelay: '1000ms' }}></div>
+                      <div className="w-1 h-3 bg-white rounded-full animate-sound-wave" style={{ animationDelay: '0ms' }}></div>
+                      <div className="w-1 h-4 bg-white rounded-full animate-sound-wave" style={{ animationDelay: '250ms' }}></div>
+                      <div className="w-1 h-2 bg-white rounded-full animate-sound-wave" style={{ animationDelay: '500ms' }}></div>
+                      <div className="w-1 h-5 bg-white rounded-full animate-sound-wave" style={{ animationDelay: '750ms' }}></div>
+                      <div className="w-1 h-3 bg-white rounded-full animate-sound-wave" style={{ animationDelay: '1000ms' }}></div>
                     </div>
-                    <span>Listening... {voiceConfidence > 0 ? `(${Math.round(voiceConfidence * 100)}%)` : ''}</span>
+                    <span className="flex items-center gap-1">
+                      <Mic className="h-3 w-3 animate-ping-slow" />
+                      Listening... {voiceConfidence > 0 ? (
+                        <span className={`
+                          ${voiceConfidence > 0.8 ? 'text-green-200' : voiceConfidence > 0.5 ? 'text-yellow-200' : 'text-red-200'}
+                          transition-colors duration-300
+                        `}>
+                          ({Math.round(voiceConfidence * 100)}%)
+                        </span>
+                      ) : ''}
+                    </span>
                   </div>
                 </div>
               )}
@@ -786,17 +797,20 @@ export default function EllaChat() {
                 </Button>
               </div>
               
-              {/* Speaking indicator - when Ella is speaking */}
+              {/* Speaking indicator - when Ella is speaking with animation */}
               {isSpeaking && (
                 <div className="mt-2 text-center">
-                  <div className="inline-flex items-center justify-center gap-1 bg-muted rounded-full px-2 py-0.5">
+                  <div className="inline-flex items-center justify-center gap-1 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border border-blue-100 dark:border-blue-900 rounded-full px-3 py-1 shadow-sm">
                     <div className="flex gap-1 items-center">
-                      <div className="w-1 h-2 bg-blue-500 rounded-full animate-pulse" style={{ animationDelay: '0ms' }}></div>
-                      <div className="w-1 h-3 bg-blue-500 rounded-full animate-pulse" style={{ animationDelay: '200ms' }}></div>
-                      <div className="w-1 h-1.5 bg-blue-500 rounded-full animate-pulse" style={{ animationDelay: '400ms' }}></div>
-                      <div className="w-1 h-2.5 bg-blue-500 rounded-full animate-pulse" style={{ animationDelay: '600ms' }}></div>
+                      <div className="w-1 h-2 bg-blue-500 rounded-full animate-sound-wave" style={{ animationDelay: '0ms' }}></div>
+                      <div className="w-1 h-3 bg-blue-500 rounded-full animate-sound-wave" style={{ animationDelay: '150ms' }}></div>
+                      <div className="w-1 h-1.5 bg-blue-500 rounded-full animate-sound-wave" style={{ animationDelay: '300ms' }}></div>
+                      <div className="w-1 h-2.5 bg-blue-500 rounded-full animate-sound-wave" style={{ animationDelay: '450ms' }}></div>
                     </div>
-                    <span className="text-[10px] text-muted-foreground ml-1">Ella is speaking...</span>
+                    <span className="text-[10px] text-blue-600 dark:text-blue-300 ml-1 font-medium flex items-center">
+                      <Volume2 className="h-3 w-3 mr-1 animate-ping-slow" />
+                      Ella is speaking...
+                    </span>
                   </div>
                 </div>
               )}
