@@ -96,7 +96,7 @@ const ThemePreview: React.FC<ThemePreviewProps> = ({ theme, bubbleOpacity, usePr
   );
 };
 
-export const ThemeSelector: React.FC<ThemeSelectorProps> = ({
+export const ThemeSelector: React.FC<ThemeSelectorProps & { compact?: boolean }> = ({
   currentThemeId,
   bubbleOpacity,
   usePrimaryColor,
@@ -106,7 +106,8 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({
   onBubbleOpacityChange,
   onUsePrimaryColorChange,
   onAnimationsEnabledChange,
-  onFontScaleChange
+  onFontScaleChange,
+  compact = false
 }) => {
   // Define available themes
   const themes: ThemeOption[] = [
@@ -155,6 +156,88 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({
   // Find the current theme object
   const currentTheme = themes.find(theme => theme.id === currentThemeId) || themes[0];
 
+  // If compact mode is enabled, render a simplified version for the sidebar
+  if (compact) {
+    return (
+      <div className="space-y-4 text-xs">
+        <div className="space-y-2">
+          <div className="font-medium mb-1">Select Theme</div>
+          <Select value={currentThemeId} onValueChange={onThemeChange}>
+            <SelectTrigger className="h-7 text-xs">
+              <SelectValue placeholder="Select a theme" />
+            </SelectTrigger>
+            <SelectContent>
+              {themes.map(theme => (
+                <SelectItem key={theme.id} value={theme.id}>
+                  <div className="flex items-center">
+                    <div 
+                      className="h-3 w-3 rounded-full mr-2"
+                      style={{ backgroundColor: theme.primaryColor }}
+                    />
+                    {theme.name}
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        
+        <div className="space-y-2">
+          <div className="flex justify-between items-center">
+            <Label htmlFor="compactBubbleOpacity" className="text-xs">Bubble Opacity</Label>
+            <span className="text-xs">{Math.round(bubbleOpacity * 100)}%</span>
+          </div>
+          <Slider
+            id="compactBubbleOpacity"
+            min={0.3}
+            max={1}
+            step={0.05}
+            value={[bubbleOpacity]}
+            onValueChange={(value) => onBubbleOpacityChange(value[0])}
+          />
+        </div>
+        
+        <div className="flex items-center justify-between">
+          <Label htmlFor="compactUsePrimaryColor" className="text-xs">Use Theme Color</Label>
+          <Switch
+            id="compactUsePrimaryColor"
+            checked={usePrimaryColor}
+            onCheckedChange={onUsePrimaryColorChange}
+          />
+        </div>
+        
+        <div className="space-y-2">
+          <div className="flex justify-between items-center">
+            <Label htmlFor="compactFontScale" className="text-xs">Text Size</Label>
+            <span className="text-xs">{Math.round(fontScale * 100)}%</span>
+          </div>
+          <Slider
+            id="compactFontScale"
+            min={0.8}
+            max={1.4}
+            step={0.05}
+            value={[fontScale]}
+            onValueChange={(value) => onFontScaleChange(value[0])}
+          />
+        </div>
+        
+        <div className="flex items-center justify-between">
+          <Label htmlFor="compactAnimationsEnabled" className="text-xs">Animations</Label>
+          <Switch
+            id="compactAnimationsEnabled"
+            checked={animationsEnabled}
+            onCheckedChange={onAnimationsEnabledChange}
+          />
+        </div>
+        
+        <div className="pt-2 text-muted-foreground text-xs">
+          Theme: <span className="font-medium">{currentTheme.name}</span>
+        </div>
+      </div>
+    );
+  }
+    
+  // Otherwise render the full version
   return (
     <Card className="w-full max-w-3xl mx-auto">
       <CardHeader>

@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Mic, MicOff, Send, Volume2, VolumeX, ArrowLeft, User, Brain, Edit, Calendar, Clock, MapPin, AlertCircle, Briefcase, Trash2 } from 'lucide-react';
+import { Mic, MicOff, Send, Volume2, VolumeX, ArrowLeft, User, Brain, Edit, Calendar, Clock, MapPin, AlertCircle, Briefcase, Trash2, Palette } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar } from '@/components/ui/avatar';
 import { Slider } from '@/components/ui/slider';
@@ -1275,7 +1275,36 @@ export default function EllaChat() {
                     <Edit className="h-3 w-3 mr-1" />
                     Start New Conversation
                   </Button>
+                  <Button 
+                    variant={showThemeSettings ? "default" : "outline"}
+                    size="sm" 
+                    className="w-full text-[10px] sm:text-xs h-7"
+                    onClick={() => setShowThemeSettings(!showThemeSettings)}
+                  >
+                    <Palette className="h-3 w-3 mr-1" />
+                    {showThemeSettings ? "Hide Theme Settings" : "Customize Theme"}
+                  </Button>
                 </div>
+                
+                {/* Theme Settings Panel */}
+                {showThemeSettings && (
+                  <div className="mt-4 rounded-lg border p-3 bg-background/50 backdrop-blur-sm">
+                    <h4 className="text-xs font-semibold mb-2">Theme Settings</h4>
+                    <ThemeSelector
+                      currentThemeId={currentThemeId}
+                      bubbleOpacity={bubbleOpacity}
+                      usePrimaryColor={usePrimaryColor}
+                      animationsEnabled={animationsEnabled}
+                      fontScale={fontScale}
+                      onThemeChange={handleThemeChange}
+                      onBubbleOpacityChange={handleBubbleOpacityChange}
+                      onUsePrimaryColorChange={handleUsePrimaryColorChange}
+                      onAnimationsEnabledChange={handleAnimationsEnabledChange}
+                      onFontScaleChange={handleFontScaleChange}
+                      compact={true}
+                    />
+                  </div>
+                )}
               </div>
             </div>
           </Card>
