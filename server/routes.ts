@@ -166,7 +166,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
   
-  // ElevenLabs text-to-speech endpoint
+  // ElevenLabs text-to-speech endpoint with enhanced options
   app.post("/api/speech", async (req, res) => {
     try {
       // Access ElevenLabs API key from environment
@@ -179,7 +179,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      let { text } = req.body;
+      let { text, options } = req.body;
       
       if (!text) {
         return res.status(400).json({ 
@@ -187,6 +187,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           error: "Text parameter is required" 
         });
       }
+      
+      // Default options if not provided
+      const speechOptions = options || {};
       
       // Process text to improve speech readability
       // Replace bullet points and similar characters with proper phrases for better speech
@@ -197,29 +200,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .replace(/^\s*-\s*/gm, "") // Remove hyphens at the beginning of each line
         .replace(/\n\s*-\s*/g, "\n"); // Replace newline-hyphen patterns with just newlines
       
+      // Process SSML tags if present
+      const hasSSML = text.includes('<break') || text.includes('<prosody') || text.includes('<emphasis');
+      
       // Create temp file path for audio
       const tempFile = path.join(os.tmpdir(), `speech-${Date.now()}.mp3`);
       
-      // Using the user-provided voice ID
+      // Using the user-provided voice ID for Ella
       const voiceId = "KgleQSAupUuS391XuXpI";
       
       try {
-        console.log("Attempting to use ElevenLabs with new API key");
+        console.log("Generating speech with ElevenLabs");
         
         // Initialize ElevenLabs with the API key from environment
         const elevenLabs = new ElevenLabs({
-          apiKey: ELEVENLABS_API_KEY, // Use the environment variable
+          apiKey: ELEVENLABS_API_KEY,
           voiceId: voiceId
         });
         
-        console.log(`Using voice ID: ${voiceId} with ElevenLabs`);
+        // Configure speech parameters with either defaults or user-provided options
+        const stability = speechOptions.stability !== undefined ? speechOptions.stability : 0.5;
+        const similarityBoost = speechOptions.similarityBoost !== undefined ? speechOptions.similarityBoost : 0.75;
+        const style = speechOptions.style !== undefined ? speechOptions.style : 0.5;
+        const useSpeakerBoost = speechOptions.useSpeakerBoost !== undefined ? speechOptions.useSpeakerBoost : true;
         
-        // Generate audio from ElevenLabs
+        console.log(`Using voice ID: ${voiceId} with parameters:`, { 
+          stability, similarityBoost, style, useSpeakerBoost 
+        });
+        
+        // Generate audio from ElevenLabs with enhanced options
         const result = await elevenLabs.textToSpeech({
           textInput: text,
           fileName: tempFile,
-          stability: 0.5,
-          similarityBoost: 0.75
+          stability,
+          similarityBoost,
+          style,
+          speakerBoost: useSpeakerBoost,
+          // Use modelId for the newest model if available
+          modelId: "eleven_turbo_v2"
         });
         
         console.log("ElevenLabs response:", result);

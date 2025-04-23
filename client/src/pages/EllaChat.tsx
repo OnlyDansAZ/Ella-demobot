@@ -76,6 +76,17 @@ export default function EllaChat() {
   const [useCustomPersona, setUseCustomPersona] = useState(false);
   const [customPersonaText, setCustomPersonaText] = useState(customPersonaTemplate);
   
+  // Voice enhancement states
+  const [isVoiceEnabled, setIsVoiceEnabled] = useState<boolean>(true);
+  const [voiceConfidence, setVoiceConfidence] = useState<number>(0);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  
+  // Refs
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const recognitionRef = useRef<any>(null);
+  const currentAudioRef = useRef<HTMLAudioElement | null>(null);
+  
   // Fetch upcoming appointments
   const fetchAppointments = async () => {
     setIsLoadingAppointments(true);
@@ -100,150 +111,41 @@ export default function EllaChat() {
     }
   };
   
-  // Refs
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-  
-  // Speech recognition setup
-  const recognitionRef = useRef<any>(null);
-  
-  const [isVoiceEnabled, setIsVoiceEnabled] = useState<boolean>(true);
-  const [voiceConfidence, setVoiceConfidence] = useState<number>(0);
-  
-  useEffect(() => {
-    // Initialize speech recognition when component mounts
-    if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      recognitionRef.current = new SpeechRecognition();
-      recognitionRef.current.continuous = true; // Allow continuous listening
-      recognitionRef.current.interimResults = true; // Get interim results for more responsive UI
-      recognitionRef.current.lang = 'en-US';
-      
-      // Set up event handlers with enhanced error recovery
-      recognitionRef.current.onresult = (event: any) => {
-        // Get the last result (most recent speech)
-        const lastResult = event.results[event.results.length - 1];
-        
-        // Check if this is a final result
-        if (lastResult.isFinal) {
-          const transcript = lastResult[0].transcript.trim();
-          const confidence = lastResult[0].confidence;
-          setVoiceConfidence(confidence);
-          
-          console.log(`Speech recognized with ${Math.round(confidence * 100)}% confidence: "${transcript}"`);
-          
-          // Set the recognized speech as input message
-          setInputMessage(transcript);
-          
-          // If confidence is high enough and we're in listening mode, auto-send the message
-          if (confidence > 0.85 && isListening) {
-            // Use a timeout to give visual feedback before sending
-            setTimeout(() => {
-              if (transcript && transcript.length > 0) {
-                sendMessageWithText(transcript);
-              }
-            }, 300);
-          }
-        }
-      };
-      
-      recognitionRef.current.onerror = (event: any) => {
-        console.error('Speech recognition error:', event.error);
-        
-        // Only stop listening on critical errors, try to recover from transient ones
-        if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
-          setIsListening(false);
-          alert('Speech recognition permission was denied. Please allow microphone access.');
-        } else if (event.error === 'aborted') {
-          // User likely aborted manually, just stop
-          setIsListening(false);
-        } else if (event.error === 'network') {
-          console.warn('Network error in speech recognition, trying to restart...');
-          // Try to restart after a brief delay
-          setTimeout(() => {
-            if (isListening) restartListening();
-          }, 1000);
-        } else {
-          // For other errors, we might try to restart recognition if still in listening mode
-          setTimeout(() => {
-            if (isListening) restartListening();
-          }, 1000);
-        }
-      };
-      
-      recognitionRef.current.onend = () => {
-        // Attempt to restart if still in listening mode
-        if (isListening) {
-          restartListening();
-        }
-      };
-    }
+  // Function to process response actions (shared between text and voice input)
+  const processResponseActions = (response: string, userMessage: string) => {
+    // Check if the response contains booking-related content
+    const lowerCaseResponse = response.toLowerCase();
+    const lowerCaseUserMessage = userMessage.toLowerCase();
     
-    // Clean up on unmount
-    return () => {
-      if (recognitionRef.current) {
-        recognitionRef.current.onresult = null;
-        recognitionRef.current.onerror = null;
-        recognitionRef.current.onend = null;
-        
-        try {
-          recognitionRef.current.stop();
-        } catch (e) {
-          // Ignore errors during cleanup
-        }
-      }
-    };
-  }, [isListening]);
-  
-  // Helper function to restart recognition
-  const restartListening = () => {
-    if (recognitionRef.current && isListening) {
-      try {
-        recognitionRef.current.start();
-        console.log('Speech recognition restarted');
-      } catch (error) {
-        console.error('Failed to restart speech recognition:', error);
-        setIsListening(false);
-      }
+    // Show appointments view if user asked about their appointments
+    if (
+      (lowerCaseUserMessage.includes('my appointment') || 
+       lowerCaseUserMessage.includes('my meeting') || 
+       lowerCaseUserMessage.includes('meeting that i have') ||
+       lowerCaseUserMessage.includes('do i have any appointment') ||
+       lowerCaseUserMessage.includes('upcoming appointment') ||
+       lowerCaseUserMessage.includes('check appointment') ||
+       lowerCaseUserMessage.includes('view appointment')) && 
+      !showAppointments
+    ) {
+      // Show the appointments interface
+      setShowAppointments(true);
+    }
+    // Show Calendly widget if response suggests booking a meeting
+    else if (
+      (lowerCaseResponse.includes('calendly') || 
+       lowerCaseResponse.includes('schedule a meeting') || 
+       lowerCaseResponse.includes('booking link') ||
+       lowerCaseResponse.includes('book a time') ||
+       (lowerCaseResponse.includes('appointment') && !lowerCaseResponse.includes('existing appointment'))) && 
+      !showCalendly
+    ) {
+      // Show the Calendly interface
+      setShowCalendly(true);
     }
   };
   
-  const startListening = () => {
-    if (recognitionRef.current) {
-      try {
-        recognitionRef.current.start();
-        setIsListening(true);
-      } catch (error) {
-        console.error('Failed to start speech recognition:', error);
-        
-        // More informative error messages
-        if (error instanceof DOMException && error.name === 'NotAllowedError') {
-          alert('Microphone permission was denied. Please allow microphone access in your browser settings.');
-        } else {
-          alert('Failed to start speech recognition. Please try again or use text input instead.');
-        }
-        setIsListening(false);
-      }
-    } else if (!('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) {
-      alert('Speech recognition is not supported in your browser. Please try using a modern browser like Chrome, Edge, or Safari.');
-      setIsVoiceEnabled(false);
-    } else {
-      alert('Speech recognition failed to initialize. Please refresh the page and try again.');
-    }
-  };
-  
-  const stopListening = () => {
-    if (recognitionRef.current) {
-      try {
-        recognitionRef.current.stop();
-      } catch (error) {
-        console.error('Error stopping speech recognition:', error);
-      }
-    }
-    setIsListening(false);
-  };
-  
-  // Function to send a message with specific text (for voice input)
+  // Function to send a message with specific text (for voice input or text input)
   const sendMessageWithText = async (text: string) => {
     if (!text.trim()) return;
     
@@ -295,51 +197,106 @@ export default function EllaChat() {
     }
   };
   
-  // Function to process response actions (shared between text and voice input)
-  const processResponseActions = (response: string, userMessage: string) => {
-    // Check if the response contains booking-related content
-    const lowerCaseResponse = response.toLowerCase();
-    const lowerCaseUserMessage = userMessage.toLowerCase();
-    
-    // Show appointments view if user asked about their appointments
-    if (
-      (lowerCaseUserMessage.includes('my appointment') || 
-       lowerCaseUserMessage.includes('my meeting') || 
-       lowerCaseUserMessage.includes('meeting that i have') ||
-       lowerCaseUserMessage.includes('do i have any appointment') ||
-       lowerCaseUserMessage.includes('upcoming appointment') ||
-       lowerCaseUserMessage.includes('check appointment') ||
-       lowerCaseUserMessage.includes('view appointment')) && 
-      !showAppointments
-    ) {
-      // Show the appointments interface
-      setShowAppointments(true);
-    }
-    // Show Calendly widget if response suggests booking a meeting
-    else if (
-      (lowerCaseResponse.includes('calendly') || 
-       lowerCaseResponse.includes('schedule a meeting') || 
-       lowerCaseResponse.includes('booking link') ||
-       lowerCaseResponse.includes('book a time') ||
-       (lowerCaseResponse.includes('appointment') && !lowerCaseResponse.includes('existing appointment'))) && 
-      !showCalendly
-    ) {
-      // Show the Calendly interface
-      setShowCalendly(true);
-    }
-  };
-  
-  // Function to send a message using the persistence hook (for text input)
+  // Function to send a message from the input field (wrapper for sendMessageWithText)
   const sendMessage = async () => {
     if (!inputMessage.trim()) return;
-    
-    // Delegate to the shared function
     await sendMessageWithText(inputMessage);
   };
   
-  // Keep track of audio playback state
-  const [isSpeaking, setIsSpeaking] = useState(false);
-  const currentAudioRef = useRef<HTMLAudioElement | null>(null);
+  // Helper function to restart speech recognition
+  const restartListening = () => {
+    if (recognitionRef.current && isListening) {
+      try {
+        recognitionRef.current.start();
+        console.log('Speech recognition restarted');
+      } catch (error) {
+        console.error('Failed to restart speech recognition:', error);
+        setIsListening(false);
+      }
+    }
+  };
+  
+  // Start listening for speech
+  const startListening = () => {
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.start();
+        setIsListening(true);
+      } catch (error) {
+        console.error('Failed to start speech recognition:', error);
+        
+        // More informative error messages
+        if (error instanceof DOMException && error.name === 'NotAllowedError') {
+          alert('Microphone permission was denied. Please allow microphone access in your browser settings.');
+        } else {
+          alert('Failed to start speech recognition. Please try again or use text input instead.');
+        }
+        setIsListening(false);
+      }
+    } else if (!('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) {
+      alert('Speech recognition is not supported in your browser. Please try using a modern browser like Chrome, Edge, or Safari.');
+      setIsVoiceEnabled(false);
+    } else {
+      alert('Speech recognition failed to initialize. Please refresh the page and try again.');
+    }
+  };
+  
+  // Stop listening for speech
+  const stopListening = () => {
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.stop();
+      } catch (error) {
+        console.error('Error stopping speech recognition:', error);
+      }
+    }
+    setIsListening(false);
+  };
+  
+  // Helper function for browser speech synthesis fallback
+  const useBrowserFallbackSpeech = (text: string) => {
+    if (window.speechSynthesis) {
+      try {
+        // Cancel any ongoing speech
+        window.speechSynthesis.cancel();
+        
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.volume = volume / 100;
+        
+        // Attempt to find a female voice for better match to Ella
+        const voices = window.speechSynthesis.getVoices();
+        const femaleVoice = voices.find(voice => 
+          voice.name.includes('female') || 
+          voice.name.includes('Samantha') || 
+          voice.name.includes('Victoria') || 
+          voice.name.includes('Karen')
+        );
+        
+        if (femaleVoice) {
+          utterance.voice = femaleVoice;
+        }
+        
+        // Set state for speaking indicator
+        setIsSpeaking(true);
+        
+        // Handle when speech is done
+        utterance.onend = () => {
+          setIsSpeaking(false);
+        };
+        
+        // Handle errors
+        utterance.onerror = () => {
+          console.error('Browser speech synthesis error');
+          setIsSpeaking(false);
+        };
+        
+        window.speechSynthesis.speak(utterance);
+      } catch (e) {
+        console.error('Browser speech synthesis failed:', e);
+        setIsSpeaking(false);
+      }
+    }
+  };
   
   // Function to play audio response with enhanced handling
   const playAudio = async (text: string) => {
@@ -449,50 +406,91 @@ export default function EllaChat() {
     }
   };
   
-  // Helper function for browser speech synthesis fallback
-  const useBrowserFallbackSpeech = (text: string) => {
-    if (window.speechSynthesis) {
-      try {
-        // Cancel any ongoing speech
-        window.speechSynthesis.cancel();
+  // Initialize speech recognition
+  useEffect(() => {
+    // Initialize speech recognition when component mounts
+    if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      recognitionRef.current = new SpeechRecognition();
+      recognitionRef.current.continuous = true; // Allow continuous listening
+      recognitionRef.current.interimResults = true; // Get interim results for more responsive UI
+      recognitionRef.current.lang = 'en-US';
+      
+      // Set up event handlers with enhanced error recovery
+      recognitionRef.current.onresult = (event: any) => {
+        // Get the last result (most recent speech)
+        const lastResult = event.results[event.results.length - 1];
         
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.volume = volume / 100;
-        
-        // Attempt to find a female voice for better match to Ella
-        const voices = window.speechSynthesis.getVoices();
-        const femaleVoice = voices.find(voice => 
-          voice.name.includes('female') || 
-          voice.name.includes('Samantha') || 
-          voice.name.includes('Victoria') || 
-          voice.name.includes('Karen')
-        );
-        
-        if (femaleVoice) {
-          utterance.voice = femaleVoice;
+        // Check if this is a final result
+        if (lastResult.isFinal) {
+          const transcript = lastResult[0].transcript.trim();
+          const confidence = lastResult[0].confidence;
+          setVoiceConfidence(confidence);
+          
+          console.log(`Speech recognized with ${Math.round(confidence * 100)}% confidence: "${transcript}"`);
+          
+          // Set the recognized speech as input message
+          setInputMessage(transcript);
+          
+          // If confidence is high enough and we're in listening mode, auto-send the message
+          if (confidence > 0.85 && isListening) {
+            // Use a timeout to give visual feedback before sending
+            setTimeout(() => {
+              if (transcript && transcript.length > 0) {
+                sendMessageWithText(transcript);
+              }
+            }, 300);
+          }
         }
+      };
+      
+      recognitionRef.current.onerror = (event: any) => {
+        console.error('Speech recognition error:', event.error);
         
-        // Set state for speaking indicator
-        setIsSpeaking(true);
-        
-        // Handle when speech is done
-        utterance.onend = () => {
-          setIsSpeaking(false);
-        };
-        
-        // Handle errors
-        utterance.onerror = () => {
-          console.error('Browser speech synthesis error');
-          setIsSpeaking(false);
-        };
-        
-        window.speechSynthesis.speak(utterance);
-      } catch (e) {
-        console.error('Browser speech synthesis failed:', e);
-        setIsSpeaking(false);
-      }
+        // Only stop listening on critical errors, try to recover from transient ones
+        if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+          setIsListening(false);
+          alert('Speech recognition permission was denied. Please allow microphone access.');
+        } else if (event.error === 'aborted') {
+          // User likely aborted manually, just stop
+          setIsListening(false);
+        } else if (event.error === 'network') {
+          console.warn('Network error in speech recognition, trying to restart...');
+          // Try to restart after a brief delay
+          setTimeout(() => {
+            if (isListening) restartListening();
+          }, 1000);
+        } else {
+          // For other errors, we might try to restart recognition if still in listening mode
+          setTimeout(() => {
+            if (isListening) restartListening();
+          }, 1000);
+        }
+      };
+      
+      recognitionRef.current.onend = () => {
+        // Attempt to restart if still in listening mode
+        if (isListening) {
+          restartListening();
+        }
+      };
     }
-  };
+    
+    // Clean up on unmount
+    return () => {
+      if (recognitionRef.current) {
+        recognitionRef.current.onresult = null;
+        recognitionRef.current.onerror = null;
+        recognitionRef.current.onend = null;
+        
+        try {
+          recognitionRef.current.stop();
+        } catch (e) {
+          // Ignore errors during cleanup
+        }
+      }
+    };
+  }, [isListening]);
   
   // Load appointments when needed
   useEffect(() => {
@@ -625,31 +623,23 @@ export default function EllaChat() {
                           <ScheduleMeeting 
                             key={type.id}
                             buttonText={type.name}
-                            buttonVariant="default"
+                            buttonClasses="text-xs sm:text-sm py-1 px-3 bg-blue-500 hover:bg-blue-600 text-white rounded transition duration-150 ease-in-out w-full sm:w-auto"
                             calendlyUrl={type.url}
-                            popupTitle={`Schedule: ${type.name}`}
-                            size="md"
+                            prefill={{}}
                           />
                         ))
                       ) : (
-                        <ScheduleMeeting 
-                          buttonText="Schedule Meeting"
-                          buttonVariant="default"
-                          calendlyUrl={calendlyUrl}
-                          popupTitle="Select a time to meet"
-                          size="md"
-                        />
+                        <p className="text-xs text-muted-foreground">Loading available meeting types...</p>
                       )}
                     </div>
                   </div>
                 )}
-                
                 {showAppointments && (
                   <div className="my-4 p-2 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
                     <div className="flex justify-between items-center mb-2">
                       <h3 className="text-xs sm:text-sm font-medium flex items-center gap-1">
                         <Calendar className="h-3 w-3 sm:h-4 sm:w-4" />
-                        Your Appointments
+                        Your Upcoming Appointments
                       </h3>
                       <Button 
                         variant="ghost" 
@@ -660,314 +650,292 @@ export default function EllaChat() {
                         ✕
                       </Button>
                     </div>
-                    
-                    {isLoadingAppointments ? (
-                      <div className="flex justify-center p-4">
-                        <div className="h-4 w-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
-                      </div>
-                    ) : appointments.length > 0 ? (
-                      <div className="space-y-2">
-                        {appointments.map((appointment) => (
-                          <div key={appointment.id} className="p-2 bg-white dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700">
-                            <div className="flex justify-between">
-                              <h4 className="text-xs sm:text-sm font-medium">{appointment.title}</h4>
-                              <Badge 
-                                variant={
-                                  appointment.status === "confirmed" ? "default" : 
-                                  appointment.status === "completed" ? "secondary" : 
-                                  appointment.status === "cancelled" ? "destructive" : 
-                                  "outline"
-                                }
-                                className="text-[8px] px-1 py-0 h-4"
-                              >
-                                {appointment.status}
-                              </Badge>
-                            </div>
-                            
-                            <div className="mt-1 space-y-1">
-                              <div className="flex items-center text-[10px] sm:text-xs text-muted-foreground">
-                                <Calendar className="h-2.5 w-2.5 mr-1" />
-                                <span>
-                                  {new Date(appointment.date).toLocaleDateString()}
-                                </span>
+                    <p className="text-[10px] sm:text-xs text-muted-foreground mb-2">
+                      Here are your upcoming appointments. Ella will remind you about these when needed.
+                    </p>
+                    <div className="space-y-2">
+                      {isLoadingAppointments ? (
+                        <div className="flex justify-center py-4">
+                          <div className="flex space-x-1">
+                            <div className="w-2 h-2 rounded-full bg-blue-500 animate-bounce" style={{ animationDelay: '0ms' }} />
+                            <div className="w-2 h-2 rounded-full bg-blue-500 animate-bounce" style={{ animationDelay: '150ms' }} />
+                            <div className="w-2 h-2 rounded-full bg-blue-500 animate-bounce" style={{ animationDelay: '300ms' }} />
+                          </div>
+                        </div>
+                      ) : appointments.length > 0 ? (
+                        appointments.map(appointment => (
+                          <div key={appointment.id} className="border border-blue-200 dark:border-blue-800 rounded-lg p-2 text-[10px] sm:text-xs">
+                            <div className="flex items-start gap-1">
+                              <div className="bg-blue-100 dark:bg-blue-900 p-1 rounded flex items-center justify-center">
+                                <Calendar className="h-3 w-3 sm:h-4 sm:w-4 text-blue-600 dark:text-blue-400" />
                               </div>
-                              
-                              <div className="flex items-center text-[10px] sm:text-xs text-muted-foreground">
-                                <Clock className="h-2.5 w-2.5 mr-1" />
-                                <span>
-                                  {appointment.startTime}
-                                  {appointment.endTime ? ` - ${appointment.endTime}` : ''}
-                                </span>
-                              </div>
-                              
-                              {appointment.location && (
+                              <div className="flex-1">
+                                <div className="font-medium">{appointment.title}</div>
                                 <div className="flex items-center text-[10px] sm:text-xs text-muted-foreground">
-                                  <MapPin className="h-2.5 w-2.5 mr-1" />
-                                  <span>{appointment.location}</span>
+                                  <Calendar className="h-2.5 w-2.5 mr-1" />
+                                  <span>
+                                    {new Date(appointment.date).toLocaleDateString(undefined, {
+                                      weekday: 'short',
+                                      month: 'short',
+                                      day: 'numeric'
+                                    })}
+                                  </span>
                                 </div>
-                              )}
-                              
-                              {appointment.details && (
-                                <div className="flex items-center text-[10px] sm:text-xs text-muted-foreground mt-1 bg-gray-50 dark:bg-gray-900 p-1 rounded border border-gray-100 dark:border-gray-800">
-                                  <Briefcase className="h-2.5 w-2.5 mr-1 text-blue-500" />
-                                  <span className="font-medium">Bring: {appointment.details}</span>
+                                <div className="flex items-center text-[10px] sm:text-xs text-muted-foreground">
+                                  <Clock className="h-2.5 w-2.5 mr-1" />
+                                  <span>
+                                    {appointment.startTime}
+                                    {appointment.endTime ? ` - ${appointment.endTime}` : ''}
+                                  </span>
                                 </div>
-                              )}
+                                {appointment.location && (
+                                  <div className="flex items-center text-[10px] sm:text-xs text-muted-foreground">
+                                    <MapPin className="h-2.5 w-2.5 mr-1" />
+                                    <span>{appointment.location}</span>
+                                  </div>
+                                )}
+                                {appointment.details && (
+                                  <div className="flex items-center text-[10px] sm:text-xs text-muted-foreground mt-1">
+                                    <Briefcase className="h-2.5 w-2.5 mr-1" />
+                                    <span>Items to bring: {appointment.details}</span>
+                                  </div>
+                                )}
+                                <div className="mt-1">
+                                  <Badge 
+                                    variant={
+                                      appointment.status === 'confirmed' ? 'default' :
+                                      appointment.status === 'pending' ? 'outline' :
+                                      appointment.status === 'completed' ? 'secondary' : 'destructive'
+                                    }
+                                    className="text-[8px] sm:text-[10px] px-1 py-0 h-auto"
+                                  >
+                                    {appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1)}
+                                  </Badge>
+                                </div>
+                              </div>
                             </div>
                           </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="text-center p-2">
-                        <p className="text-xs text-muted-foreground">No upcoming appointments found.</p>
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="mt-2 text-xs"
-                          onClick={() => {
-                            setShowAppointments(false);
-                            setShowCalendly(true);
-                          }}
-                        >
-                          Schedule One Now
-                        </Button>
-                      </div>
-                    )}
+                        ))
+                      ) : (
+                        <div className="flex items-center justify-center p-4 text-center border border-dashed border-gray-300 dark:border-gray-700 rounded-lg">
+                          <div>
+                            <AlertCircle className="h-5 w-5 mx-auto mb-1 text-muted-foreground" />
+                            <p className="text-[10px] sm:text-xs text-muted-foreground">
+                              You don't have any upcoming appointments yet.
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
                 <div ref={messagesEndRef} />
               </div>
             </CardContent>
-            
-            <div className="p-1 sm:p-4 border-t">
-              <div className="flex space-x-1 sm:space-x-2">
+            <div className="p-1 sm:p-3 border-t relative">
+              {/* Voice activity indicator - visible when voice is active */}
+              {isListening && (
+                <div className="absolute left-0 top-0 w-full flex items-center justify-center">
+                  <div className="bg-blue-500/90 text-white px-3 py-1 rounded-b-lg text-xs shadow-md flex items-center gap-2 transform -translate-y-1">
+                    <div className="flex gap-1">
+                      <div className="w-1 h-3 bg-white rounded-full animate-pulse" style={{ animationDelay: '0ms' }}></div>
+                      <div className="w-1 h-4 bg-white rounded-full animate-pulse" style={{ animationDelay: '250ms' }}></div>
+                      <div className="w-1 h-2 bg-white rounded-full animate-pulse" style={{ animationDelay: '500ms' }}></div>
+                      <div className="w-1 h-5 bg-white rounded-full animate-pulse" style={{ animationDelay: '750ms' }}></div>
+                      <div className="w-1 h-3 bg-white rounded-full animate-pulse" style={{ animationDelay: '1000ms' }}></div>
+                    </div>
+                    <span>Listening... {voiceConfidence > 0 ? `(${Math.round(voiceConfidence * 100)}%)` : ''}</span>
+                  </div>
+                </div>
+              )}
+              
+              <div className="flex items-center gap-1 sm:gap-2">
                 <Button
-                  variant={isListening ? 'destructive' : 'outline'}
                   size="icon"
-                  onClick={isListening ? stopListening : startListening}
-                  disabled={isLoading}
-                  className="shrink-0 h-8 w-8 sm:h-10 sm:w-10"
+                  variant="ghost"
+                  className={`h-8 w-8 rounded-full ${isMuted ? 'text-red-500 hover:text-red-600' : ''}`}
+                  onClick={() => setIsMuted(!isMuted)}
                 >
-                  {isListening ? <MicOff className="h-3 w-3 sm:h-4 sm:w-4" /> : <Mic className="h-3 w-3 sm:h-4 sm:w-4" />}
+                  {isMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+                </Button>
+                <Button
+                  size="icon"
+                  variant={isListening ? 'destructive' : 'outline'}
+                  className="h-8 w-8 rounded-full"
+                  onClick={isListening ? stopListening : startListening}
+                  disabled={!isVoiceEnabled}
+                >
+                  {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
                 </Button>
                 <Input
-                  ref={inputRef}
-                  placeholder="Type your message..."
+                  className="flex-1 h-8 text-sm"
+                  placeholder="Type a message to Ella..."
                   value={inputMessage}
                   onChange={(e) => setInputMessage(e.target.value)}
                   onKeyDown={handleKeyPress}
-                  disabled={isLoading || isListening}
-                  className="flex-1 text-xs sm:text-base h-8 sm:h-10"
+                  ref={inputRef}
+                  disabled={isLoading}
                 />
-                <Button 
-                  onClick={sendMessage} 
+                <Button
+                  size="icon"
+                  className="h-8 w-8 rounded-full bg-blue-500 hover:bg-blue-600"
+                  onClick={sendMessage}
                   disabled={isLoading || !inputMessage.trim()}
-                  className="shrink-0 h-8 sm:h-10 px-2 sm:px-4 text-xs sm:text-sm"
                 >
-                  {isLoading ? (
-                    <span className="flex items-center gap-1">
-                      <div className="h-2 w-2 sm:h-4 sm:w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      <span className="hidden sm:inline">Processing</span>
-                    </span>
-                  ) : (
-                    <span className="flex items-center gap-1">
-                      <Send className="h-3 w-3 sm:h-4 sm:w-4" />
-                      <span className="hidden sm:inline">Send</span>
-                    </span>
-                  )}
+                  <Send className="h-4 w-4 text-white" />
                 </Button>
               </div>
+              
+              {/* Speaking indicator - when Ella is speaking */}
+              {isSpeaking && (
+                <div className="mt-2 text-center">
+                  <div className="inline-flex items-center justify-center gap-1 bg-muted rounded-full px-2 py-0.5">
+                    <div className="flex gap-1 items-center">
+                      <div className="w-1 h-2 bg-blue-500 rounded-full animate-pulse" style={{ animationDelay: '0ms' }}></div>
+                      <div className="w-1 h-3 bg-blue-500 rounded-full animate-pulse" style={{ animationDelay: '200ms' }}></div>
+                      <div className="w-1 h-1.5 bg-blue-500 rounded-full animate-pulse" style={{ animationDelay: '400ms' }}></div>
+                      <div className="w-1 h-2.5 bg-blue-500 rounded-full animate-pulse" style={{ animationDelay: '600ms' }}></div>
+                    </div>
+                    <span className="text-[10px] text-muted-foreground ml-1">Ella is speaking...</span>
+                  </div>
+                </div>
+              )}
             </div>
           </Card>
         </div>
         
-        {/* Settings Panel - 1/4 width on desktop, full width on mobile when settings are shown */}
-        <div className={`md:col-span-1 ${showSettingsOnMobile ? 'block' : 'hidden md:block'}`}>
-          <Card className="border rounded-lg shadow-sm h-[80vh] sm:h-[70vh] overflow-y-auto">
-            <CardContent className="p-2 sm:p-4">
-              <div className="flex items-center justify-between">
-                <h2 className="font-semibold text-sm sm:text-lg mb-2 sm:mb-4">Settings</h2>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="md:hidden -mt-1 h-6 w-6 p-0"
-                  onClick={() => setShowSettingsOnMobile(false)}
-                >
-                  <ArrowLeft className="h-3 w-3" />
-                </Button>
+        {/* Settings Panel - 1/4 width on desktop, full width on mobile when toggled */}
+        <div className={`md:col-span-1 ${!showSettingsOnMobile ? 'hidden md:block' : 'block'}`}>
+          <Card className="border rounded-lg shadow-sm p-2 sm:p-4 h-[80vh] sm:h-[70vh] overflow-y-auto">
+            <h2 className="text-sm sm:text-base font-semibold mb-2 sm:mb-4">Settings</h2>
+            
+            <div className="space-y-3 sm:space-y-4">
+              {/* Voice Settings */}
+              <div>
+                <h3 className="text-xs sm:text-sm font-medium mb-1 sm:mb-2 flex items-center gap-1">
+                  <Volume2 className="h-3 w-3 sm:h-4 sm:w-4" /> 
+                  Voice Settings
+                </h3>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-[10px] sm:text-xs">Voice Volume</Label>
+                    <div className="w-[60%]">
+                      <Slider 
+                        defaultValue={[volume]} 
+                        max={100} 
+                        step={1} 
+                        className="h-1.5"
+                        onValueChange={(values) => setVolume(values[0])}
+                      />
+                    </div>
+                    <span className="text-[10px] sm:text-xs w-8 text-right">{volume}%</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="mute-toggle" className="text-[10px] sm:text-xs">Mute Voice</Label>
+                    <Switch 
+                      id="mute-toggle" 
+                      checked={isMuted}
+                      onCheckedChange={setIsMuted}
+                    />
+                  </div>
+                </div>
               </div>
               
-              <div className="space-y-3 sm:space-y-6">
-                <div className="space-y-1 sm:space-y-3">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="voice-toggle" className="text-xs sm:text-base">Voice Output</Label>
-                    <div className="flex items-center gap-1 sm:gap-2">
-                      {isMuted ? <VolumeX className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" /> : <Volume2 className="h-3 w-3 sm:h-4 sm:w-4" />}
-                      <Switch 
-                        id="voice-toggle" 
-                        checked={!isMuted}
-                        onCheckedChange={(checked) => setIsMuted(!checked)}
-                      />
-                    </div>
-                  </div>
-                  
-                  {!isMuted && (
-                    <div className="space-y-1 sm:space-y-2">
-                      <div className="flex justify-between">
-                        <Label htmlFor="volume-slider" className="text-xs sm:text-sm">Volume</Label>
-                        <span className="text-xs sm:text-sm">{volume}%</span>
-                      </div>
-                      <Slider
-                        id="volume-slider"
-                        min={0}
-                        max={100}
-                        step={1}
-                        value={[volume]}
-                        onValueChange={(value) => setVolume(value[0])}
-                      />
-                    </div>
-                  )}
-                </div>
-                
-                <Separator />
-                
-                {/* Persona Settings Section */}
-                <div className="space-y-2 sm:space-y-4">
-                  <div className="flex items-center gap-1 sm:gap-2">
-                    <Brain className="h-3 w-3 sm:h-4 sm:w-4 text-blue-500" />
-                    <h3 className="text-xs sm:text-sm font-medium">Ella's Persona</h3>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    {/* Predefined persona selector */}
-                    <div className={useCustomPersona ? "opacity-50" : ""}>
-                      <Label htmlFor="persona-select" className="text-[10px] sm:text-xs mb-1 block">
-                        Select Predefined Persona
-                      </Label>
+              <Separator />
+              
+              {/* Persona Selection */}
+              <div>
+                <h3 className="text-xs sm:text-sm font-medium mb-1 sm:mb-2 flex items-center gap-1">
+                  <Brain className="h-3 w-3 sm:h-4 sm:w-4" /> 
+                  Ella's Persona
+                </h3>
+                <div className="space-y-2">
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <Label className="text-[10px] sm:text-xs">Predefined Personas</Label>
                       <Select 
-                        value={selectedPersona} 
-                        onValueChange={setSelectedPersona}
+                        value={useCustomPersona ? "" : selectedPersona}
+                        onValueChange={(value) => {
+                          setSelectedPersona(value);
+                          setUseCustomPersona(false);
+                        }}
                         disabled={useCustomPersona}
                       >
-                        <SelectTrigger id="persona-select" className="text-[10px] sm:text-xs h-7 sm:h-9">
-                          <SelectValue placeholder="Choose persona" />
+                        <SelectTrigger className="w-full h-7 text-[10px] sm:text-xs">
+                          <SelectValue placeholder="Select a persona" />
                         </SelectTrigger>
                         <SelectContent>
-                          {predefinedPersonas.map(persona => (
-                            <SelectItem 
-                              key={persona.id} 
-                              value={persona.id}
-                              className="text-[10px] sm:text-xs"
-                            >
-                              {persona.name} - {persona.description}
+                          {Object.keys(predefinedPersonas).map((key) => (
+                            <SelectItem key={key} value={key} className="text-[10px] sm:text-xs">
+                              {predefinedPersonas[key].name}
                             </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
                     </div>
-                    
-                    {/* Toggle for custom persona */}
-                    <div className="flex items-center justify-between mt-2">
-                      <Label htmlFor="custom-persona-toggle" className="text-[10px] sm:text-xs flex items-center gap-1">
-                        <Edit className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                        Use Custom Persona
-                      </Label>
-                      <Switch 
-                        id="custom-persona-toggle"
-                        checked={useCustomPersona}
-                        onCheckedChange={setUseCustomPersona}
+                    <div>
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="custom-toggle" className="text-[10px] sm:text-xs">Custom Persona</Label>
+                        <Switch 
+                          id="custom-toggle" 
+                          checked={useCustomPersona}
+                          onCheckedChange={setUseCustomPersona}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {useCustomPersona && (
+                    <div>
+                      <Label className="text-[10px] sm:text-xs mb-1 block">Custom Instructions</Label>
+                      <Textarea 
+                        placeholder="Enter custom persona instructions..."
+                        className="h-24 text-[10px] sm:text-xs"
+                        value={customPersonaText}
+                        onChange={(e) => setCustomPersonaText(e.target.value)}
                       />
                     </div>
-                    
-                    {/* Custom persona text area */}
-                    {useCustomPersona && (
-                      <div className="mt-2">
-                        <Label htmlFor="custom-persona-text" className="text-[10px] sm:text-xs mb-1 block">
-                          Custom Persona Instructions
-                        </Label>
-                        <Textarea 
-                          id="custom-persona-text"
-                          value={customPersonaText}
-                          onChange={(e) => setCustomPersonaText(e.target.value)}
-                          placeholder="Describe how Ella should behave..."
-                          className="text-[10px] sm:text-xs min-h-[100px] resize-none"
-                        />
-                        <p className="text-[8px] sm:text-[10px] text-muted-foreground mt-1">
-                          These instructions will override Ella's default personality.
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-                
-                <Separator />
-                
-                {/* Memory Management Section */}
-                <div className="space-y-2 sm:space-y-4">
-                  <div className="flex items-center gap-1 sm:gap-2">
-                    <Trash2 className="h-3 w-3 sm:h-4 sm:w-4 text-red-500" />
-                    <h3 className="text-xs sm:text-sm font-medium">Memory Management</h3>
-                  </div>
+                  )}
                   
-                  <div className="space-y-2">
-                    <Button 
-                      variant="destructive" 
-                      size="sm" 
-                      className="text-xs w-full"
-                      onClick={() => {
-                        if (window.confirm('Are you sure you want to clear this conversation? This cannot be undone.')) {
-                          clearConversation();
-                        }
-                      }}
-                    >
-                      Clear Conversation
-                    </Button>
-                    
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="text-xs w-full"
-                      onClick={() => {
-                        if (window.confirm('Start a completely new conversation? This will generate a new session ID.')) {
-                          startNewConversation();
-                        }
-                      }}
-                    >
-                      New Conversation
-                    </Button>
-                  </div>
-                </div>
-                
-                <Separator />
-                
-                <div>
-                  <h3 className="text-[10px] sm:text-sm font-medium mb-1 sm:mb-2">Conversation Tips</h3>
-                  <ul className="text-[10px] sm:text-sm text-muted-foreground space-y-0.5 sm:space-y-2">
-                    <li>• Ask about YoBot's features</li>
-                    <li>• Try scheduling commands</li>
-                    <li>• Ask for tier comparisons</li>
-                    <li>• Ask about voice capabilities</li>
-                    <li>• Test Ella's memory</li>
-                  </ul>
-                </div>
-                
-                <Separator />
-                
-                <div className="text-[8px] sm:text-xs text-muted-foreground">
-                  <p>Using OpenAI GPT-4o and ElevenLabs.</p>
-                  <p className="mt-1">Conversations are securely stored for your convenience.</p>
-                  
-                  <div className="md:hidden mt-3">
-                    <Link href="/">
-                      <Button variant="outline" size="sm" className="w-full flex items-center justify-center gap-1 text-xs h-7 py-0">
-                        <ArrowLeft className="h-3 w-3" />
-                        Back to Home
-                      </Button>
-                    </Link>
-                  </div>
+                  {!useCustomPersona && selectedPersona && (
+                    <div className="text-[9px] sm:text-[10px] text-muted-foreground mt-1 bg-muted p-1.5 rounded">
+                      <div className="font-medium">Description:</div>
+                      <p>{predefinedPersonas[selectedPersona].description}</p>
+                    </div>
+                  )}
                 </div>
               </div>
-            </CardContent>
+              
+              <Separator />
+              
+              {/* Conversation Controls */}
+              <div>
+                <h3 className="text-xs sm:text-sm font-medium mb-1 sm:mb-2 flex items-center gap-1">
+                  <User className="h-3 w-3 sm:h-4 sm:w-4" /> 
+                  Conversation
+                </h3>
+                <div className="space-y-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="w-full text-[10px] sm:text-xs h-7"
+                    onClick={() => clearConversation()}
+                  >
+                    <Trash2 className="h-3 w-3 mr-1" />
+                    Clear Conversation
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="w-full text-[10px] sm:text-xs h-7"
+                    onClick={() => startNewConversation()}
+                  >
+                    <Edit className="h-3 w-3 mr-1" />
+                    Start New Conversation
+                  </Button>
+                </div>
+              </div>
+            </div>
           </Card>
         </div>
       </div>
