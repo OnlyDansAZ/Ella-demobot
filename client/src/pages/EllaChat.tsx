@@ -19,6 +19,8 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { predefinedPersonas, customPersonaTemplate, Persona } from '@/lib/personas';
 import { motion } from 'framer-motion';
+import { ThemeSelector, ThemeOption } from '@/components/ThemeSelector';
+import { applyTheme, applyFontScale, saveThemeSettings, loadThemeSettings } from '@/lib/themeUtils';
 import { ScheduleMeeting } from '@/components/ScheduleMeeting';
 import { Badge } from '@/components/ui/badge';
 import { useCalendly } from '@/hooks/use-calendly';
@@ -81,6 +83,14 @@ export default function EllaChat() {
   const [isVoiceEnabled, setIsVoiceEnabled] = useState<boolean>(true);
   const [voiceConfidence, setVoiceConfidence] = useState<number>(0);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  
+  // Theme state
+  const [currentThemeId, setCurrentThemeId] = useState('default');
+  const [bubbleOpacity, setBubbleOpacity] = useState(1);
+  const [usePrimaryColor, setUsePrimaryColor] = useState(false);
+  const [animationsEnabled, setAnimationsEnabled] = useState(true);
+  const [fontScale, setFontScale] = useState(1);
+  const [showThemeSettings, setShowThemeSettings] = useState(false);
   
   // Refs
   const messagesEndRef = useRef<HTMLDivElement>(null);
