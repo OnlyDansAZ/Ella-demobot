@@ -7,15 +7,107 @@ import {
   type UpdateAppointment 
 } from '@shared/schema';
 
-// In-memory storage for appointments when database is unavailable
-class InMemoryAppointmentStore {
+import * as fs from 'fs';
+import * as path from 'path';
+
+// File-backed storage for appointments when database is unavailable
+class FileBackedAppointmentStore {
   appointments: Map<number, any> = new Map();
   nextId: number = 1;
+  filePath: string = path.join(process.cwd(), 'data', 'appointments.json');
+  
+  constructor() {
+    this.loadFromFile();
+  }
+  
+  // Save appointments to file
+  private saveToFile() {
+    try {
+      // Ensure directory exists
+      const dir = path.dirname(this.filePath);
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+      
+      // Save appointments as JSON
+      fs.writeFileSync(
+        this.filePath, 
+        JSON.stringify({
+          nextId: this.nextId,
+          appointments: Array.from(this.appointments.entries())
+        }, null, 2)
+      );
+    } catch (error) {
+      console.error('Error saving appointments to file:', error);
+    }
+  }
+  
+  // Load appointments from file
+  private loadFromFile() {
+    try {
+      if (fs.existsSync(this.filePath)) {
+        const data = JSON.parse(fs.readFileSync(this.filePath, 'utf8'));
+        
+        // Restore nextId
+        this.nextId = data.nextId || 1;
+        
+        // Restore appointments
+        this.appointments = new Map(data.appointments || []);
+        
+        console.log(`Loaded ${this.appointments.size} appointments from local storage`);
+      } else {
+        // Initialize with sample data
+        this.initializeSampleData();
+      }
+    } catch (error) {
+      console.error('Error loading appointments from file:', error);
+      
+      // Initialize with sample data on error
+      this.initializeSampleData();
+    }
+  }
+  
+  // Initialize with sample data for demo purposes
+  private initializeSampleData() {
+    console.log('Initializing appointment store with sample data');
+    
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    
+    const tomorrowStr = tomorrow.toISOString().split('T')[0];
+    
+    // Sample appointment for demo purposes
+    const sampleAppointment = {
+      id: 1,
+      title: 'Demo Meeting with Client',
+      description: 'Review product features and pricing',
+      date: tomorrowStr,
+      startTime: '14:00:00',
+      endTime: '15:00:00',
+      location: 'Virtual',
+      userId: 1,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      timeZone: 'UTC',
+      status: 'confirmed',
+      metadata: {
+        itemsToBring: ['Presentation materials', 'Product roadmap']
+      }
+    };
+    
+    this.appointments.set(1, sampleAppointment);
+    this.nextId = 2;
+    
+    // Save to file
+    this.saveToFile();
+  }
   
   add(appointment: any): any {
     const id = this.nextId++;
     const newAppointment = { ...appointment, id };
     this.appointments.set(id, newAppointment);
+    
+    this.saveToFile();
     return newAppointment;
   }
   
@@ -29,11 +121,15 @@ class InMemoryAppointmentStore {
     
     const updated = { ...appointment, ...updates };
     this.appointments.set(id, updated);
+    
+    this.saveToFile();
     return updated;
   }
   
   delete(id: number): boolean {
-    return this.appointments.delete(id);
+    const result = this.appointments.delete(id);
+    this.saveToFile();
+    return result;
   }
   
   getAll(): any[] {
@@ -91,8 +187,8 @@ class InMemoryAppointmentStore {
   }
 }
 
-// Create a singleton memory store
-const memoryStore = new InMemoryAppointmentStore();
+// Create a singleton file-backed store
+const memoryStore = new FileBackedAppointmentStore();
 
 /**
  * Service for managing persistent appointment storage
@@ -183,6 +279,10 @@ export class AppointmentStorage {
         updatedAt: new Date()
       };
       
+      if (!isDatabaseAvailable) {
+        throw new Error('Database is not available, using memory store');
+      }
+      
       const [result] = await db
         .update(appointments)
         .set(formattedUpdates)
@@ -195,8 +295,35 @@ export class AppointmentStorage {
       
       return result;
     } catch (error) {
-      console.error('Error updating appointment:', error);
-      throw new Error('Failed to update appointment');
+      console.error('Error updating appointment, using memory store:', error);
+      
+      // Format updates for memory store
+      const memoryUpdates = { ...updates };
+      
+      if (updates.date && typeof updates.date === 'object') {
+        const dateObj = updates.date as Date;
+        memoryUpdates.date = dateObj.toISOString().split('T')[0];
+      }
+      
+      if (updates.startTime) {
+        memoryUpdates.startTime = this.formatTimeString(updates.startTime);
+      }
+      
+      if (updates.endTime) {
+        memoryUpdates.endTime = this.formatTimeString(updates.endTime);
+      }
+      
+      // Fall back to in-memory storage
+      const memoryResult = memoryStore.update(id, memoryUpdates);
+      
+      if (!memoryResult) {
+        throw new Error(`Appointment with ID ${id} not found`);
+      }
+      
+      return {
+        ...memoryResult,
+        date: new Date(memoryResult.date) // Convert back to Date object for consistency
+      } as Appointment;
     }
   }
   
@@ -205,6 +332,10 @@ export class AppointmentStorage {
    */
   async deleteAppointment(id: number): Promise<boolean> {
     try {
+      if (!isDatabaseAvailable) {
+        throw new Error('Database is not available, using memory store');
+      }
+      
       const [result] = await db
         .delete(appointments)
         .where(eq(appointments.id, id))
@@ -212,8 +343,10 @@ export class AppointmentStorage {
       
       return !!result;
     } catch (error) {
-      console.error('Error deleting appointment:', error);
-      throw new Error('Failed to delete appointment');
+      console.error('Error deleting appointment, using memory store:', error);
+      
+      // Fall back to in-memory storage
+      return memoryStore.delete(id);
     }
   }
   
@@ -221,9 +354,13 @@ export class AppointmentStorage {
    * Get all appointments for a specific date
    */
   async getAppointmentsByDate(date: Date): Promise<Appointment[]> {
+    // Convert Date to YYYY-MM-DD string format for comparison
+    const dateStr = date.toISOString().split('T')[0];
+    
     try {
-      // Convert Date to YYYY-MM-DD string format for PostgreSQL date comparison
-      const dateStr = date.toISOString().split('T')[0];
+      if (!isDatabaseAvailable) {
+        throw new Error('Database is not available, using memory store');
+      }
       
       return await db
         .select()
@@ -231,8 +368,16 @@ export class AppointmentStorage {
         .where(eq(appointments.date, dateStr))
         .orderBy(appointments.startTime);
     } catch (error) {
-      console.error('Error getting appointments by date:', error);
-      throw new Error('Failed to get appointments');
+      console.error('Error getting appointments by date, using memory store:', error);
+      
+      // Fall back to in-memory storage
+      const memoryResults = memoryStore.getByDate(dateStr);
+      
+      // Convert dates back to Date objects for consistency
+      return memoryResults.map(appt => ({
+        ...appt,
+        date: new Date(appt.date)
+      })) as Appointment[];
     }
   }
   
@@ -240,13 +385,17 @@ export class AppointmentStorage {
    * Check for conflicting appointments in a time range
    */
   async checkForConflicts(date: Date, startTime: string, endTime?: string): Promise<Appointment[]> {
+    const dateStr = date.toISOString().split('T')[0]; // Convert to YYYY-MM-DD
+    const formattedStartTime = this.formatTimeString(startTime);
+    const formattedEndTime = endTime ? this.formatTimeString(endTime) : undefined;
+    
+    // If no end time is provided, assume it's a 1-hour appointment
+    const effectiveEndTime = formattedEndTime || this.addHoursToTime(formattedStartTime, 1);
+    
     try {
-      const dateStr = date.toISOString().split('T')[0]; // Convert to YYYY-MM-DD
-      const formattedStartTime = this.formatTimeString(startTime);
-      const formattedEndTime = endTime ? this.formatTimeString(endTime) : undefined;
-      
-      // If no end time is provided, assume it's a 1-hour appointment
-      const effectiveEndTime = formattedEndTime || this.addHoursToTime(formattedStartTime, 1);
+      if (!isDatabaseAvailable) {
+        throw new Error('Database is not available, using memory store');
+      }
       
       // Find appointments that overlap with the requested time slot
       return await db
@@ -268,8 +417,16 @@ export class AppointmentStorage {
         )
         .orderBy(appointments.startTime);
     } catch (error) {
-      console.error('Error checking for conflicts:', error);
-      throw new Error('Failed to check for conflicts');
+      console.error('Error checking for conflicts, using memory store:', error);
+      
+      // Fall back to in-memory storage
+      const conflicts = memoryStore.findConflicts(dateStr, formattedStartTime, effectiveEndTime);
+      
+      // Convert dates back to Date objects for consistency
+      return conflicts.map(appt => ({
+        ...appt,
+        date: new Date(appt.date)
+      })) as Appointment[];
     }
   }
   
@@ -277,9 +434,13 @@ export class AppointmentStorage {
    * Get upcoming appointments
    */
   async getUpcomingAppointments(limit: number = 5): Promise<Appointment[]> {
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0]; // Convert to YYYY-MM-DD
+    
     try {
-      const today = new Date();
-      const todayStr = today.toISOString().split('T')[0]; // Convert to YYYY-MM-DD
+      if (!isDatabaseAvailable) {
+        throw new Error('Database is not available, using memory store');
+      }
       
       return await db
         .select()
@@ -288,8 +449,16 @@ export class AppointmentStorage {
         .orderBy(appointments.date) // Order by date first
         .limit(limit);
     } catch (error) {
-      console.error('Error getting upcoming appointments:', error);
-      throw new Error('Failed to get upcoming appointments');
+      console.error('Error getting upcoming appointments, using memory store:', error);
+      
+      // Fall back to in-memory storage
+      const memoryResults = memoryStore.getUpcoming(todayStr, limit);
+      
+      // Convert dates back to Date objects for consistency
+      return memoryResults.map(appt => ({
+        ...appt,
+        date: new Date(appt.date)
+      })) as Appointment[];
     }
   }
   

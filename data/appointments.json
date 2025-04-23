@@ -1,0 +1,28 @@
+{
+  "nextId": 2,
+  "appointments": [
+    [
+      1,
+      {
+        "id": 1,
+        "title": "Demo Meeting with Client",
+        "description": "Review product features and pricing",
+        "date": "2025-04-24",
+        "startTime": "14:00:00",
+        "endTime": "15:00:00",
+        "location": "Virtual",
+        "userId": 1,
+        "createdAt": "2025-04-23T00:14:38.502Z",
+        "updatedAt": "2025-04-23T00:14:38.502Z",
+        "timeZone": "UTC",
+        "status": "confirmed",
+        "metadata": {
+          "itemsToBring": [
+            "Presentation materials",
+            "Product roadmap"
+          ]
+        }
+      }
+    ]
+  ]
+}
