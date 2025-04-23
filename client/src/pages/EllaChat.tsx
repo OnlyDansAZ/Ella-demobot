@@ -17,7 +17,7 @@ import {
   SelectValue 
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { predefinedPersonas, customPersonaTemplate } from '@/lib/personas';
+import { predefinedPersonas, customPersonaTemplate, Persona } from '@/lib/personas';
 import { motion } from 'framer-motion';
 import { ScheduleMeeting } from '@/components/ScheduleMeeting';
 import { Badge } from '@/components/ui/badge';
@@ -569,35 +569,90 @@ export default function EllaChat() {
           <Card className="border rounded-lg shadow-sm h-[80vh] sm:h-[70vh] flex flex-col">
             <CardContent className="flex-1 overflow-y-auto p-1 sm:p-4">
               <div className="space-y-2 sm:space-y-4">
-                {messages.map((message) => (
-                  <div
+                {messages.map((message, index) => (
+                  <motion.div
                     key={message.id}
                     className={`flex ${message.isUser ? 'justify-end' : 'justify-start'}`}
+                    initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    transition={{ 
+                      duration: 0.3, 
+                      ease: "easeOut",
+                      delay: 0.05 * Math.min(index, 3) // Cap the delay for older messages
+                    }}
                   >
-                    <div
+                    <motion.div
                       className={`max-w-[90%] sm:max-w-[80%] rounded-lg p-1.5 sm:p-3 ${
                         message.isUser
-                          ? 'bg-blue-500 text-white rounded-br-none'
-                          : 'bg-muted rounded-bl-none'
+                          ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-br-none shadow-sm'
+                          : 'bg-gradient-to-r from-gray-50 to-blue-50 dark:from-gray-900/70 dark:to-blue-900/40 rounded-bl-none border border-blue-100/50 dark:border-blue-800/30 shadow-sm'
                       }`}
+                      initial={{ opacity: 0, x: message.isUser ? 20 : -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ 
+                        duration: 0.3,
+                        type: "spring",
+                        stiffness: 500,
+                        damping: 25,
+                        delay: 0.05 * Math.min(index, 3) + 0.1 
+                      }}
+                      whileHover={{ scale: 1.01 }}
                     >
-                      <p className="whitespace-pre-wrap text-xs sm:text-base">{message.content}</p>
-                      <div className={`text-[8px] sm:text-xs mt-1 ${message.isUser ? 'text-blue-100' : 'text-muted-foreground'}`}>
+                      <motion.p 
+                        className="whitespace-pre-wrap text-xs sm:text-base"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ duration: 0.3, delay: 0.2 }}
+                      >
+                        {message.content}
+                      </motion.p>
+                      <motion.div 
+                        className={`text-[8px] sm:text-xs mt-1 ${message.isUser ? 'text-blue-100' : 'text-muted-foreground'}`}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ duration: 0.3, delay: 0.3 }}
+                      >
                         {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </div>
-                    </div>
-                  </div>
+                      </motion.div>
+                    </motion.div>
+                  </motion.div>
                 ))}
                 {isLoading && (
-                  <div className="flex justify-start">
-                    <div className="max-w-[90%] sm:max-w-[80%] rounded-lg p-1.5 sm:p-3 bg-muted rounded-bl-none">
-                      <div className="flex space-x-1 sm:space-x-2">
-                        <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-blue-500 animate-bounce" style={{ animationDelay: '0ms' }} />
-                        <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-blue-500 animate-bounce" style={{ animationDelay: '150ms' }} />
-                        <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-blue-500 animate-bounce" style={{ animationDelay: '300ms' }} />
+                  <motion.div 
+                    className="flex justify-start"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <motion.div 
+                      className="max-w-[90%] sm:max-w-[80%] rounded-lg p-2 sm:p-3 bg-gradient-to-r from-gray-50 to-blue-50 dark:from-gray-900/70 dark:to-blue-900/40 rounded-bl-none border border-blue-100/50 dark:border-blue-800/30 shadow-sm"
+                      animate={{ boxShadow: ["0 0 0 rgba(59, 130, 246, 0)", "0 0 8px rgba(59, 130, 246, 0.3)", "0 0 0 rgba(59, 130, 246, 0)"] }}
+                      transition={{ duration: 2, repeat: Infinity }}
+                    >
+                      <div className="flex items-center gap-2">
+                        <div className="flex space-x-1 sm:space-x-1.5">
+                          <motion.div 
+                            className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-blue-500"
+                            animate={{ scale: [0.5, 1, 0.5], opacity: [0.5, 1, 0.5] }}
+                            transition={{ duration: 1.5, repeat: Infinity, delay: 0 }}
+                          />
+                          <motion.div 
+                            className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-blue-500"
+                            animate={{ scale: [0.5, 1, 0.5], opacity: [0.5, 1, 0.5] }}
+                            transition={{ duration: 1.5, repeat: Infinity, delay: 0.2 }}
+                          />
+                          <motion.div 
+                            className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-blue-500"
+                            animate={{ scale: [0.5, 1, 0.5], opacity: [0.5, 1, 0.5] }}
+                            transition={{ duration: 1.5, repeat: Infinity, delay: 0.4 }}
+                          />
+                        </div>
+                        <span className="text-[10px] sm:text-xs text-blue-600 dark:text-blue-400 font-medium">
+                          Ella is thinking...
+                        </span>
                       </div>
-                    </div>
-                  </div>
+                    </motion.div>
+                  </motion.div>
                 )}
                 {showCalendly && (
                   <div className="my-4 p-2 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
@@ -656,13 +711,62 @@ export default function EllaChat() {
                     </p>
                     <div className="space-y-2">
                       {isLoadingAppointments ? (
-                        <div className="flex justify-center py-4">
-                          <div className="flex space-x-1">
-                            <div className="w-2 h-2 rounded-full bg-blue-500 animate-bounce" style={{ animationDelay: '0ms' }} />
-                            <div className="w-2 h-2 rounded-full bg-blue-500 animate-bounce" style={{ animationDelay: '150ms' }} />
-                            <div className="w-2 h-2 rounded-full bg-blue-500 animate-bounce" style={{ animationDelay: '300ms' }} />
+                        <motion.div 
+                          className="flex justify-center py-4"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          transition={{ duration: 0.3 }}
+                        >
+                          <div className="flex items-center gap-2">
+                            <div className="flex space-x-1.5">
+                              <motion.div 
+                                className="w-2 h-2 rounded-full bg-blue-500"
+                                animate={{ 
+                                  scale: [0.5, 1, 0.5],
+                                  opacity: [0.5, 1, 0.5]
+                                }}
+                                transition={{ 
+                                  duration: 1.5, 
+                                  repeat: Infinity, 
+                                  ease: "easeInOut",
+                                  times: [0, 0.5, 1],
+                                  delay: 0
+                                }}
+                              />
+                              <motion.div 
+                                className="w-2 h-2 rounded-full bg-blue-500"
+                                animate={{ 
+                                  scale: [0.5, 1, 0.5],
+                                  opacity: [0.5, 1, 0.5]
+                                }}
+                                transition={{ 
+                                  duration: 1.5, 
+                                  repeat: Infinity,
+                                  ease: "easeInOut", 
+                                  times: [0, 0.5, 1],
+                                  delay: 0.2
+                                }}
+                              />
+                              <motion.div 
+                                className="w-2 h-2 rounded-full bg-blue-500"
+                                animate={{ 
+                                  scale: [0.5, 1, 0.5],
+                                  opacity: [0.5, 1, 0.5]
+                                }}
+                                transition={{ 
+                                  duration: 1.5, 
+                                  repeat: Infinity,
+                                  ease: "easeInOut",
+                                  times: [0, 0.5, 1],
+                                  delay: 0.4
+                                }}
+                              />
+                            </div>
+                            <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">
+                              Loading appointments...
+                            </span>
                           </div>
-                        </div>
+                        </motion.div>
                       ) : appointments.length > 0 ? (
                         appointments.map(appointment => (
                           <div key={appointment.id} className="border border-blue-200 dark:border-blue-800 rounded-lg p-2 text-[10px] sm:text-xs">
