@@ -1339,6 +1339,12 @@ export default function EllaChat() {
                 >
                   <Image className="h-4 w-4" />
                 </Button>
+                <QuickCallButton 
+                  buttonStyle="icon"
+                  className="h-8 w-8 rounded-full bg-blue-100 hover:bg-blue-200 text-blue-600 ml-1"
+                  latestMessage={inputMessage.trim() ? inputMessage : undefined}
+                  persona={currentPersona?.id || 'default'}
+                />
                 <Button
                   size="icon"
                   className="h-8 w-8 rounded-full bg-blue-500 hover:bg-blue-600 ml-1"
