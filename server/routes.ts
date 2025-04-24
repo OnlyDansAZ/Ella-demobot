@@ -6,7 +6,7 @@ import ElevenLabs from "elevenlabs-node";
 import fs from 'fs-extra';
 import path from 'path';
 import os from 'os';
-import { generateResponse, getFallbackResponse } from './openai';
+import { generateResponse, getFallbackResponse, generateImage } from './openai';
 import documentRoutes from './routes/documentRoutes';
 import calendlyRouter from './routes/calendlyRoutes';
 import appointmentRoutes from './routes/appointmentRoutes';
@@ -275,6 +275,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ 
         success: false,
         error: "Internal server error", 
+        details: err instanceof Error ? err.message : String(err)
+      });
+    }
+  });
+
+  // Image generation endpoint using DALL-E 3
+  app.post("/api/images/generate", async (req, res) => {
+    try {
+      const { prompt, size } = req.body;
+      
+      if (!prompt) {
+        return res.status(400).json({ 
+          success: false, 
+          error: "Please provide a prompt description for the image" 
+        });
+      }
+      
+      // Check if OpenAI API key is available
+      if (!process.env.OPENAI_API_KEY) {
+        return res.status(500).json({ 
+          success: false, 
+          error: "OpenAI API key is not configured" 
+        });
+      }
+      
+      // Generate the image
+      try {
+        console.log(`Generating image with prompt: "${prompt}"`);
+        const imageUrl = await generateImage(prompt, size);
+        
+        res.json({ 
+          success: true, 
+          imageUrl,
+          prompt 
+        });
+      } catch (openaiError) {
+        console.error("OpenAI image generation error:", openaiError);
+        res.status(500).json({ 
+          success: false, 
+          error: "Failed to generate image",
+          details: openaiError instanceof Error ? openaiError.message : String(openaiError)
+        });
+      }
+    } catch (err) {
+      console.error("Image generation API error:", err);
+      res.status(500).json({ 
+        success: false, 
+        error: "Internal server error",
         details: err instanceof Error ? err.message : String(err)
       });
     }

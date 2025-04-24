@@ -945,6 +945,41 @@ function identifyCriticalMessages(messages: ChatMessage[]): string[] {
   return criticalMessages;
 }
 
+/**
+ * Generate an image using DALL-E 3 based on a text prompt
+ * @param prompt The text description of the image to generate
+ * @param size The size of the image (default: "1024x1024")
+ * @returns URL of the generated image
+ */
+export async function generateImage(prompt: string, size: "1024x1024" | "1792x1024" | "1024x1792" = "1024x1024"): Promise<string> {
+  try {
+    console.log(`Generating image with prompt: "${prompt}"`);
+    
+    // Add prompt enhancement for better results
+    const enhancedPrompt = `High quality, detailed image of ${prompt}. Photorealistic, detailed lighting, professional quality.`;
+    
+    const response = await openai.images.generate({
+      model: "dall-e-3", // Latest DALL-E model
+      prompt: enhancedPrompt,
+      n: 1, // Generate one image
+      size: size,
+      quality: "standard",
+      response_format: "url",
+    });
+    
+    console.log("Image generation successful");
+    
+    if (response.data && response.data[0].url) {
+      return response.data[0].url;
+    } else {
+      throw new Error("No image URL in response");
+    }
+  } catch (error: any) {
+    console.error("Error generating image:", error);
+    throw new Error(`Failed to generate image: ${error.message || 'Unknown error'}`);
+  }
+}
+
 // For testing without making API calls
 export function getFallbackResponse(userMessage: string): string {
   const lowerCaseMessage = userMessage.toLowerCase();
