@@ -125,13 +125,21 @@ export default function AICaller() {
     isDefault?: boolean;
   }
   
+  interface PersonasResponse {
+    success: boolean;
+    personas: Persona[];
+  }
+  
   const {
-    data: personas = [] as Persona[],
+    data: personasResponse,
     isLoading: isPersonasLoading,
-  } = useQuery<Persona[]>({
+  } = useQuery<PersonasResponse>({
     queryKey: ['/api/personas'],
     retry: 1,
   });
+  
+  // Extract personas array from response
+  const personas = personasResponse?.personas || [];
   
   // Form setup
   const form = useForm<PhoneCallFormValues>({
@@ -358,11 +366,14 @@ export default function AICaller() {
                                 {isPersonasLoading ? (
                                   <SelectItem value="loading">Loading personas...</SelectItem>
                                 ) : (
-                                  personas.map((persona: any) => (
+                                  Array.isArray(personas) ? personas.map((persona: any) => (
                                     <SelectItem key={persona.id} value={persona.id}>
                                       {persona.name}
                                     </SelectItem>
-                                  ))
+                                  )) : (
+                                    // Fallback if the response structure is different
+                                    <SelectItem value="default">Default Persona</SelectItem>
+                                  )
                                 )}
                               </SelectContent>
                             </Select>
