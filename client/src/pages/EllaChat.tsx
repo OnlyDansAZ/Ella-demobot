@@ -1207,9 +1207,9 @@ export default function EllaChat() {
                           <SelectValue placeholder="Select a persona" />
                         </SelectTrigger>
                         <SelectContent>
-                          {Object.keys(predefinedPersonas).map((key) => (
-                            <SelectItem key={key} value={key} className="text-[10px] sm:text-xs">
-                              {predefinedPersonas[key].name}
+                          {predefinedPersonas.map((persona) => (
+                            <SelectItem key={persona.id} value={persona.id} className="text-[10px] sm:text-xs">
+                              {persona.name}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -1242,7 +1242,7 @@ export default function EllaChat() {
                   {!useCustomPersona && selectedPersona && (
                     <div className="text-[9px] sm:text-[10px] text-muted-foreground mt-1 bg-muted p-1.5 rounded">
                       <div className="font-medium">Description:</div>
-                      <p>{predefinedPersonas[selectedPersona].description}</p>
+                      <p>{predefinedPersonas.find(p => p.id === selectedPersona)?.description || 'Helpful AI assistant'}</p>
                     </div>
                   )}
                 </div>
