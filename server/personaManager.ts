@@ -309,32 +309,78 @@ Prioritize clarity in your explanations while maintaining technical precision.`,
   }
   
   /**
-   * Get the default persona
+   * Get the default persona with enhanced error handling
    */
   getDefaultPersona(): Persona {
-    // Find persona marked as default
-    const defaultPersona = Array.from(this.personas.values())
-      .find(p => p.isDefault);
-    
-    // If found, return it
-    if (defaultPersona) {
-      return defaultPersona;
+    try {
+      // Try to find a persona explicitly marked as default
+      let defaultPersona: Persona | undefined;
+      
+      try {
+        defaultPersona = Array.from(this.personas.values())
+          .find(p => p.isDefault);
+      } catch (error) {
+        console.error('Error finding default persona:', error);
+      }
+      
+      // If found, return it
+      if (defaultPersona) {
+        console.log(`Using default persona: ${defaultPersona.name}`);
+        return defaultPersona;
+      }
+      
+      // Otherwise, try to get the first persona from the map
+      let firstPersona: Persona | undefined;
+      
+      try {
+        const personasArray = Array.from(this.personas.values());
+        firstPersona = personasArray.length > 0 ? personasArray[0] : undefined;
+      } catch (error) {
+        console.error('Error getting first persona:', error);
+      }
+      
+      if (firstPersona) {
+        console.log(`No default persona found, using first available: ${firstPersona.name}`);
+        return firstPersona;
+      }
+      
+      // Last resort fallback to a basic built-in persona if nothing else is available
+      console.warn('No personas available, using built-in fallback persona');
+      return {
+        id: 'default',
+        name: 'Standard Ella',
+        description: 'The default helpful assistant personality.',
+        systemPrompt: 'You are a helpful AI assistant named Ella. You aim to be friendly, helpful, and concise while providing valuable information to users.',
+        isDefault: true,
+        // Add basic voice settings for the fallback
+        voiceSettings: {
+          stability: 0.5,
+          similarityBoost: 0.75,
+          style: 0.5,
+          useSpeakerBoost: true,
+          voiceId: "KgleQSAupUuS391XuXpI" // Default Ella voice
+        },
+        // Add basic behavior modifiers for the fallback
+        behaviorModifiers: {
+          usesEmojis: false,
+          verbosity: 0.5,
+          formality: 0.5,
+          creativity: 0.5,
+          persuasiveness: 0.5,
+          usesBulletPoints: false
+        }
+      };
+    } catch (error) {
+      console.error('Serious error in getDefaultPersona:', error);
+      // Absolute last resort emergency fallback
+      return {
+        id: 'emergency-fallback',
+        name: 'Standard Ella',
+        description: 'Emergency fallback personality.',
+        systemPrompt: 'You are a helpful AI assistant named Ella.',
+        isDefault: true
+      };
     }
-    
-    // Otherwise, return the first persona or create a basic one
-    const firstPersona = Array.from(this.personas.values())[0];
-    if (firstPersona) {
-      return firstPersona;
-    }
-    
-    // Fallback to a basic persona if there are none
-    return {
-      id: 'default',
-      name: 'Standard Ella',
-      description: 'The default helpful assistant personality.',
-      systemPrompt: 'You are a helpful AI assistant named Ella.',
-      isDefault: true
-    };
   }
   
   /**
@@ -444,20 +490,40 @@ Prioritize clarity in your explanations while maintaining technical precision.`,
   }
   
   /**
-   * Get the active persona for a session
+   * Get the active persona for a session with enhanced error handling
    */
   getSessionPersona(sessionId: string): Persona {
-    const personaId = this.currentSessionPersonas.get(sessionId);
-    
-    if (personaId) {
-      const persona = this.personas.get(personaId);
-      if (persona) {
-        return persona;
+    try {
+      // Check for valid input
+      if (!sessionId) {
+        console.warn('getSessionPersona called with empty sessionId, returning default persona');
+        return this.getDefaultPersona();
       }
+      
+      // Get the persona ID for this session
+      const personaId = this.currentSessionPersonas.get(sessionId);
+      
+      if (personaId) {
+        // Log which persona we're using for this session
+        console.log(`Using persona: ${personaId}`);
+        
+        const persona = this.personas.get(personaId);
+        if (persona) {
+          return persona;
+        } else {
+          console.warn(`Persona with ID ${personaId} not found in personas map, using default instead`);
+        }
+      } else {
+        console.log(`No persona set for session ${sessionId.substring(0, 8)}..., using default`);
+      }
+      
+      // Fall back to default persona if none set or not found
+      return this.getDefaultPersona();
+    } catch (error) {
+      console.error('Error in getSessionPersona:', error);
+      // Return the default persona as a fallback in case of any error
+      return this.getDefaultPersona();
     }
-    
-    // Fall back to default persona if none set or not found
-    return this.getDefaultPersona();
   }
   
   /**
