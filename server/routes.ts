@@ -174,7 +174,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
   
-  // ElevenLabs text-to-speech endpoint with enhanced options
+  // ElevenLabs text-to-speech endpoint with persona-specific voice settings
   app.post("/api/speech", async (req, res) => {
     try {
       // Access ElevenLabs API key from environment
@@ -187,7 +187,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      let { text, options } = req.body;
+      let { text, options, sessionId, personaId } = req.body;
       
       if (!text) {
         return res.status(400).json({ 
@@ -196,8 +196,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Default options if not provided
-      const speechOptions = options || {};
+      // Get persona-specific voice settings if available
+      let voiceSettings;
+      
+      if (sessionId) {
+        // If session ID is provided, get the persona associated with this session
+        const sessionPersona = personaManager.getSessionPersona(sessionId);
+        if (sessionPersona && sessionPersona.voiceSettings) {
+          voiceSettings = sessionPersona.voiceSettings;
+          console.log(`Using voice settings from session persona: ${sessionPersona.name}`);
+        }
+      } else if (personaId) {
+        // If persona ID is directly provided, use that persona's voice settings
+        const specificPersona = personaManager.getPersona(personaId);
+        if (specificPersona && specificPersona.voiceSettings) {
+          voiceSettings = specificPersona.voiceSettings;
+          console.log(`Using voice settings from specific persona: ${specificPersona.name}`);
+        }
+      }
+      
+      // Fallback to provided options or defaults if no persona voice settings
+      const speechOptions = voiceSettings || options || {};
       
       // Process text to improve speech readability
       // Replace bullet points and similar characters with proper phrases for better speech
@@ -214,8 +233,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Create temp file path for audio
       const tempFile = path.join(os.tmpdir(), `speech-${Date.now()}.mp3`);
       
-      // Using the user-provided voice ID for Ella
-      const voiceId = "KgleQSAupUuS391XuXpI";
+      // Using either persona-specific voice ID or the default Ella voice
+      const voiceId = speechOptions.voiceId || "KgleQSAupUuS391XuXpI";
       
       try {
         console.log("Generating speech with ElevenLabs");
@@ -226,7 +245,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           voiceId: voiceId
         });
         
-        // Configure speech parameters with either defaults or user-provided options
+        // Configure speech parameters with either persona-specific, user-provided, or defaults
         const stability = speechOptions.stability !== undefined ? speechOptions.stability : 0.5;
         const similarityBoost = speechOptions.similarityBoost !== undefined ? speechOptions.similarityBoost : 0.75;
         const style = speechOptions.style !== undefined ? speechOptions.style : 0.5;
@@ -236,7 +255,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           stability, similarityBoost, style, useSpeakerBoost 
         });
         
-        // Generate audio from ElevenLabs with enhanced options
+        // Generate audio from ElevenLabs with persona-specific options
         const result = await elevenLabs.textToSpeech({
           textInput: text,
           fileName: tempFile,

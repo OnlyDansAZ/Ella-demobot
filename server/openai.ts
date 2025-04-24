@@ -656,25 +656,109 @@ export async function generateResponse(
     // Add the new user message
     messages.push({ role: "user", content: userMessage });
     
-    // STEP 9: GENERATE RESPONSE WITH OPTIMIZED PARAMETERS
-    // Adjust temperature based on the nature of the query for optimal response style
+    // STEP 9: GENERATE RESPONSE WITH PERSONA-SPECIFIC BEHAVIOR MODIFIERS
+    // Default parameters
     let temperature = 0.3; // Default low temperature for factual responses
+    let maxTokens = 400;   // Default token limit
+    let topP = 0.95;       // Default top_p value
     
-    // For casual conversation or emotional support, use slightly higher temperature
-    if (userTone === 'casual' || userTone === 'seeking reassurance' || 
-        personaDescription.toLowerCase().includes('casual') || 
-        personaDescription.toLowerCase().includes('friendly')) {
-      temperature = 0.5;
+    // Get behavior modifiers from the persona if available
+    let behaviorModifiers = null;
+    let preferredResponseFormat = null;
+    
+    // If we have a session ID, check for persona-specific behavior modifiers
+    if (sessionId) {
+      const sessionPersona = personaManager.getSessionPersona(sessionId);
+      if (sessionPersona && sessionPersona.behaviorModifiers) {
+        behaviorModifiers = sessionPersona.behaviorModifiers;
+        console.log(`Using behavior modifiers from persona: ${sessionPersona.name}`);
+        
+        // Extract the preferred response format instruction if specified
+        if (behaviorModifiers.preferredResponseFormat) {
+          preferredResponseFormat = behaviorModifiers.preferredResponseFormat;
+        }
+      }
     }
     
-    // Call OpenAI API with optimized parameters
+    // Apply behavioral modifiers to the message generation parameters
+    if (behaviorModifiers) {
+      // Adjust temperature based on personality traits
+      // Higher creativity -> higher temperature
+      if (behaviorModifiers.creativity !== undefined) {
+        temperature = 0.2 + (behaviorModifiers.creativity * 0.5); // Range from 0.2 to 0.7
+      }
+      
+      // Adjust max tokens based on verbosity
+      // Higher verbosity -> more tokens
+      if (behaviorModifiers.verbosity !== undefined) {
+        maxTokens = 200 + Math.round(behaviorModifiers.verbosity * 600); // Range from 200 to 800
+      }
+      
+      // Add emojis instruction if this persona uses them
+      if (behaviorModifiers.usesEmojis) {
+        messages.push({ 
+          role: "system", 
+          content: "Include appropriate emojis in your response to add personality and emotion. Use them naturally, not excessively."
+        });
+      }
+      
+      // Add bullet points instruction if this persona uses them
+      if (behaviorModifiers.usesBulletPoints) {
+        messages.push({ 
+          role: "system", 
+          content: "When providing multiple points or listing information, use bullet points or numbered lists for clarity and organization."
+        });
+      }
+      
+      // Add formality instruction based on formality level
+      if (behaviorModifiers.formality !== undefined) {
+        if (behaviorModifiers.formality > 0.7) {
+          messages.push({ 
+            role: "system", 
+            content: "Use a formal, professional tone. Avoid contractions, slang, or casual expressions."
+          });
+        } else if (behaviorModifiers.formality < 0.3) {
+          messages.push({ 
+            role: "system", 
+            content: "Use a casual, conversational tone. Feel free to use contractions and everyday language."
+          });
+        }
+      }
+      
+      // Add persuasiveness instruction based on persuasiveness level
+      if (behaviorModifiers.persuasiveness !== undefined && behaviorModifiers.persuasiveness > 0.6) {
+        messages.push({ 
+          role: "system", 
+          content: "Frame your response in a persuasive manner. Highlight benefits, address potential concerns, and include a subtle call-to-action where appropriate."
+        });
+      }
+      
+      // Add the preferred response format instruction if specified
+      if (preferredResponseFormat) {
+        messages.push({ 
+          role: "system", 
+          content: `FORMAT INSTRUCTION: ${preferredResponseFormat}`
+        });
+      }
+    } else {
+      // Legacy behavior - adjust temperature based on persona description
+      if (userTone === 'casual' || userTone === 'seeking reassurance' || 
+          personaDescription.toLowerCase().includes('casual') || 
+          personaDescription.toLowerCase().includes('friendly')) {
+        temperature = 0.5;
+      }
+    }
+    
+    // Log the parameters being used
+    console.log(`Generating response with parameters: temperature=${temperature.toFixed(2)}, maxTokens=${maxTokens}, topP=${topP}`);
+    
+    // Call OpenAI API with persona-specific parameters
     const completion = await openai.chat.completions.create({
       model: MODEL,
       messages: messages,
-      max_tokens: 400, // Increased max tokens for more detailed responses
+      max_tokens: maxTokens,
       temperature: temperature,
-      // Add top_p for more controlled response diversity
-      top_p: 0.95
+      top_p: topP
     });
     
     // Extract and return the response
