@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import { Link } from 'wouter';
-import { LockKeyhole, ArrowLeft, Image, FileText } from 'lucide-react';
+import { LockKeyhole, ArrowLeft, Image, FileText, Phone } from 'lucide-react';
 
 export default function Admin() {
   const [isAuthenticated, setIsAuthenticated] = useState(true); // For demo, default to authenticated
@@ -164,6 +164,37 @@ export default function Admin() {
                       </Button>
                     </Link>
                   </div>
+                </div>
+              </div>
+            </div>
+            
+            <div>
+              <h2 className="text-2xl font-semibold mb-4">AI Phone Calls</h2>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="rounded-md bg-[#0D82DA]/10 border border-[#0D82DA]/30 p-4 flex flex-col justify-between">
+                  <div>
+                    <h3 className="font-medium text-[#0D82DA]">Outbound Call Manager</h3>
+                    <p className="text-sm text-[#0956a3] mt-2">Let Ella make phone calls to follow up with leads, confirm appointments, or deliver personalized messages</p>
+                  </div>
+                  <div className="mt-4">
+                    <Link href="/ai-caller">
+                      <Button className="w-full flex items-center justify-center gap-2 bg-[#0D82DA] hover:bg-[#0956a3]">
+                        <Phone className="h-4 w-4" />
+                        <span>Manage AI Calls</span>
+                      </Button>
+                    </Link>
+                  </div>
+                </div>
+                
+                <div className="rounded-md bg-muted p-4">
+                  <h3 className="font-medium">Call Features</h3>
+                  <ul className="text-sm mt-2 space-y-1 list-disc pl-4">
+                    <li>Natural voice outbound calls</li>
+                    <li>Call scripting with preview</li>
+                    <li>Call history and analytics</li>
+                    <li>Persona-specific voices</li>
+                    <li>Twilio integration</li>
+                  </ul>
                 </div>
               </div>
             </div>

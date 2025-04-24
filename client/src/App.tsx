@@ -12,6 +12,7 @@ import DemoDashboard from "@/pages/DemoDashboard";
 import WhiteLabelGenerator from "@/pages/WhiteLabelGenerator";
 import LaunchPage from "@/pages/LaunchPage";
 import BookDemo from "@/pages/BookDemo";
+import AICaller from "@/pages/AICaller";
 
 function Router() {
   return (
@@ -25,6 +26,7 @@ function Router() {
       <Route path="/demo-dashboard" component={DemoDashboard} />
       <Route path="/white-label" component={WhiteLabelGenerator} />
       <Route path="/book-demo" component={BookDemo} />
+      <Route path="/ai-caller" component={AICaller} />
       <Route component={NotFound} />
     </Switch>
   );

@@ -108,19 +108,27 @@ export default function AICaller() {
   
   // Fetch call history
   const {
-    data: callHistory = [],
+    data: callHistory = [] as CallRecord[],
     isLoading: isHistoryLoading,
     error: historyError,
-  } = useQuery({
+  } = useQuery<CallRecord[]>({
     queryKey: ['/api/phone-call/history'],
     retry: 1,
   });
   
   // Fetch personas for the dropdown
+  interface Persona {
+    id: string;
+    name: string;
+    description: string;
+    systemPrompt: string;
+    isDefault?: boolean;
+  }
+  
   const {
-    data: personas = [],
+    data: personas = [] as Persona[],
     isLoading: isPersonasLoading,
-  } = useQuery({
+  } = useQuery<Persona[]>({
     queryKey: ['/api/personas'],
     retry: 1,
   });
