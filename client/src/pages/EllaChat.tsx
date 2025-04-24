@@ -1518,18 +1518,18 @@ export default function EllaChat() {
                     <div>
                       <Label className="text-[10px] sm:text-xs">Predefined Personas</Label>
                       <Select 
-                        value={useCustomPersona ? "" : selectedPersona}
+                        value={useCustomPersona ? "" : (currentPersona?.id || "")}
                         onValueChange={(value) => {
-                          setSelectedPersona(value);
+                          setPersona(value);
                           setUseCustomPersona(false);
                         }}
-                        disabled={useCustomPersona}
+                        disabled={useCustomPersona || isLoadingPersona}
                       >
                         <SelectTrigger className="w-full h-7 text-[10px] sm:text-xs">
                           <SelectValue placeholder="Select a persona" />
                         </SelectTrigger>
                         <SelectContent>
-                          {predefinedPersonas.map((persona) => (
+                          {personas.map((persona) => (
                             <SelectItem key={persona.id} value={persona.id} className="text-[10px] sm:text-xs">
                               {persona.name}
                             </SelectItem>
@@ -1543,7 +1543,14 @@ export default function EllaChat() {
                         <Switch 
                           id="custom-toggle" 
                           checked={useCustomPersona}
-                          onCheckedChange={setUseCustomPersona}
+                          onCheckedChange={(checked) => {
+                            setUseCustomPersona(checked);
+                            if (!checked) {
+                              // Reset to default when unchecking custom persona
+                              resetToDefaultPersona();
+                            }
+                          }}
+                          disabled={isLoadingPersona}
                         />
                       </div>
                     </div>
@@ -1558,13 +1565,22 @@ export default function EllaChat() {
                         value={customPersonaText}
                         onChange={(e) => setCustomPersonaText(e.target.value)}
                       />
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="mt-2 w-full text-[10px] sm:text-xs"
+                        onClick={() => setCustomPersona(customPersonaText)}
+                        disabled={isLoadingPersona || !customPersonaText.trim()}
+                      >
+                        Apply Custom Persona
+                      </Button>
                     </div>
                   )}
                   
-                  {!useCustomPersona && selectedPersona && (
+                  {!useCustomPersona && currentPersona && (
                     <div className="text-[9px] sm:text-[10px] text-muted-foreground mt-1 bg-muted p-1.5 rounded">
                       <div className="font-medium">Description:</div>
-                      <p>{predefinedPersonas.find(p => p.id === selectedPersona)?.description || 'Helpful AI assistant'}</p>
+                      <p>{currentPersona.description || 'Helpful AI assistant'}</p>
                     </div>
                   )}
                 </div>

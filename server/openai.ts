@@ -1,6 +1,7 @@
 import OpenAI from "openai";
 import { getRelevantContext, createEnhancedSystemPrompt } from './rag';
 import { appointmentStorage } from './appointmentStorage';
+import { personaManager } from './personaManager';
 
 // Initialize OpenAI with API key from environment variables
 const openai = new OpenAI({

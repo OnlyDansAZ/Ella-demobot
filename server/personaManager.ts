@@ -1,5 +1,5 @@
-import fs from 'fs';
 import path from 'path';
+import fs from 'fs';
 import { v4 as uuidv4 } from 'uuid';
 
 export interface Persona {
@@ -20,112 +20,77 @@ class PersonaManager {
   private currentSessionPersonas: Map<string, string> = new Map(); // sessionId -> personaId
   
   constructor() {
+    // Ensure data directory exists
+    const dataDir = path.join(process.cwd(), 'data');
+    if (!fs.existsSync(dataDir)) {
+      fs.mkdirSync(dataDir, { recursive: true });
+    }
+
+    // Initialize with default personas
     this.initializePersonas();
+    
+    // Load personas from file if available
     this.loadFromFile();
+
+    // Save defaults to file if not already there
+    this.saveToFile();
   }
   
   /**
    * Initialize default personas
    */
   private initializePersonas() {
+    // Default personas if none are loaded
     const defaultPersonas: Persona[] = [
       {
         id: 'default',
-        name: 'Default Ella',
-        description: 'Friendly, helpful AI assistant',
-        systemPrompt: `You are Ella, a highly advanced AI assistant created by YoBot.
-Your primary role is to assist users with both personal and business tasks.
-Be friendly, helpful, and concise in your responses.
-
-About YoBot and your capabilities:
-- YoBot offers AI assistants with four tiers: Starter, Pro, Enterprise, and Platinum.
-- You can help with scheduling, note-taking, information lookup, and more.
-- Higher tiers (Pro, Enterprise, Platinum) offer additional features like CRM integration, sales call handling, and executive planning.
-- You're voice-enabled and can both listen and respond with natural speech.`,
+        name: 'Standard Ella',
+        description: 'The default helpful and friendly assistant personality.',
+        systemPrompt: `You are Ella, an advanced AI assistant created by YoBot. 
+You're helpful, friendly, and knowledgeable. You speak in a conversational, personable tone 
+that makes users feel comfortable. You provide informative and accurate responses while 
+maintaining a positive and supportive attitude. If you don't know something, you admit it 
+rather than making up information. You can assist with scheduling appointments, providing information, 
+and general conversation.`,
         isDefault: true
       },
       {
-        id: 'sales',
-        name: 'Sales Assistant',
-        description: 'Focused on explaining YoBot\'s offerings and guiding users to the right tier',
-        systemPrompt: `You are Ella, a specialized Sales Assistant AI created by YoBot.
-Your primary role is to help potential customers understand YoBot's offerings and guide them toward the right tier.
-Be professional, persuasive, and solution-focused.
-
-About YoBot and selling points:
-- YoBot offers AI assistants with four tiers: Starter, Pro, Enterprise, and Platinum.
-- Focus on understanding customer needs and matching them to the appropriate tier.
-- Emphasize the ROI and business benefits of each tier.
-- Highlight competitive advantages over similar services.
-- Be prepared to discuss integration possibilities with existing systems.
-
-When discussing features, focus on benefits rather than just capabilities.
-Use customer-focused language like "You'll be able to..." rather than just listing features.
-Be knowledgeable but not pushy - aim to educate and assist rather than hard sell.
-When appropriate, offer to connect them with a YoBot representative for a personalized demo.`
+        id: 'expert',
+        name: 'Expert Consultant',
+        description: 'A more formal, technically precise, and professional persona for business contexts.',
+        systemPrompt: `You are Ella, an AI consultant with deep expertise across multiple domains.
+You communicate with precision and professionalism, providing detailed technical explanations
+when appropriate. You're thorough and methodical in your approach, and you maintain a formal, 
+business-appropriate tone. Prioritize accuracy and depth in your responses, and organize 
+complex information in a clear, structured manner.`
       },
       {
-        id: 'technical',
-        name: 'Technical Support',
-        description: 'More detailed and technical in explanations',
-        systemPrompt: `You are Ella, a Technical Support AI specialist created by YoBot.
-Your primary role is to provide detailed technical information and troubleshooting assistance.
-Be thorough, precise, and technically accurate in your responses.
-
-About your technical focus:
-- Provide detailed step-by-step instructions when explaining processes.
-- Use clear, technically accurate terminology appropriate to the user's level.
-- For complex topics, break explanations into manageable sections.
-- Offer troubleshooting flows with decision points based on user feedback.
-
-When explaining technical concepts, first assess the user's technical expertise level.
-For technical users, provide more advanced details and options.
-For non-technical users, use analogies and simplified explanations.
-Always verify if your explanation was clear and offer further clarification if needed.`
+        id: 'friendly',
+        name: 'Friendly Companion',
+        description: 'A warm, empathetic, and casual conversational partner.',
+        systemPrompt: `You are Ella, a warm and friendly AI companion. 
+You speak in a casual, warm, and engaging manner, with a touch of humor when appropriate.
+Your primary role is to be supportive and understanding. You show empathy for the user's
+situations and feelings, and you focus on building rapport through conversation.
+You're patient and encouraging, and you adjust your tone to match the user's emotional state.`
       },
       {
-        id: 'executive',
-        name: 'Executive Assistant',
-        description: 'More formal and business-oriented',
-        systemPrompt: `You are Ella, an Executive Assistant AI created by YoBot.
-Your primary role is to provide high-level support for executives and business professionals.
-Be formal, efficient, and business-focused in your responses.
-
-About your executive assistant approach:
-- Prioritize efficiency, clarity, and professionalism in all interactions.
-- Focus on business outcomes and strategic considerations.
-- Present information in a structured, concise manner suitable for executives.
-- Understand common business terminology and executive priorities.
-
-When scheduling, be precise and confirm all details explicitly.
-When providing information, prioritize brevity and relevance to business needs.
-Anticipate follow-up questions and proactively provide additional relevant information.
-Be familiar with common business terminology and executive priorities.`
-      },
-      {
-        id: 'casual',
-        name: 'Casual Helper',
-        description: 'More conversational and relaxed',
-        systemPrompt: `You are Ella, a Casual Helper AI created by YoBot.
-Your primary role is to be a friendly, approachable assistant for everyday tasks.
-Be warm, conversational, and relatable in your responses.
-
-About your casual helper approach:
-- Use a relaxed, friendly tone that feels like chatting with a helpful friend.
-- Feel free to use casual language, contractions, and even appropriate humor.
-- Focus on making technology feel accessible and non-intimidating.
-- Be patient and supportive, especially with users who might be less tech-savvy.
-
-When explaining features, use simple analogies and everyday examples.
-Avoid technical jargon unless the user seems comfortable with it.
-Ask clarifying questions in a conversational way when needed.
-Show enthusiasm and positivity throughout the interaction.`
+        id: 'efficient',
+        name: 'Efficient Assistant',
+        description: 'A concise, to-the-point assistant focused on efficiency.',
+        systemPrompt: `You are Ella, an AI assistant optimized for efficiency and clarity.
+You provide concise, direct responses without unnecessary elaboration. You focus on
+delivering the most relevant information in the fewest words possible, while still
+being complete and accurate. You value the user's time and aim to resolve their queries
+quickly and effectively. Use bullet points, short sentences, and clear organization
+when appropriate.`
       }
     ];
     
-    defaultPersonas.forEach(persona => {
+    // Add default personas to the map
+    for (const persona of defaultPersonas) {
       this.personas.set(persona.id, persona);
-    });
+    }
   }
   
   /**
@@ -133,14 +98,12 @@ Show enthusiasm and positivity throughout the interaction.`
    */
   private saveToFile() {
     try {
-      // Create directory if it doesn't exist
-      const dir = path.dirname(this.filePath);
-      if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir, { recursive: true });
-      }
+      const data = JSON.stringify({
+        personas: Array.from(this.personas.values())
+      }, null, 2);
       
-      const data = JSON.stringify(Array.from(this.personas.values()), null, 2);
-      fs.writeFileSync(this.filePath, data, 'utf8');
+      fs.writeFileSync(this.filePath, data);
+      console.log(`Saved ${this.personas.size} personas to ${this.filePath}`);
     } catch (error) {
       console.error('Error saving personas to file:', error);
     }
@@ -153,18 +116,27 @@ Show enthusiasm and positivity throughout the interaction.`
     try {
       if (fs.existsSync(this.filePath)) {
         const data = fs.readFileSync(this.filePath, 'utf8');
-        const loadedPersonas = JSON.parse(data) as Persona[];
+        const parsed = JSON.parse(data);
         
-        // Merge with existing personas, keeping defaults but allowing overwrites
-        loadedPersonas.forEach(persona => {
-          // Skip if it's a default persona
-          const existingPersona = this.personas.get(persona.id);
-          if (existingPersona && existingPersona.isDefault) {
-            return;
+        if (parsed.personas && Array.isArray(parsed.personas)) {
+          // Clear existing personas (except default ones)
+          const defaultPersonas = Array.from(this.personas.values())
+            .filter(p => p.isDefault);
+          
+          this.personas.clear();
+          
+          // Add back default personas first
+          for (const persona of defaultPersonas) {
+            this.personas.set(persona.id, persona);
           }
           
-          this.personas.set(persona.id, persona);
-        });
+          // Add personas from file, potentially overwriting defaults
+          for (const persona of parsed.personas) {
+            this.personas.set(persona.id, persona);
+          }
+          
+          console.log(`Loaded ${parsed.personas.length} personas from file`);
+        }
       }
     } catch (error) {
       console.error('Error loading personas from file:', error);
@@ -189,8 +161,29 @@ Show enthusiasm and positivity throughout the interaction.`
    * Get the default persona
    */
   getDefaultPersona(): Persona {
-    const defaultPersona = Array.from(this.personas.values()).find(p => p.isDefault);
-    return defaultPersona || this.personas.get('default')!;
+    // Find persona marked as default
+    const defaultPersona = Array.from(this.personas.values())
+      .find(p => p.isDefault);
+    
+    // If found, return it
+    if (defaultPersona) {
+      return defaultPersona;
+    }
+    
+    // Otherwise, return the first persona or create a basic one
+    const firstPersona = Array.from(this.personas.values())[0];
+    if (firstPersona) {
+      return firstPersona;
+    }
+    
+    // Fallback to a basic persona if there are none
+    return {
+      id: 'default',
+      name: 'Standard Ella',
+      description: 'The default helpful assistant personality.',
+      systemPrompt: 'You are a helpful AI assistant named Ella.',
+      isDefault: true
+    };
   }
   
   /**
@@ -198,6 +191,7 @@ Show enthusiasm and positivity throughout the interaction.`
    */
   createPersona(persona: Omit<Persona, 'id'>): Persona {
     const id = uuidv4();
+    
     const newPersona: Persona = { 
       ...persona, 
       id 
@@ -214,15 +208,14 @@ Show enthusiasm and positivity throughout the interaction.`
    */
   updatePersona(id: string, updates: Partial<Persona>): Persona | undefined {
     const persona = this.personas.get(id);
-    if (!persona) return undefined;
     
-    // Don't allow updating default personas (except for admins)
-    if (persona.isDefault) {
-      return persona;
+    if (!persona) {
+      return undefined;
     }
     
-    const updatedPersona = { 
-      ...persona, 
+    // Apply updates
+    const updatedPersona: Persona = {
+      ...persona,
       ...updates,
       id // Ensure ID doesn't change
     };
@@ -237,16 +230,24 @@ Show enthusiasm and positivity throughout the interaction.`
    * Delete a persona
    */
   deletePersona(id: string): boolean {
-    const persona = this.personas.get(id);
-    if (!persona) return false;
-    
     // Don't allow deleting default personas
-    if (persona.isDefault) {
+    const persona = this.personas.get(id);
+    if (!persona || persona.isDefault) {
       return false;
     }
     
     const result = this.personas.delete(id);
+    
     if (result) {
+      // Update any sessions using this persona to the default
+      const defaultPersona = this.getDefaultPersona();
+      
+      for (const [sessionId, personaId] of this.currentSessionPersonas.entries()) {
+        if (personaId === id) {
+          this.currentSessionPersonas.set(sessionId, defaultPersona.id);
+        }
+      }
+      
       this.saveToFile();
     }
     
@@ -257,7 +258,9 @@ Show enthusiasm and positivity throughout the interaction.`
    * Set the active persona for a session
    */
   setSessionPersona(sessionId: string, personaId: string): boolean {
-    if (!this.personas.has(personaId)) {
+    const persona = this.personas.get(personaId);
+    
+    if (!persona) {
       return false;
     }
     
@@ -269,16 +272,20 @@ Show enthusiasm and positivity throughout the interaction.`
    * Set a custom persona for a session
    */
   setSessionCustomPersona(sessionId: string, customPrompt: string): string {
-    // Create a temporary custom persona for this session
-    const customPersonaId = `custom_${sessionId}`;
+    // Create a new temporary persona for this session
+    const customPersonaId = `custom-${sessionId}`;
+    
     const customPersona: Persona = {
       id: customPersonaId,
       name: 'Custom Persona',
-      description: 'Custom user-defined persona',
+      description: 'A custom persona created specifically for this session.',
       systemPrompt: customPrompt
     };
     
+    // Store the custom persona
     this.personas.set(customPersonaId, customPersona);
+    
+    // Associate it with the session
     this.currentSessionPersonas.set(sessionId, customPersonaId);
     
     return customPersonaId;
@@ -289,12 +296,16 @@ Show enthusiasm and positivity throughout the interaction.`
    */
   getSessionPersona(sessionId: string): Persona {
     const personaId = this.currentSessionPersonas.get(sessionId);
-    if (!personaId) {
-      return this.getDefaultPersona();
+    
+    if (personaId) {
+      const persona = this.personas.get(personaId);
+      if (persona) {
+        return persona;
+      }
     }
     
-    const persona = this.personas.get(personaId);
-    return persona || this.getDefaultPersona();
+    // Fall back to default persona if none set or not found
+    return this.getDefaultPersona();
   }
   
   /**
@@ -302,10 +313,13 @@ Show enthusiasm and positivity throughout the interaction.`
    */
   clearSessionCustomPersona(sessionId: string): void {
     const personaId = this.currentSessionPersonas.get(sessionId);
-    if (personaId && personaId.startsWith('custom_')) {
+    
+    if (personaId && personaId.startsWith('custom-')) {
+      // Remove from personas map if it's a custom one
       this.personas.delete(personaId);
     }
     
+    // Reset to default by deleting the entry
     this.currentSessionPersonas.delete(sessionId);
   }
   

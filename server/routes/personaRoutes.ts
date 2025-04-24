@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { personaManager, Persona } from '../personaManager';
+import { personaManager } from '../personaManager';
 
 const router = Router();
 
@@ -27,7 +27,7 @@ router.get('/:id', (req: Request, res: Response) => {
   if (!persona) {
     return res.status(404).json({
       success: false,
-      message: 'Persona not found'
+      error: 'Persona not found'
     });
   }
   
@@ -47,19 +47,19 @@ router.post('/', (req: Request, res: Response) => {
   if (!name || !systemPrompt) {
     return res.status(400).json({
       success: false,
-      message: 'Name and system prompt are required'
+      error: 'Name and systemPrompt are required'
     });
   }
   
-  const newPersona = personaManager.createPersona({
+  const persona = personaManager.createPersona({
     name,
-    description: description || '',
+    description: description || `Custom persona: ${name}`,
     systemPrompt
   });
   
   res.status(201).json({
     success: true,
-    persona: newPersona
+    persona
   });
 });
 
@@ -74,20 +74,26 @@ router.put('/:id', (req: Request, res: Response) => {
   if (!name && !description && !systemPrompt) {
     return res.status(400).json({
       success: false,
-      message: 'At least one field to update is required'
+      error: 'At least one field to update is required'
     });
   }
   
-  const updatedPersona = personaManager.updatePersona(id, {
-    name,
-    description,
-    systemPrompt
-  });
+  const updates: {
+    name?: string;
+    description?: string;
+    systemPrompt?: string;
+  } = {};
+  
+  if (name) updates.name = name;
+  if (description) updates.description = description;
+  if (systemPrompt) updates.systemPrompt = systemPrompt;
+  
+  const updatedPersona = personaManager.updatePersona(id, updates);
   
   if (!updatedPersona) {
     return res.status(404).json({
       success: false,
-      message: 'Persona not found or cannot be updated'
+      error: 'Persona not found'
     });
   }
   
@@ -103,12 +109,12 @@ router.put('/:id', (req: Request, res: Response) => {
  */
 router.delete('/:id', (req: Request, res: Response) => {
   const { id } = req.params;
-  const result = personaManager.deletePersona(id);
+  const success = personaManager.deletePersona(id);
   
-  if (!result) {
+  if (!success) {
     return res.status(404).json({
       success: false,
-      message: 'Persona not found or cannot be deleted'
+      error: 'Persona not found or cannot be deleted'
     });
   }
   
@@ -126,42 +132,44 @@ router.post('/session/:sessionId', (req: Request, res: Response) => {
   const { sessionId } = req.params;
   const { personaId, customPrompt } = req.body;
   
+  // If a custom prompt is provided, create a custom persona
   if (customPrompt) {
-    // Set custom persona
     const customPersonaId = personaManager.setSessionCustomPersona(sessionId, customPrompt);
     const persona = personaManager.getPersona(customPersonaId);
     
     return res.json({
       success: true,
-      personaId: customPersonaId,
+      message: 'Custom persona set for session',
       persona,
-      message: 'Custom persona set for session'
-    });
-  } else if (personaId) {
-    // Set predefined persona
-    const success = personaManager.setSessionPersona(sessionId, personaId);
-    
-    if (!success) {
-      return res.status(404).json({
-        success: false,
-        message: 'Persona not found'
-      });
-    }
-    
-    const persona = personaManager.getPersona(personaId);
-    
-    return res.json({
-      success: true,
-      personaId,
-      persona,
-      message: 'Persona set for session'
-    });
-  } else {
-    return res.status(400).json({
-      success: false,
-      message: 'Either personaId or customPrompt is required'
+      personaId: customPersonaId
     });
   }
+  
+  // Otherwise, use the provided persona ID
+  if (!personaId) {
+    return res.status(400).json({
+      success: false,
+      error: 'Either personaId or customPrompt must be provided'
+    });
+  }
+  
+  const success = personaManager.setSessionPersona(sessionId, personaId);
+  
+  if (!success) {
+    return res.status(404).json({
+      success: false,
+      error: 'Persona not found'
+    });
+  }
+  
+  const persona = personaManager.getSessionPersona(sessionId);
+  
+  res.json({
+    success: true,
+    message: 'Persona set for session',
+    persona,
+    personaId
+  });
 });
 
 /**
@@ -174,8 +182,8 @@ router.get('/session/:sessionId', (req: Request, res: Response) => {
   
   res.json({
     success: true,
-    personaId: persona.id,
-    persona
+    persona,
+    personaId: persona.id
   });
 });
 
@@ -185,15 +193,15 @@ router.get('/session/:sessionId', (req: Request, res: Response) => {
  */
 router.delete('/session/:sessionId', (req: Request, res: Response) => {
   const { sessionId } = req.params;
-  personaManager.clearSessionCustomPersona(sessionId);
   
+  personaManager.clearSessionCustomPersona(sessionId);
   const defaultPersona = personaManager.getDefaultPersona();
   
   res.json({
     success: true,
-    personaId: defaultPersona.id,
+    message: 'Session reset to default persona',
     persona: defaultPersona,
-    message: 'Session reset to default persona'
+    personaId: defaultPersona.id
   });
 });
 
