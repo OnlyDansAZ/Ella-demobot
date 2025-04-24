@@ -61,19 +61,47 @@ Personas are defined in `client/src/lib/personas.ts` as objects with:
 3. The persona will automatically appear in the persona selector
 
 ### Voice Recognition System
-The voice recognition system uses Web Speech API with enhanced error handling and permission management.
+The voice recognition system uses Web Speech API with enhanced error handling, permission management, and device-specific optimizations.
+
+#### Architecture Overview
+The voice recognition system is designed with a progressive enhancement approach:
+1. Device-specific detection and optimization
+2. Platform-specific recognition initialization
+3. Multi-layered error recovery
+4. Unified interaction model across desktop and mobile
 
 #### Key Components
 - `recognitionRef` holds the SpeechRecognition instance
-- `startListening()` initiates voice input with permission handling
-- `handleRecognitionResult()` processes transcription results
-- Confidence scoring to auto-submit high-confidence results
+- `startListening()` - Main entry point that detects device type and routes accordingly
+- `startMobileRecognition()` - Mobile-specific implementation with platform optimizations
+- `startRecognition()` - Desktop-specific implementation
+- `initializeSpeechRecognition()` - Creates and configures recognition objects
+- `setupRecognitionHandlers()` - Sets up event handlers for recognition
+
+#### Mobile-Specific Optimizations
+- **Device Detection**: `isMobileDevice()` and `isIOS()` functions detect device types
+- **Fresh Instances**: Creates new recognition instances for each listening attempt on mobile
+- **iOS-Specific Handling**: 
+  - Special initialization sequence for iOS
+  - Uses `prepareIOSForSpeech()` to warm up the audio system with a silent utterance
+  - Adds delays specifically tuned for iOS devices
+- **Robust Permission Flow**: `requestMicrophoneAccess()` ensures microphone permissions before starting
+- **Enhanced Error Recovery**: Multiple fallback mechanisms with platform-specific error messages
+
+#### Desktop Optimization
+- More persistent recognition instances
+- Standard continuous recognition with configurable parameters
+- Explicit permission management
 
 #### Recent Improvements
 - Explicit microphone permission requests via MediaDevices API
 - Conflict resolution between audio playback and recording
 - Enhanced error recovery and recognition restart mechanisms
 - Simplified non-continuous mode for more reliable operation
+- Complete redesign of mobile speech recognition for cross-device compatibility
+- Improved visual feedback with animation during listening
+- Device-specific error messaging with helpful troubleshooting
+- Larger tap targets on mobile for better accessibility
 
 ### Voice Synthesis
 Voice synthesis uses ElevenLabs API with browser fallback capabilities.

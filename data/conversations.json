@@ -210,10 +210,130 @@
             "content": "Yes, that's me! How can I assist you today?",
             "isUser": false,
             "timestamp": "2025-04-24T02:48:13.792Z"
+          },
+          {
+            "id": "8da3cdbf-88f7-4742-939b-da50ecf5253d",
+            "content": "see if you're going to see if you're a mobile Mike is working",
+            "isUser": true,
+            "timestamp": "2025-04-24T04:00:14.286Z"
+          },
+          {
+            "id": "36c8a8c0-3cdb-4807-b576-9e413f63b17b",
+            "content": "It seems like you're asking about a mobile service or perhaps someone named Mike. Could you clarify what you need help with regarding Mike or the mobile service?",
+            "isUser": false,
+            "timestamp": "2025-04-24T04:00:21.739Z"
+          },
+          {
+            "id": "4e12454c-550c-48bd-97f8-97a10674b3d9",
+            "content": "I was clarifying that my microphone on my phone was working",
+            "isUser": true,
+            "timestamp": "2025-04-24T04:00:39.842Z"
+          },
+          {
+            "id": "d60ddd24-30c7-400f-b3f7-5dd09746f58a",
+            "content": "Got it! It sounds like your microphone is working just fine. If there's anything else you need help with, feel free to let me know!",
+            "isUser": false,
+            "timestamp": "2025-04-24T04:00:42.675Z"
+          },
+          {
+            "id": "b59c1e05-f6cb-490e-9109-f40e1c8ac0a7",
+            "content": "thank you Ella do I have any appointments on my schedule",
+            "isUser": true,
+            "timestamp": "2025-04-24T04:00:57.616Z"
+          },
+          {
+            "id": "14e9db07-03c8-437f-9bd9-e9d5914ba42d",
+            "content": "Yes, you have a Demo Meeting with a client scheduled for April 25th, 2025, at 2:00 PM, which will be held virtually. If you need to make any changes or have any questions about this appointment, feel free to let me know!",
+            "isUser": false,
+            "timestamp": "2025-04-24T04:01:00.967Z"
+          },
+          {
+            "id": "b4da76cf-0966-463a-9d06-48888a2198a3",
+            "content": "any other any other appointments after that",
+            "isUser": true,
+            "timestamp": "2025-04-24T04:01:22.766Z"
+          },
+          {
+            "id": "3418aad8-02f1-418f-9f38-2012150c2892",
+            "content": "Currently, I don't have any additional appointments listed after your Demo Meeting on April 25th, 2025, at 2:00 PM. If you need to schedule any new appointments, feel free to let me know!",
+            "isUser": false,
+            "timestamp": "2025-04-24T04:01:26.235Z"
+          },
+          {
+            "id": "3ea234b6-fe5d-4132-8425-4fcbd1d0485c",
+            "content": "will do thank you Ella will talk to you soon",
+            "isUser": true,
+            "timestamp": "2025-04-24T04:01:45.333Z"
+          },
+          {
+            "id": "2daa4ac5-98b9-44a0-8161-df14ba61c819",
+            "content": "You're welcome! I'm here whenever you need me. Talk to you soon!",
+            "isUser": false,
+            "timestamp": "2025-04-24T04:01:47.576Z"
+          },
+          {
+            "id": "ee70c19a-1e7f-4c06-95f5-323ace20dedb",
+            "content": "oh how is the mic working",
+            "isUser": true,
+            "timestamp": "2025-04-24T04:20:33.717Z"
+          },
+          {
+            "id": "8b141a70-43ca-4de9-915d-5bcc6b4e11d1",
+            "content": "Your microphone seems to be working perfectly! If there's anything else you'd like to check or need assistance with, just let me know.",
+            "isUser": false,
+            "timestamp": "2025-04-24T04:20:40.282Z"
+          },
+          {
+            "id": "8d7d1e1d-97ef-47ab-9281-279fa962aa7a",
+            "content": "I will do that thank you so much Ella",
+            "isUser": true,
+            "timestamp": "2025-04-24T04:20:54.892Z"
+          },
+          {
+            "id": "28d3e141-e27a-446b-a899-b09864fcaef9",
+            "content": "You're very welcome! Have a great day, and feel free to reach out anytime you need help.",
+            "isUser": false,
+            "timestamp": "2025-04-24T04:20:57.466Z"
+          },
+          {
+            "id": "8b031b6c-35bc-4349-ba14-ca0c42bb8216",
+            "content": "you know who I am",
+            "isUser": true,
+            "timestamp": "2025-04-24T04:21:07.790Z"
+          },
+          {
+            "id": "7d9bd8e7-b535-4784-adb5-23e3033bbd8e",
+            "content": "I recognize you based on our previous interactions, but I don't have access to personal identifiers like names unless you provide them during our conversation. If there's anything specific you'd like me to remember or assist you with, just let me know!",
+            "isUser": false,
+            "timestamp": "2025-04-24T04:21:11.292Z"
+          },
+          {
+            "id": "587db8d7-ec46-424f-aeb3-e8a55ba7d9ca",
+            "content": "yes my name is Daniel",
+            "isUser": true,
+            "timestamp": "2025-04-24T04:21:33.077Z"
+          },
+          {
+            "id": "355cb0e4-bdd2-4975-9a8f-9d4893ada90d",
+            "content": "Thank you for letting me know, Daniel! If there's anything specific you'd like me to remember or assist you with, just let me know. I'm here to help!",
+            "isUser": false,
+            "timestamp": "2025-04-24T04:21:36.019Z"
+          },
+          {
+            "id": "e9dcabbd-672d-4362-9a58-6b5b5b263ed5",
+            "content": "I am I am the co-founder of yoga yobots and we will be putting on a demo today for one of our clients",
+            "isUser": true,
+            "timestamp": "2025-04-24T04:21:55.175Z"
+          },
+          {
+            "id": "680c94f2-5c0d-4e79-bf22-c1537fee601d",
+            "content": "That's great to hear, Daniel! I remember your Demo Meeting scheduled for April 25th, 2025, at 2:00 PM. If there's anything specific you need help with for the demo or if you need to make any changes, just let me know!",
+            "isUser": false,
+            "timestamp": "2025-04-24T04:21:58.398Z"
           }
         ],
         "createdAt": "2025-04-24T02:47:31.953Z",
-        "updatedAt": "2025-04-24T02:48:13.792Z"
+        "updatedAt": "2025-04-24T04:21:58.398Z"
       }
     ]
   ]
