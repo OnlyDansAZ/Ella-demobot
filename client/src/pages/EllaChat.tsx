@@ -803,7 +803,7 @@ export default function EllaChat() {
     }
   };
   
-  // Function to play text response audio using ElevenLabs
+  // Function to play text response audio using ElevenLabs with persona-specific voice
   const playAudio = async (text: string) => {
     if (!text || text.trim() === '') return;
     
@@ -816,7 +816,11 @@ export default function EllaChat() {
       
       setIsSpeaking(true);
       
-      // Call the server to generate and return audio
+      // Get the current persona information
+      const activePersona = currentPersona?.id || 'default';
+      console.log(`Using persona for speech: ${activePersona}`);
+      
+      // Call the server to generate and return audio with session and persona info
       const response = await fetch('/api/speech', {
         method: 'POST',
         headers: {
@@ -824,6 +828,9 @@ export default function EllaChat() {
         },
         body: JSON.stringify({ 
           text,
+          // Include the session ID so the server can use persona-specific voice settings
+          sessionId: sessionId,
+          // Fallback options in case no persona voice settings are found
           options: {
             stability: 0.5,
             similarityBoost: 0.75,

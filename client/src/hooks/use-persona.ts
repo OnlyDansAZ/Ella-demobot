@@ -1,6 +1,26 @@
 import { useState, useEffect, useCallback } from 'react';
 import { apiRequest } from '@/lib/queryClient';
 
+// Voice settings interface (matching server-side definition)
+export interface VoiceSettings {
+  stability: number;       // Controls stability of voice (0.0 to 1.0)
+  similarityBoost: number; // Controls similarity to source voice (0.0 to 1.0)
+  style: number;           // Controls style injection (0.0 to 1.0)
+  useSpeakerBoost: boolean;// Whether to enhance speaker clarity
+  voiceId?: string;        // Optional custom voice ID from ElevenLabs
+}
+
+// Behavior modifiers interface (matching server-side definition)
+export interface BehaviorModifiers {
+  usesEmojis: boolean;    // Whether this persona uses emojis
+  verbosity: number;      // Controls response length (0.1=brief, 0.5=balanced, 1.0=detailed)
+  formality: number;      // Controls formality (0.1=casual, 0.5=balanced, 1.0=formal)
+  creativity: number;     // Controls creativity (0.1=factual, 0.5=balanced, 1.0=creative)
+  persuasiveness: number; // Controls persuasiveness (0.1=neutral, 0.5=balanced, 1.0=persuasive)
+  usesBulletPoints: boolean; // Whether this persona organizes content with bullet points
+  preferredResponseFormat?: string; // Optional preferred response format instruction
+}
+
 // Define persona interface (matching server's definition)
 export interface Persona {
   id: string;
@@ -8,6 +28,10 @@ export interface Persona {
   description: string;
   systemPrompt: string;
   isDefault?: boolean;
+  
+  // New fields for persona-specific voice and behavior
+  voiceSettings?: VoiceSettings;
+  behaviorModifiers?: BehaviorModifiers;
 }
 
 // Define response types for API
