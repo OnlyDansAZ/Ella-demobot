@@ -196,23 +196,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Get persona-specific voice settings if available
+          // Get persona-specific voice settings if available
       let voiceSettings;
+      let personaName = "default";
       
       try {
         if (sessionId) {
           // If session ID is provided, get the persona associated with this session
-          const sessionPersona = personaManager.getSessionPersona(sessionId);
-          if (sessionPersona && sessionPersona.voiceSettings) {
-            voiceSettings = sessionPersona.voiceSettings;
-            console.log(`Using voice settings from session persona: ${sessionPersona.name}`);
+          try {
+            const sessionPersona = personaManager.getSessionPersona(sessionId);
+            if (sessionPersona) {
+              personaName = sessionPersona.name;
+              
+              if (sessionPersona.voiceSettings) {
+                voiceSettings = sessionPersona.voiceSettings;
+                console.log(`Using voice settings from session persona: ${sessionPersona.name}`);
+              } else {
+                console.log(`Session persona ${sessionPersona.name} has no voice settings, using defaults`);
+              }
+            }
+          } catch (sessionError) {
+            console.error('Failed to get session persona:', sessionError);
+            // Will continue with default settings
           }
         } else if (personaId) {
           // If persona ID is directly provided, use that persona's voice settings
-          const specificPersona = personaManager.getPersona(personaId);
-          if (specificPersona && specificPersona.voiceSettings) {
-            voiceSettings = specificPersona.voiceSettings;
-            console.log(`Using voice settings from specific persona: ${specificPersona.name}`);
+          try {
+            const specificPersona = personaManager.getPersona(personaId);
+            if (specificPersona) {
+              personaName = specificPersona.name;
+              
+              if (specificPersona.voiceSettings) {
+                voiceSettings = specificPersona.voiceSettings;
+                console.log(`Using voice settings from specific persona: ${specificPersona.name}`);
+              } else {
+                console.log(`Specific persona ${specificPersona.name} has no voice settings, using defaults`);
+              }
+            }
+          } catch (personaError) {
+            console.error('Failed to get specific persona:', personaError);
+            // Will continue with default settings
           }
         }
       } catch (error) {
@@ -242,7 +265,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const voiceId = speechOptions.voiceId || "KgleQSAupUuS391XuXpI";
       
       try {
-        console.log("Generating speech with ElevenLabs");
+        console.log(`Generating speech with ElevenLabs for persona: ${personaName}`);
+        
+        // Check if ElevenLabs API key is available
+        if (!ELEVENLABS_API_KEY) {
+          throw new Error("ElevenLabs API key is not configured or missing");
+        }
         
         // Initialize ElevenLabs with the API key from environment
         const elevenLabs = new ElevenLabs({
@@ -261,21 +289,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
         
         // Generate audio from ElevenLabs with persona-specific options
-        const result = await elevenLabs.textToSpeech({
-          textInput: text,
-          fileName: tempFile,
-          stability,
-          similarityBoost,
-          style,
-          speakerBoost: useSpeakerBoost,
-          // Use modelId for the newest model if available
-          modelId: "eleven_turbo_v2"
-        });
-        
-        console.log("ElevenLabs response:", result);
+        let result;
+        try {
+          result = await elevenLabs.textToSpeech({
+            textInput: text,
+            fileName: tempFile,
+            stability,
+            similarityBoost,
+            style,
+            speakerBoost: useSpeakerBoost,
+            // Use modelId for the newest model if available
+            modelId: "eleven_turbo_v2"
+          });
+          
+          console.log("ElevenLabs response:", result);
+        } catch (speechError) {
+          console.error("Failed to generate speech with ElevenLabs:", speechError);
+          throw new Error(`ElevenLabs API error: ${speechError instanceof Error ? speechError.message : String(speechError)}`);
+        }
         
         // Read the audio file
-        const audioData = await fs.readFile(tempFile);
+        let audioData;
+        try {
+          audioData = await fs.readFile(tempFile);
+        } catch (fileError) {
+          console.error("Failed to read generated audio file:", fileError);
+          throw new Error(`Could not read generated audio file: ${fileError instanceof Error ? fileError.message : String(fileError)}`);
+        }
+        
+        // Verify we have audio data
+        if (!audioData || audioData.length === 0) {
+          throw new Error("Generated audio file is empty or invalid");
+        }
         
         // Set appropriate headers for audio streaming
         res.setHeader('Content-Type', 'audio/mpeg');
@@ -291,7 +336,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.status(500).json({ 
           success: false,
           error: "Failed to generate speech", 
-          details: error instanceof Error ? error.message : String(error)
+          details: error instanceof Error ? error.message : String(error),
+          personaUsed: personaName
         });
       }
     } catch (err) {
