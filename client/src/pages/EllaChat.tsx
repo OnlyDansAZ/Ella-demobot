@@ -1302,11 +1302,34 @@ export default function EllaChat() {
                 <Button
                   size="icon"
                   variant={isListening ? 'destructive' : 'outline'}
-                  className="h-8 w-8 rounded-full"
+                  className={`h-10 w-10 sm:h-8 sm:w-8 rounded-full ${isListening ? 'shadow-md' : ''}`}
                   onClick={isListening ? stopListening : startListening}
                   disabled={!isVoiceEnabled}
                 >
-                  {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+                  {isListening ? (
+                    <div className="relative">
+                      <MicOff className="h-5 w-5 sm:h-4 sm:w-4" />
+                      <motion.div 
+                        className="absolute -inset-4 rounded-full border border-red-400 dark:border-red-600"
+                        animate={{ 
+                          scale: [1, 1.1, 1],
+                          opacity: [0.8, 0.2, 0.8],
+                          boxShadow: [
+                            '0 0 0 0 rgba(248, 113, 113, 0.7)',
+                            '0 0 0 4px rgba(248, 113, 113, 0.0)',
+                            '0 0 0 0 rgba(248, 113, 113, 0.7)'
+                          ]
+                        }}
+                        transition={{ 
+                          duration: 1.5, 
+                          repeat: Infinity, 
+                          ease: "easeInOut" 
+                        }}
+                      />
+                    </div>
+                  ) : (
+                    <Mic className="h-5 w-5 sm:h-4 sm:w-4" />
+                  )}
                 </Button>
                 <Input
                   className="flex-1 h-8 text-sm"
