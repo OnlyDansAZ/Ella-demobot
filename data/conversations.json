@@ -180,10 +180,22 @@
             "content": "Thank you! I'm here whenever you need me. Have a great day! 😊",
             "isUser": false,
             "timestamp": "2025-04-24T03:37:12.844Z"
+          },
+          {
+            "id": "4dce6c98-22f9-4995-8dea-d4e416b41f9c",
+            "content": "hello can you hear me",
+            "isUser": true,
+            "timestamp": "2025-04-24T04:28:44.837Z"
+          },
+          {
+            "id": "f56008be-23a2-4994-9f6e-46569a4819d4",
+            "content": "Hello! Yes, I can hear you. How can I assist you today?",
+            "isUser": false,
+            "timestamp": "2025-04-24T04:28:50.150Z"
           }
         ],
         "createdAt": "2025-04-23T01:01:18.628Z",
-        "updatedAt": "2025-04-24T03:37:12.844Z"
+        "updatedAt": "2025-04-24T04:28:50.150Z"
       }
     ],
     [
