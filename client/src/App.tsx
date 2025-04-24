@@ -10,16 +10,21 @@ import Admin from "@/pages/Admin";
 import EllaChat from "@/pages/EllaChat";
 import DemoDashboard from "@/pages/DemoDashboard";
 import WhiteLabelGenerator from "@/pages/WhiteLabelGenerator";
+import LaunchPage from "@/pages/LaunchPage";
+import BookDemo from "@/pages/BookDemo";
 
 function Router() {
   return (
     <Switch>
-      <Route path="/" component={Home} />
+      <Route path="/" component={LaunchPage} />
+      <Route path="/home" component={Home} />
       <Route path="/test-speech" component={TestSpeech} />
       <Route path="/admin" component={Admin} />
       <Route path="/chat" component={EllaChat} />
+      <Route path="/ella-chat" component={EllaChat} />
       <Route path="/demo-dashboard" component={DemoDashboard} />
       <Route path="/white-label" component={WhiteLabelGenerator} />
+      <Route path="/book-demo" component={BookDemo} />
       <Route component={NotFound} />
     </Switch>
   );
