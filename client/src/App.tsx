@@ -9,6 +9,7 @@ import TestSpeech from "./components/TestSpeech";
 import Admin from "@/pages/Admin";
 import EllaChat from "@/pages/EllaChat";
 import DemoDashboard from "@/pages/DemoDashboard";
+import WhiteLabelGenerator from "@/pages/WhiteLabelGenerator";
 
 function Router() {
   return (
@@ -18,6 +19,7 @@ function Router() {
       <Route path="/admin" component={Admin} />
       <Route path="/chat" component={EllaChat} />
       <Route path="/demo-dashboard" component={DemoDashboard} />
+      <Route path="/white-label" component={WhiteLabelGenerator} />
       <Route component={NotFound} />
     </Switch>
   );

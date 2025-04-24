@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import { Link } from 'wouter';
-import { LockKeyhole, ArrowLeft, Image } from 'lucide-react';
+import { LockKeyhole, ArrowLeft, Image, FileText } from 'lucide-react';
 
 export default function Admin() {
   const [isAuthenticated, setIsAuthenticated] = useState(true); // For demo, default to authenticated
@@ -163,6 +163,39 @@ export default function Admin() {
                         <span>Open Demo Dashboard</span>
                       </Button>
                     </Link>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div>
+              <h2 className="text-2xl font-semibold mb-4">White Labeling</h2>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="rounded-md bg-green-50 border border-green-200 p-4 flex flex-col justify-between">
+                  <div>
+                    <h3 className="font-medium text-green-800">White Label Generator</h3>
+                    <p className="text-sm text-green-800 mt-2">Create custom AI assistants with your brand, personas, and integrations</p>
+                  </div>
+                  <div className="mt-4">
+                    <Link href="/white-label">
+                      <Button className="w-full flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700">
+                        <FileText className="h-4 w-4" />
+                        <span>Generate Your AI Assistant</span>
+                      </Button>
+                    </Link>
+                  </div>
+                </div>
+                
+                <div className="rounded-md bg-muted p-4 flex flex-col justify-between">
+                  <div>
+                    <h3 className="font-medium">Features</h3>
+                    <ul className="text-sm mt-2 space-y-1 list-disc pl-4">
+                      <li>Customizable personas and prompts</li>
+                      <li>Brand colors and themes</li>
+                      <li>Custom DALL·E image styles</li>
+                      <li>Integration with third-party services</li>
+                      <li>Exportable configuration</li>
+                    </ul>
                   </div>
                 </div>
               </div>
