@@ -38,8 +38,9 @@ import {
 } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 
-// Import YoBot logo
-import yobotLogo from '@assets/New Upscaled Head Only Logo.png';
+// Import YoBot logos
+import yobotLogo from '@assets/YoBot® Logo Robot Head.png';
+import yobotFullLogo from '@assets/Engage Smarter Logo Cursive 7 HR Zoomed no background resized smaller.png';
 
 export default function LaunchPage() {
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
@@ -429,13 +430,9 @@ export default function LaunchPage() {
       {/* Footer */}
       <footer className="py-10 bg-indigo-950 text-white">
         <div className="container mx-auto px-4">
-          <div className="flex flex-col md:flex-row justify-between items-center">
-            <div className="flex items-center mb-6 md:mb-0">
-              <img src={yobotLogo} alt="YoBot Logo" className="h-10 w-10 mr-3" />
-              <div>
-                <h3 className="text-xl font-bold">YoBot</h3>
-                <p className="text-indigo-300 text-sm">Transforming business communication</p>
-              </div>
+          <div className="flex flex-col md:flex-row justify-between items-center mb-6">
+            <div className="mb-6 md:mb-0">
+              <img src={yobotFullLogo} alt="YoBot Logo" className="h-24 md:h-16" />
             </div>
             <div className="flex gap-6">
               <Link href="/about" className="text-indigo-300 hover:text-white transition-colors">About</Link>
