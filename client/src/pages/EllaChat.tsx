@@ -1,13 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Mic, MicOff, Send, Volume2, VolumeX, ArrowLeft, User, Brain, Edit, Calendar, Clock, MapPin, AlertCircle, Briefcase, Trash2, Palette } from 'lucide-react';
+import { Mic, MicOff, Send, Volume2, VolumeX, ArrowLeft, User, Brain, Edit, Calendar, Clock, MapPin, AlertCircle, Briefcase, Trash2, Palette, Image, X, Loader2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar } from '@/components/ui/avatar';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Link } from 'wouter';
 import { 
   Select, 
@@ -101,6 +102,14 @@ export default function EllaChat() {
   const [animationsEnabled, setAnimationsEnabled] = useState(true);
   const [fontScale, setFontScale] = useState(1);
   const [showThemeSettings, setShowThemeSettings] = useState(false);
+  
+  // Image generation state
+  const [showImageDialog, setShowImageDialog] = useState(false);
+  const [imagePrompt, setImagePrompt] = useState('');
+  const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(null);
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
+  const [imageError, setImageError] = useState<string | null>(null);
+  const [imageSize, setImageSize] = useState<"1024x1024" | "1792x1024" | "1024x1792">("1024x1024");
   
   // Refs
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -344,6 +353,45 @@ export default function EllaChat() {
       animationsEnabled,
       fontScale: scale
     });
+  };
+  
+  // Function to generate image
+  const generateImage = async () => {
+    if (!imagePrompt.trim()) return;
+    
+    setIsGeneratingImage(true);
+    setImageError(null);
+    
+    try {
+      const response = await fetch('/api/images/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ 
+          prompt: imagePrompt,
+          size: imageSize
+        })
+      });
+      
+      const data = await response.json();
+      
+      if (data.success && data.imageUrl) {
+        setGeneratedImageUrl(data.imageUrl);
+        
+        // Add the image generation to the conversation
+        await addMessage(`Generate an image of: ${imagePrompt}`, true);
+        await addMessage(`I've created this image for you: ${data.imageUrl}`, false);
+        
+      } else {
+        throw new Error(data.error || 'Failed to generate image');
+      }
+    } catch (error: any) {
+      console.error('Error generating image:', error);
+      setImageError(error instanceof Error ? error.message : 'An unexpected error occurred');
+    } finally {
+      setIsGeneratingImage(false);
+    }
   };
 
   // Function to process response actions (shared between text and voice input)
@@ -623,398 +671,202 @@ export default function EllaChat() {
     } catch (error) {
       console.error('Mobile speech recognition setup error:', error);
       setIsListening(false);
-      alert('Your device doesn\'t support voice input or permission was denied. Please type your message instead.');
     }
   };
   
-  // Create or recreate the speech recognition object
-  const initializeSpeechRecognition = (forMobile = false) => {
-    // Ensure old instance is fully stopped
-    if (recognitionRef.current) {
-      try {
-        recognitionRef.current.onend = null;
-        recognitionRef.current.onerror = null;
-        recognitionRef.current.onresult = null;
-        recognitionRef.current.stop();
-      } catch (e) {
-        // Ignore errors during cleanup
-      }
-    }
+  // More robust desktop speech recognition with features
+  const startDesktopRecognition = () => {
+    console.log('Using desktop speech recognition');
     
-    // Create new instance
     try {
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      recognitionRef.current = new SpeechRecognition();
-      
-      // Configure based on device type
-      if (forMobile) {
-        // Mobile-optimized settings
-        recognitionRef.current.continuous = false;
-        recognitionRef.current.interimResults = false;
-        recognitionRef.current.maxAlternatives = 1;
-      } else {
-        // Desktop settings
-        recognitionRef.current.continuous = false;
-        recognitionRef.current.interimResults = false;
-        recognitionRef.current.maxAlternatives = 1;
-      }
-      
-      recognitionRef.current.lang = 'en-US';
-      
-      // Set up handlers
-      setupRecognitionHandlers();
-      
-      console.log(`Speech recognition initialized for ${forMobile ? 'mobile' : 'desktop'}`);
-      return true;
-    } catch (error) {
-      console.error('Failed to initialize speech recognition:', error);
-      return false;
-    }
-  };
-  
-  // Set up the event handlers for the recognition object
-  const setupRecognitionHandlers = () => {
-    if (!recognitionRef.current) return;
-    
-    recognitionRef.current.onstart = () => {
-      console.log('Speech recognition started, listening for speech...');
-      setIsListening(true);
-    };
-    
-    recognitionRef.current.onresult = (event: any) => {
-      console.log('Speech recognition result received:', event);
-      try {
-        // Extract the transcript from the first result
-        const transcript = event.results[0][0].transcript.trim();
-        const confidence = event.results[0][0].confidence;
-        
-        console.log(`Speech recognized with ${Math.round(confidence * 100)}% confidence: "${transcript}"`);
-        setVoiceConfidence(confidence);
-        
-        // Update input message with recognized text
-        setInputMessage(transcript);
-        
-        // Auto-send message if confidence is high enough
-        if (confidence > 0.7) {
-          // Use a small delay to provide visual feedback
-          setTimeout(() => {
-            if (transcript && transcript.length > 0) {
-              sendMessageWithText(transcript);
-            }
-          }, 300);
+      // Always clean up any existing instance first
+      if (recognitionRef.current) {
+        try {
+          // Clean up old handlers
+          recognitionRef.current.onstart = null;
+          recognitionRef.current.onresult = null;
+          recognitionRef.current.onerror = null;
+          recognitionRef.current.onend = null;
+          recognitionRef.current.abort();
+          recognitionRef.current.stop();
+        } catch (err) {
+          // Ignore cleanup errors
         }
-      } catch (error) {
-        console.error('Error processing speech result:', error);
-      } finally {
-        // Always set isListening to false since we're using non-continuous mode
+      }
+      
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      const recognition = new SpeechRecognition();
+      
+      // Desktop settings - we can use more advanced features
+      recognition.continuous = true;
+      recognition.interimResults = true; 
+      recognition.maxAlternatives = 1;
+      recognition.lang = 'en-US';
+      
+      let finalTranscript = '';
+      let interimTranscript = '';
+      
+      recognition.onstart = () => {
+        setIsListening(true);
+        console.log('Desktop speech recognition started');
+        // Reset transcripts
+        finalTranscript = '';
+        interimTranscript = '';
+      };
+      
+      recognition.onresult = (event: any) => {
+        let updatedFinal = finalTranscript;
+        interimTranscript = '';
+        
+        // Process all results
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const transcript = event.results[i][0].transcript;
+          const confidence = event.results[i][0].confidence;
+          setVoiceConfidence(confidence);
+          
+          if (event.results[i].isFinal) {
+            updatedFinal += ' ' + transcript;
+            console.log(`Desktop speech recognized (final): "${transcript}" (${Math.round(confidence * 100)}%)`);
+          } else {
+            interimTranscript += transcript;
+            console.log(`Desktop speech recognized (interim): "${transcript}" (${Math.round(confidence * 100)}%)`);
+          }
+        }
+        
+        finalTranscript = updatedFinal;
+        
+        // Update UI with current transcript (either final or interim)
+        setInputMessage(finalTranscript || interimTranscript);
+      };
+      
+      recognition.onerror = (event: any) => {
+        console.error('Desktop speech recognition error:', event.error);
+        
+        if (event.error === 'not-allowed') {
+          alert('Microphone access is needed for voice input. Please enable it in your browser settings.');
+        }
+        
         setIsListening(false);
-      }
-    };
-    
-    recognitionRef.current.onerror = (event: any) => {
-      console.error('Speech recognition error:', event.error, event);
+      };
       
-      if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
-        alert('Microphone permission was denied. Please allow microphone access to use voice input.');
-      } else if (event.error === 'no-speech') {
-        console.log('No speech was detected');
-      } else {
-        console.error(`Speech recognition error: ${event.error}`);
-      }
+      recognition.onend = () => {
+        console.log('Desktop speech recognition ended');
+        
+        // If we have a finalTranscript and it's not empty, send the message
+        if (finalTranscript.trim()) {
+          // Small delay to allow UI to update
+          setTimeout(() => {
+            sendMessageWithText(finalTranscript.trim());
+          }, 100);
+        }
+        
+        setIsListening(false);
+      };
       
+      recognitionRef.current = recognition;
+      
+      recognition.start();
+    } catch (error) {
+      console.error('Desktop speech recognition setup error:', error);
       setIsListening(false);
-    };
-    
-    recognitionRef.current.onend = () => {
-      console.log('Speech recognition ended');
-      setIsListening(false);
-    };
+      
+      alert('Could not start voice input. Please try again or type your message.');
+    }
   };
   
-  // Speech recognition main entry point
-  const startListening = async () => {
-    console.log('Speech recognition requested');
-    
-    // Check for browser support of Web Speech API
-    if (!('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) {
-      alert('Speech recognition is not supported in your browser. Please try using a modern browser like Chrome, Edge, or Safari.');
-      setIsVoiceEnabled(false);
-      return;
-    }
-    
-    // Make sure we're not already in listening mode
-    if (isListening) {
-      console.log('Already listening, ignoring duplicate request');
-      return;
-    }
-    
-    // Stop speaking if anything is playing to avoid conflicts
-    if (isSpeaking && currentAudioRef.current) {
-      currentAudioRef.current.pause();
-      currentAudioRef.current = null;
-      setIsSpeaking(false);
-    }
-    
-    // Show listening state immediately for better UX
-    setIsListening(true);
-    
-    // Branch for mobile vs desktop
+  // Wrapper function to start the appropriate recognition based on device
+  const startRecognition = () => {
+    // Get appropriate speech recognition based on device detection
     if (isMobileDevice()) {
-      console.log('Detected mobile device, using mobile-optimized recognition');
-      
-      // Mobile needs special handling - call our mobile-specific function
       startMobileRecognition();
     } else {
-      console.log('Detected desktop device, using standard recognition');
-      
-      try {
-        // Ensure recognition is initialized for desktop
-        if (!recognitionRef.current) {
-          initializeSpeechRecognition(false);
-        }
-        
-        // Request microphone access first
-        const hasPermission = await requestMicrophoneAccess();
-        if (!hasPermission) {
-          setIsListening(false);
-          return;
-        }
-        
-        // Start recognition
-        startRecognition();
-      } catch (error) {
-        console.error('Error in desktop speech recognition:', error);
-        setIsListening(false);
-        alert('Could not start speech recognition. Please try again.');
-      }
+      startDesktopRecognition();
     }
   };
   
-  // Helper function to actually start the recognition for desktop
-  const startRecognition = () => {
-    if (!recognitionRef.current) {
-      if (!initializeSpeechRecognition(false)) {
-        console.error('Recognition initialization failed');
-        return;
+  // Toggle speech recognition on/off
+  const toggleListening = () => {
+    if (isListening) {
+      try {
+        // Already listening, stop it
+        if (recognitionRef.current) {
+          recognitionRef.current.stop();
+        }
+      } catch (error) {
+        console.error('Error stopping recognition:', error);
       }
+      
+      setIsListening(false);
+    } else {
+      // Not listening, start it with the appropriate method
+      startRecognition();
     }
+  };
+  
+  // Function to play text response audio using ElevenLabs
+  const playAudio = async (text: string) => {
+    if (!text || text.trim() === '') return;
     
     try {
-      // Don't set isListening here - let the onstart handler do it
-      recognitionRef.current.start();
-      console.log('Recognition start command sent');
-    } catch (error) {
-      console.error('Failed to start recognition:', error);
-      setIsListening(false);
-      
-      if (error instanceof DOMException && error.name === 'NotAllowedError') {
-        alert('Microphone access was denied by your browser. Please check your settings and try again.');
-      }
-    }
-  };
-  
-  // Stop listening for speech
-  const stopListening = () => {
-    if (recognitionRef.current) {
-      try {
-        recognitionRef.current.stop();
-      } catch (error) {
-        console.error('Error stopping speech recognition:', error);
-      }
-    }
-    setIsListening(false);
-  };
-  
-  // Helper function for browser speech synthesis fallback
-  const useBrowserFallbackSpeech = (text: string) => {
-    if (window.speechSynthesis) {
-      try {
-        // Cancel any ongoing speech
-        window.speechSynthesis.cancel();
-        
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.volume = volume / 100;
-        
-        // Attempt to find a female voice for better match to Ella
-        const voices = window.speechSynthesis.getVoices();
-        const femaleVoice = voices.find(voice => 
-          voice.name.includes('female') || 
-          voice.name.includes('Samantha') || 
-          voice.name.includes('Victoria') || 
-          voice.name.includes('Karen')
-        );
-        
-        if (femaleVoice) {
-          utterance.voice = femaleVoice;
-        }
-        
-        // Set state for speaking indicator
-        setIsSpeaking(true);
-        
-        // Handle when speech is done
-        utterance.onend = () => {
-          setIsSpeaking(false);
-        };
-        
-        // Handle errors
-        utterance.onerror = () => {
-          console.error('Browser speech synthesis error');
-          setIsSpeaking(false);
-        };
-        
-        window.speechSynthesis.speak(utterance);
-      } catch (e) {
-        console.error('Browser speech synthesis failed:', e);
-        setIsSpeaking(false);
-      }
-    }
-  };
-  
-  // Function to play audio response with enhanced handling
-  const playAudio = async (text: string) => {
-    try {
-      // If currently speaking, stop the current audio first
-      if (isSpeaking && currentAudioRef.current) {
+      // If there's currently audio playing, stop it
+      if (currentAudioRef.current) {
         currentAudioRef.current.pause();
         currentAudioRef.current = null;
       }
       
-      // Process text on client side to improve voice quality and handle formatting
-      // This is a second layer of defense in case server-side processing doesn't catch all
-      let processedText = text
-        .replace(/•\s*/g, "") // Remove bullet points
-        .replace(/\*/g, "") // Remove asterisks completely
-        .replace(/-\s+/g, "") // Remove hyphens at the start of lines
-        .replace(/^\s*-\s*/gm, "") // Remove hyphens at the start of each line in multiline text
-        .replace(/\n+/g, ". ") // Replace multiple newlines with periods for better speech flow
-        .replace(/\s{2,}/g, " "); // Replace multiple spaces with a single space
-      
-      // Add natural pauses for better speech rhythm
-      processedText = processedText
-        .replace(/\. /g, ". <break time='0.5s'/> ")
-        .replace(/\? /g, "? <break time='0.6s'/> ")
-        .replace(/! /g, "! <break time='0.5s'/> ")
-        .replace(/: /g, ": <break time='0.3s'/> ")
-        .replace(/; /g, "; <break time='0.3s'/> ");
-      
-      console.log("Original text:", text);
-      console.log("Processed text for speech:", processedText);
-      
       setIsSpeaking(true);
       
-      try {
-        const response = await fetch('/api/speech', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ 
-            text: processedText,
-            // Add additional parameters for more expressive speech
-            options: {
-              stability: 0.5,
-              similarityBoost: 0.75,
-              style: 0.5 // Add more expressiveness to the voice
-            }
-          })
-        });
-        
-        if (response.ok) {
-          const audioBlob = await response.blob();
-          const audioUrl = URL.createObjectURL(audioBlob);
-          const audioElement = new Audio(audioUrl);
-          
-          // Save reference to the audio element
-          currentAudioRef.current = audioElement;
-          
-          audioElement.volume = volume / 100;
-          
-          // Properly handle state and cleanup when audio finishes
-          audioElement.onended = () => {
-            URL.revokeObjectURL(audioUrl);
-            setIsSpeaking(false);
-            currentAudioRef.current = null;
-          };
-          
-          // Handle errors properly
-          audioElement.onerror = (e) => {
-            console.error('Audio playback error:', e);
-            URL.revokeObjectURL(audioUrl);
-            setIsSpeaking(false);
-            currentAudioRef.current = null;
-            
-            // Attempt fallback for seamless experience
-            useBrowserFallbackSpeech(text);
-          };
-          
-          // Use a more robust play mechanism with better error handling for mobile
-          try {
-            await audioElement.play();
-          } catch (playError) {
-            console.error('Failed to play audio - likely a mobile autoplay restriction:', playError);
-            setIsSpeaking(false);
-            currentAudioRef.current = null;
-            
-            // Fallback to browser speech synthesis
-            useBrowserFallbackSpeech(text);
+      // Call the server to generate and return audio
+      const response = await fetch('/api/speech', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ 
+          text,
+          options: {
+            stability: 0.5,
+            similarityBoost: 0.75,
+            style: 0.5,
+            useSpeakerBoost: true
           }
-        } else {
-          console.error('Failed to get speech:', await response.text());
-          setIsSpeaking(false);
-          
-          // Fallback to browser speech synthesis
-          useBrowserFallbackSpeech(text);
-        }
-      } catch (fetchError) {
-        console.error('Error fetching speech from server:', fetchError);
-        setIsSpeaking(false);
-        
-        // Fallback to browser speech synthesis
-        useBrowserFallbackSpeech(text);
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to generate speech');
       }
+      
+      // Create audio blob from the response
+      const audioBlob = await response.blob();
+      const audioUrl = URL.createObjectURL(audioBlob);
+      
+      // Play the audio
+      const audio = new Audio(audioUrl);
+      audio.volume = volume / 100;
+      
+      // Set handlers
+      audio.onended = () => {
+        setIsSpeaking(false);
+        URL.revokeObjectURL(audioUrl);
+        currentAudioRef.current = null;
+      };
+      
+      audio.onerror = (err) => {
+        console.error('Audio playback error:', err);
+        setIsSpeaking(false);
+        URL.revokeObjectURL(audioUrl);
+        currentAudioRef.current = null;
+      };
+      
+      currentAudioRef.current = audio;
+      audio.play();
+      
     } catch (error) {
-      console.error('Error playing audio:', error);
+      console.error('Speech synthesis error:', error);
       setIsSpeaking(false);
     }
   };
-  
-  // Initialize speech recognition on component mount
-  useEffect(() => {
-    // Check if speech recognition is supported
-    if (!('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) {
-      console.log('Speech recognition is not supported in this browser');
-      setIsVoiceEnabled(false);
-      return;
-    }
-    
-    // Initialize for the right platform
-    const mobile = isMobileDevice();
-    console.log(`Initializing speech recognition for ${mobile ? 'mobile' : 'desktop'} device`);
-    
-    // Initialize recognition with platform-specific settings
-    initializeSpeechRecognition(mobile);
-    
-    // Clean up on unmount
-    return () => {
-      if (recognitionRef.current) {
-        try {
-          // Clear all handlers
-          const recognition = recognitionRef.current;
-          recognition.onstart = null;
-          recognition.onresult = null;
-          recognition.onerror = null;
-          recognition.onend = null;
-          
-          // Stop recognition if it's running
-          if (isListening) {
-            recognition.stop();
-          }
-        } catch (error) {
-          console.error('Error cleaning up speech recognition:', error);
-        }
-      }
-    };
-  }, []);
   
   // Load appointments when needed
   useEffect(() => {
@@ -1098,76 +950,75 @@ export default function EllaChat() {
                     className={`flex ${message.isUser ? 'justify-end' : 'justify-start'}`}
                     initial={{ opacity: 0, y: 20, scale: 0.95 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
-                    transition={{ 
-                      duration: 0.3, 
-                      ease: "easeOut",
-                      delay: 0.05 * Math.min(index, 3) // Cap the delay for older messages
-                    }}
+                    transition={{ duration: animationsEnabled ? 0.3 : 0, delay: animationsEnabled ? index * 0.05 : 0 }}
                   >
-                    <motion.div
-                      className={`max-w-[90%] sm:max-w-[80%] rounded-lg p-1.5 sm:p-3 ${
-                        message.isUser
-                          ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-br-none shadow-sm'
-                          : 'bg-gradient-to-r from-gray-50 to-blue-50 dark:from-gray-900/70 dark:to-blue-900/40 rounded-bl-none border border-blue-100/50 dark:border-blue-800/30 shadow-sm'
-                      }`}
-                      initial={{ opacity: 0, x: message.isUser ? 20 : -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ 
-                        duration: 0.3,
-                        type: "spring",
-                        stiffness: 500,
-                        damping: 25,
-                        delay: 0.05 * Math.min(index, 3) + 0.1 
+                    <motion.div 
+                      className={`rounded-2xl px-3 py-2 max-w-[85%] sm:max-w-[75%] shadow-sm
+                        ${message.isUser 
+                          ? 'bg-[var(--user-bubble-bg)] text-[var(--user-bubble-text)]' 
+                          : 'bg-blue-50 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-900 text-foreground'
+                        }`}
+                      style={{
+                        opacity: message.isUser ? bubbleOpacity : 1
                       }}
-                      whileHover={{ scale: 1.01 }}
                     >
-                      <motion.p 
-                        className="whitespace-pre-wrap text-xs sm:text-base"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ duration: 0.3, delay: 0.2 }}
-                      >
+                      {/* Header for assistant messages */}
+                      {!message.isUser && (
+                        <div className="flex items-center gap-1 mb-1">
+                          <Avatar className="h-4 w-4 rounded-full overflow-hidden">
+                            <img src={yobotHeadLogo} alt="Ella" className="h-full w-full object-contain" />
+                          </Avatar>
+                          <span className="text-[10px] font-medium text-blue-600 dark:text-blue-400">Ella</span>
+                        </div>
+                      )}
+                      
+                      <div className="text-xs sm:text-sm whitespace-pre-wrap break-words">
                         {message.content}
-                      </motion.p>
-                      <motion.div 
-                        className={`text-[8px] sm:text-xs mt-1 ${message.isUser ? 'text-blue-100' : 'text-muted-foreground'}`}
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ duration: 0.3, delay: 0.3 }}
-                      >
-                        {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </motion.div>
+                      </div>
+                      <div className="text-[8px] opacity-60 text-right mt-1">
+                        {new Date(message.timestamp).toLocaleTimeString(undefined, {
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </div>
                     </motion.div>
                   </motion.div>
                 ))}
+                
+                {/* Loader for when a message is being generated */}
                 {isLoading && (
-                  <motion.div 
+                  <motion.div
                     className="flex justify-start"
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.2 }}
                   >
                     <motion.div 
-                      className="max-w-[90%] sm:max-w-[80%] rounded-lg p-2 sm:p-3 bg-gradient-to-r from-gray-50 to-blue-50 dark:from-gray-900/70 dark:to-blue-900/40 rounded-bl-none border border-blue-100/50 dark:border-blue-800/30 shadow-sm"
-                      animate={{ boxShadow: ["0 0 0 rgba(59, 130, 246, 0)", "0 0 8px rgba(59, 130, 246, 0.3)", "0 0 0 rgba(59, 130, 246, 0)"] }}
-                      transition={{ duration: 2, repeat: Infinity }}
+                      className="rounded-2xl px-3 py-2 max-w-[85%] sm:max-w-[75%] shadow-sm
+                        bg-blue-50 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-900 text-foreground"
                     >
-                      <div className="flex items-center gap-2">
-                        <div className="flex space-x-1 sm:space-x-1.5">
+                      <div className="flex items-center gap-1 mb-1">
+                        <Avatar className="h-4 w-4 rounded-full overflow-hidden">
+                          <img src={yobotHeadLogo} alt="Ella" className="h-full w-full object-contain" />
+                        </Avatar>
+                        <span className="text-[10px] font-medium text-blue-600 dark:text-blue-400">Ella</span>
+                      </div>
+                      <div className="flex items-center gap-3 py-2">
+                        <div className="flex space-x-1.5">
                           <motion.div 
                             className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-blue-500"
-                            animate={{ scale: [0.5, 1, 0.5], opacity: [0.5, 1, 0.5] }}
-                            transition={{ duration: 1.5, repeat: Infinity, delay: 0 }}
+                            animate={{ y: [0, -5, 0] }}
+                            transition={{ duration: 1, repeat: Infinity }}
                           />
                           <motion.div 
                             className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-blue-500"
-                            animate={{ scale: [0.5, 1, 0.5], opacity: [0.5, 1, 0.5] }}
-                            transition={{ duration: 1.5, repeat: Infinity, delay: 0.2 }}
+                            animate={{ y: [0, -5, 0] }}
+                            transition={{ duration: 1, repeat: Infinity, delay: 0.2 }}
                           />
                           <motion.div 
                             className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-blue-500"
-                            animate={{ scale: [0.5, 1, 0.5], opacity: [0.5, 1, 0.5] }}
-                            transition={{ duration: 1.5, repeat: Infinity, delay: 0.4 }}
+                            animate={{ y: [0, -5, 0] }}
+                            transition={{ duration: 1, repeat: Infinity, delay: 0.4 }}
                           />
                         </div>
                         <span className="text-[10px] sm:text-xs text-blue-600 dark:text-blue-400 font-medium">
@@ -1229,74 +1080,34 @@ export default function EllaChat() {
                         ✕
                       </Button>
                     </div>
-                    <p className="text-[10px] sm:text-xs text-muted-foreground mb-2">
-                      Here are your upcoming appointments. Ella will remind you about these when needed.
-                    </p>
                     <div className="space-y-2">
                       {isLoadingAppointments ? (
-                        <motion.div 
-                          className="flex justify-center py-4"
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          transition={{ duration: 0.3 }}
-                        >
-                          <div className="flex items-center gap-2">
-                            <div className="flex space-x-1.5">
+                        <div className="flex items-center justify-center p-4">
+                          <div className="flex flex-col items-center">
+                            <div className="flex space-x-1.5 mb-2">
                               <motion.div 
                                 className="w-2 h-2 rounded-full bg-blue-500"
-                                animate={{ 
-                                  scale: [0.5, 1, 0.5],
-                                  opacity: [0.5, 1, 0.5]
-                                }}
-                                transition={{ 
-                                  duration: 1.5, 
-                                  repeat: Infinity, 
-                                  ease: "easeInOut",
-                                  times: [0, 0.5, 1],
-                                  delay: 0
-                                }}
+                                animate={{ y: [0, -5, 0] }}
+                                transition={{ duration: 1, repeat: Infinity }}
                               />
                               <motion.div 
                                 className="w-2 h-2 rounded-full bg-blue-500"
-                                animate={{ 
-                                  scale: [0.5, 1, 0.5],
-                                  opacity: [0.5, 1, 0.5]
-                                }}
-                                transition={{ 
-                                  duration: 1.5, 
-                                  repeat: Infinity,
-                                  ease: "easeInOut", 
-                                  times: [0, 0.5, 1],
-                                  delay: 0.2
-                                }}
+                                animate={{ y: [0, -5, 0] }}
+                                transition={{ duration: 1, repeat: Infinity, delay: 0.2 }}
                               />
                               <motion.div 
                                 className="w-2 h-2 rounded-full bg-blue-500"
-                                animate={{ 
-                                  scale: [0.5, 1, 0.5],
-                                  opacity: [0.5, 1, 0.5]
-                                }}
-                                transition={{ 
-                                  duration: 1.5, 
-                                  repeat: Infinity,
-                                  ease: "easeInOut",
-                                  times: [0, 0.5, 1],
-                                  delay: 0.4
-                                }}
+                                animate={{ y: [0, -5, 0] }}
+                                transition={{ duration: 1, repeat: Infinity, delay: 0.4 }}
                               />
                             </div>
-                            <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">
-                              Loading appointments...
-                            </span>
+                            <span className="text-xs text-muted-foreground">Loading your appointments...</span>
                           </div>
-                        </motion.div>
+                        </div>
                       ) : appointments.length > 0 ? (
                         appointments.map(appointment => (
-                          <div key={appointment.id} className="border border-blue-200 dark:border-blue-800 rounded-lg p-2 text-[10px] sm:text-xs">
-                            <div className="flex items-start gap-1">
-                              <div className="bg-blue-100 dark:bg-blue-900 p-1 rounded flex items-center justify-center">
-                                <Calendar className="h-3 w-3 sm:h-4 sm:w-4 text-blue-600 dark:text-blue-400" />
-                              </div>
+                          <div key={appointment.id} className="p-2 rounded-md border bg-white dark:bg-gray-900">
+                            <div className="flex flex-col sm:flex-row gap-2">
                               <div className="flex-1">
                                 <div className="font-medium">{appointment.title}</div>
                                 <div className="flex items-center text-[10px] sm:text-xs text-muted-foreground">
@@ -1348,82 +1159,28 @@ export default function EllaChat() {
                         <div className="flex items-center justify-center p-4 text-center border border-dashed border-gray-300 dark:border-gray-700 rounded-lg">
                           <div>
                             <AlertCircle className="h-5 w-5 mx-auto mb-1 text-muted-foreground" />
-                            <p className="text-[10px] sm:text-xs text-muted-foreground">
-                              You don't have any upcoming appointments yet.
-                            </p>
+                            <p className="text-sm text-muted-foreground">You don't have any upcoming appointments.</p>
                           </div>
                         </div>
                       )}
                     </div>
                   </div>
                 )}
+                
                 <div ref={messagesEndRef} />
               </div>
             </CardContent>
-            <div className="p-1 sm:p-3 border-t relative">
-              {/* Voice activity indicators - microanimations */}
-              {isListening && (
-                <div className="absolute left-0 top-0 w-full flex items-center justify-center">
-                  <div className="bg-blue-500/90 text-white px-3 py-1 rounded-b-lg text-xs shadow-md flex items-center gap-2 transform -translate-y-1">
-                    <div className="flex gap-1">
-                      <div className="w-1 h-3 bg-white rounded-full animate-sound-wave" style={{ animationDelay: '0ms' }}></div>
-                      <div className="w-1 h-4 bg-white rounded-full animate-sound-wave" style={{ animationDelay: '250ms' }}></div>
-                      <div className="w-1 h-2 bg-white rounded-full animate-sound-wave" style={{ animationDelay: '500ms' }}></div>
-                      <div className="w-1 h-5 bg-white rounded-full animate-sound-wave" style={{ animationDelay: '750ms' }}></div>
-                      <div className="w-1 h-3 bg-white rounded-full animate-sound-wave" style={{ animationDelay: '1000ms' }}></div>
-                    </div>
-                    <span className="flex items-center gap-1">
-                      <Mic className="h-3 w-3 animate-ping-slow" />
-                      Listening... {voiceConfidence > 0 ? (
-                        <span className={`
-                          ${voiceConfidence > 0.8 ? 'text-green-200' : voiceConfidence > 0.5 ? 'text-yellow-200' : 'text-red-200'}
-                          transition-colors duration-300
-                        `}>
-                          ({Math.round(voiceConfidence * 100)}%)
-                        </span>
-                      ) : ''}
-                    </span>
-                  </div>
-                </div>
-              )}
-              
-              <div className="flex items-center gap-1 sm:gap-2">
+            
+            <div className="p-2 sm:p-4 border-t">
+              <div className="flex items-center space-x-2">
                 <Button
                   size="icon"
-                  variant="ghost"
-                  className={`h-8 w-8 rounded-full ${isMuted ? 'text-red-500 hover:text-red-600' : ''}`}
-                  onClick={() => setIsMuted(!isMuted)}
-                >
-                  {isMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
-                </Button>
-                <Button
-                  size="icon"
-                  variant={isListening ? 'destructive' : 'outline'}
-                  className={`h-10 w-10 sm:h-8 sm:w-8 rounded-full ${isListening ? 'shadow-md' : ''}`}
-                  onClick={isListening ? stopListening : startListening}
-                  disabled={!isVoiceEnabled}
+                  className={`h-8 w-8 ${isListening ? 'bg-red-500 hover:bg-red-600' : 'bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700'}`}
+                  onClick={toggleListening}
+                  title={isListening ? "Stop listening" : "Start voice input"}
                 >
                   {isListening ? (
-                    <div className="relative">
-                      <MicOff className="h-5 w-5 sm:h-4 sm:w-4" />
-                      <motion.div 
-                        className="absolute -inset-4 rounded-full border border-red-400 dark:border-red-600"
-                        animate={{ 
-                          scale: [1, 1.1, 1],
-                          opacity: [0.8, 0.2, 0.8],
-                          boxShadow: [
-                            '0 0 0 0 rgba(248, 113, 113, 0.7)',
-                            '0 0 0 4px rgba(248, 113, 113, 0.0)',
-                            '0 0 0 0 rgba(248, 113, 113, 0.7)'
-                          ]
-                        }}
-                        transition={{ 
-                          duration: 1.5, 
-                          repeat: Infinity, 
-                          ease: "easeInOut" 
-                        }}
-                      />
-                    </div>
+                    <MicOff className="h-5 w-5 sm:h-4 sm:w-4 text-white" />
                   ) : (
                     <Mic className="h-5 w-5 sm:h-4 sm:w-4" />
                   )}
@@ -1439,7 +1196,16 @@ export default function EllaChat() {
                 />
                 <Button
                   size="icon"
-                  className="h-8 w-8 rounded-full bg-blue-500 hover:bg-blue-600"
+                  className="h-8 w-8 rounded-full bg-blue-100 hover:bg-blue-200 text-blue-600"
+                  onClick={() => setShowImageDialog(true)}
+                  disabled={isLoading}
+                  title="Generate an image"
+                >
+                  <Image className="h-4 w-4" />
+                </Button>
+                <Button
+                  size="icon"
+                  className="h-8 w-8 rounded-full bg-blue-500 hover:bg-blue-600 ml-1"
                   onClick={sendMessage}
                   disabled={isLoading || !inputMessage.trim()}
                 >
@@ -1648,6 +1414,94 @@ export default function EllaChat() {
           </Card>
         </div>
       </div>
+      
+      {/* Image Generation Dialog */}
+      <Dialog open={showImageDialog} onOpenChange={setShowImageDialog}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Image className="h-5 w-5 text-blue-500" />
+              Generate Image with Ella
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="image-prompt">Image Description</Label>
+              <Textarea
+                id="image-prompt"
+                placeholder="Describe the image you want to generate..."
+                value={imagePrompt}
+                onChange={(e) => setImagePrompt(e.target.value)}
+                className="min-h-[100px]"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="image-size">Image Size</Label>
+              <Select value={imageSize} onValueChange={(value) => setImageSize(value as any)}>
+                <SelectTrigger id="image-size">
+                  <SelectValue placeholder="Select image size" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1024x1024">Square (1024×1024)</SelectItem>
+                  <SelectItem value="1792x1024">Landscape (1792×1024)</SelectItem>
+                  <SelectItem value="1024x1792">Portrait (1024×1792)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            {imageError && (
+              <div className="bg-red-50 text-red-600 p-2 rounded-md border border-red-200 text-sm flex items-start">
+                <AlertCircle className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
+                <span>{imageError}</span>
+              </div>
+            )}
+            
+            {generatedImageUrl && (
+              <div className="border rounded-md overflow-hidden">
+                <img
+                  src={generatedImageUrl}
+                  alt={imagePrompt}
+                  className="w-full h-auto object-contain"
+                />
+              </div>
+            )}
+          </div>
+          
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowImageDialog(false);
+                setImagePrompt('');
+                setGeneratedImageUrl(null);
+                setImageError(null);
+              }}
+            >
+              <X className="h-4 w-4 mr-2" />
+              Cancel
+            </Button>
+            <Button 
+              onClick={generateImage} 
+              disabled={isGeneratingImage || !imagePrompt.trim()}
+              className="gap-2"
+            >
+              {isGeneratingImage ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <Image className="h-4 w-4" />
+                  Generate
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
