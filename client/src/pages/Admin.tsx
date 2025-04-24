@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import DocumentUpload from '@/components/DocumentUpload';
 import AdminPersonaManager from '@/components/AdminPersonaManager';
+import ImageGenerator from '@/components/ImageGenerator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import { Link } from 'wouter';
-import { LockKeyhole, ArrowLeft } from 'lucide-react';
+import { LockKeyhole, ArrowLeft, Image } from 'lucide-react';
 
 export default function Admin() {
   const [isAuthenticated, setIsAuthenticated] = useState(true); // For demo, default to authenticated
@@ -115,6 +116,13 @@ export default function Admin() {
             <div>
               <h2 className="text-2xl font-semibold mb-4">Persona Management</h2>
               <AdminPersonaManager />
+            </div>
+            
+            <div>
+              <h2 className="text-2xl font-semibold mb-4">Image Generation</h2>
+              <div className="bg-card border rounded-lg p-6">
+                <ImageGenerator />
+              </div>
             </div>
             
             <div>

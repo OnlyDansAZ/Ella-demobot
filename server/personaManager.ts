@@ -242,11 +242,12 @@ when appropriate.`
       // Update any sessions using this persona to the default
       const defaultPersona = this.getDefaultPersona();
       
-      for (const [sessionId, personaId] of this.currentSessionPersonas.entries()) {
+      // Convert entries to array first to avoid TypeScript iteration error
+      Array.from(this.currentSessionPersonas.entries()).forEach(([sessionId, personaId]) => {
         if (personaId === id) {
           this.currentSessionPersonas.set(sessionId, defaultPersona.id);
         }
-      }
+      });
       
       this.saveToFile();
     }
