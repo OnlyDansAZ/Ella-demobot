@@ -40,7 +40,7 @@ import { Badge } from '@/components/ui/badge';
 
 // Import YoBot logos
 import yobotLogo from '@assets/YoBot® Logo Robot Head.png';
-import yobotFullLogo from '@assets/Engage Smarter Logo Cursive 7 HR Zoomed no background resized smaller.png';
+import yobotFullLogo from '@assets/YoBot Engange Smarter Logo w no background.png';
 
 export default function LaunchPage() {
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
@@ -432,7 +432,7 @@ export default function LaunchPage() {
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row justify-between items-center mb-6">
             <div className="mb-6 md:mb-0">
-              <img src={yobotFullLogo} alt="YoBot Logo" className="h-24 md:h-16" />
+              <img src={yobotFullLogo} alt="YoBot Logo" className="h-32 md:h-24 drop-shadow-md" />
             </div>
             <div className="flex gap-6">
               <Link href="/about" className="text-indigo-300 hover:text-white transition-colors">About</Link>
