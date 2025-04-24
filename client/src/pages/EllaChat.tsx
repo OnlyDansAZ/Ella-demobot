@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Mic, MicOff, Send, Volume2, VolumeX, ArrowLeft, User, Brain, Edit, Calendar, Clock, MapPin, AlertCircle, Briefcase, Trash2, Palette, Image, X, Loader2, BarChart2 } from 'lucide-react';
+import { Mic, MicOff, Send, Volume2, VolumeX, ArrowLeft, User, Brain, Edit, Calendar, Clock, MapPin, AlertCircle, Briefcase, Trash2, Palette, Image, X, Loader2, BarChart2, Phone } from 'lucide-react';
+import QuickCallButton from '@/components/QuickCallButton';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar } from '@/components/ui/avatar';
 import { Slider } from '@/components/ui/slider';
