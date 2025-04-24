@@ -454,8 +454,9 @@ Show enthusiasm and positivity throughout the interaction.`
 export async function generateResponse(
   userMessage: string, 
   conversationHistory: ChatMessage[] = [],
-  persona: string | null = null,
-  customPersonaPrompt: string | null = null
+  personaId: string | null = null,
+  customPrompt: string | null = null,
+  sessionId: string | null = null
 ): Promise<string> {
   try {
     // STEP 1: EXTRACT CONTEXT AND MEMORY DETAILS
@@ -488,21 +489,39 @@ export async function generateResponse(
     // Get relevant context from the knowledge base using enhanced RAG
     const relevantContext = await getRelevantContext(userMessage, conversationHistory);
     
-    // STEP 4: SELECT APPROPRIATE PERSONA
-    // Determine which system prompt to use based on persona selection
+    // STEP 4: SELECT APPROPRIATE PERSONA FROM SERVER-SIDE PERSONA MANAGER
+    // Determine which system prompt to use based on persona selection or session
     let baseSystemPrompt = SYSTEM_PROMPT;
     let personaDescription = "default";
     
-    if (customPersonaPrompt) {
-      // If a system prompt override is provided from the server-side persona manager, use that
-      baseSystemPrompt = customPersonaPrompt;
-      personaDescription = "server-managed";
-      console.log("Using server-managed persona prompt");
-    } else if (persona && personaSystemPrompts[persona]) {
-      // Legacy support: If a predefined persona is specified by ID, use its system prompt
-      baseSystemPrompt = personaSystemPrompts[persona];
-      personaDescription = persona;
-      console.log(`Using ${persona} persona system prompt (legacy mode)`);
+    // If we have a session ID, use the persona associated with that session
+    if (sessionId) {
+      const sessionPersona = personaManager.getSessionPersona(sessionId);
+      baseSystemPrompt = sessionPersona.systemPrompt;
+      personaDescription = sessionPersona.name;
+      console.log(`Using session persona: ${sessionPersona.name} (${sessionPersona.id})`);
+    }
+    // If we have a custom prompt directly provided (backward compatibility)
+    else if (customPrompt) {
+      baseSystemPrompt = customPrompt;
+      personaDescription = "custom";
+      console.log("Using provided custom prompt");
+    }
+    // If we have a specific persona ID requested (backward compatibility)
+    else if (personaId) {
+      // First check our server-side personas
+      const persona = personaManager.getPersona(personaId);
+      if (persona) {
+        baseSystemPrompt = persona.systemPrompt;
+        personaDescription = persona.name;
+        console.log(`Using persona: ${persona.name} (${persona.id})`);
+      }
+      // Legacy fallback to hardcoded personas
+      else if (personaSystemPrompts[personaId]) {
+        baseSystemPrompt = personaSystemPrompts[personaId];
+        personaDescription = personaId;
+        console.log(`Using ${personaId} persona system prompt (legacy mode)`);
+      }
     }
     
     // STEP 5: BUILD COMPREHENSIVE SYSTEM PROMPT
@@ -642,7 +661,9 @@ export async function generateResponse(
     let temperature = 0.3; // Default low temperature for factual responses
     
     // For casual conversation or emotional support, use slightly higher temperature
-    if (userTone === 'casual' || userTone === 'seeking reassurance' || personaDescription === 'casual') {
+    if (userTone === 'casual' || userTone === 'seeking reassurance' || 
+        personaDescription.toLowerCase().includes('casual') || 
+        personaDescription.toLowerCase().includes('friendly')) {
       temperature = 0.5;
     }
     

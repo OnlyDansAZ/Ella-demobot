@@ -98,7 +98,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Generate AI response using OpenAI
       try {
         console.log("Generating OpenAI response for:", message);
-        const aiResponse = await generateResponse(message, history, persona.id, persona.systemPrompt);
+        // Use the session ID directly for persona lookup
+        const aiResponse = await generateResponse(message, history, null, null, sessionId);
         
         // Log the AI's response for important queries to help diagnose context issues
         if (message.toLowerCase().includes("schedule") || 
