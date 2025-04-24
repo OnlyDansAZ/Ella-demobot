@@ -12,6 +12,7 @@ import calendlyRouter from './routes/calendlyRoutes';
 import appointmentRoutes from './routes/appointmentRoutes';
 import conversationRoutes from './routes/conversationRoutes';
 import personaRoutes from './routes/personaRoutes';
+import twilioRoutes from './routes/twilioRoutes';
 import { personaManager } from './personaManager';
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -34,6 +35,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Persona management routes
   app.use("/api/personas", personaRoutes);
+  
+  // Twilio phone call routes
+  app.use("/api", twilioRoutes);
 
   // Contact form submission endpoint
   app.post("/api/contact", (req, res) => {
