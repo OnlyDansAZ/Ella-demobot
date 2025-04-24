@@ -122,6 +122,19 @@ export default function EllaChat() {
   const recognitionRef = useRef<any>(null);
   const currentAudioRef = useRef<HTMLAudioElement | null>(null);
   
+  // Check URL for voice mode parameter
+  useEffect(() => {
+    // Check if voice mode is requested via URL parameter
+    const urlParams = new URLSearchParams(window.location.search);
+    const voiceMode = urlParams.get('voice');
+    
+    if (voiceMode === 'true') {
+      // Automatically start voice mode
+      setIsListening(true);
+      startListening();
+    }
+  }, []);
+
   // Effect to load and apply theme settings
   useEffect(() => {
     // Load saved theme settings from localStorage
