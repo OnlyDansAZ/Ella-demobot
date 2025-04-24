@@ -348,10 +348,70 @@
             "content": "Certainly! YoBot is a versatile AI assistant designed to enhance both personal and business productivity. Here's a brief overview of its capabilities:\n\n1. **Voice Interaction**: YoBot uses advanced voice technology for natural and emotionally rich interactions, ensuring clear communication even in challenging environments.\n\n2. **Business Integrations**: It seamlessly integrates with various business systems, making it an effective tool for improving operations and communication within organizations.\n\n3. **Flexible Solutions**: YoBot offers different tiers to cater to individual needs and business requirements, providing tailored solutions for a wide range of users.\n\n4. **Comprehensive Tasks**: Equipped to handle tasks such as scheduling appointments, providing information, and engaging in general conversations, YoBot is a reliable assistant in various contexts.\n\nOverall, YoBot is designed to be helpful, friendly, and adaptable, making it a valuable asset for both personal and professional use. If you have any more questions or need further details, feel free to ask!",
             "isUser": false,
             "timestamp": "2025-04-24T21:34:44.772Z"
+          },
+          {
+            "id": "9555855d-3d9b-425e-8f3f-58fcfbd9c130",
+            "content": "good afternoon Ella how are you  question mark  I don't right question mark put down a question mark  I don't know write that",
+            "isUser": true,
+            "timestamp": "2025-04-24T21:44:22.620Z"
+          },
+          {
+            "id": "c9027cbe-8afe-4b1b-a421-4a4482594dc6",
+            "content": "Good afternoon! I'm doing well, thank you for asking. 😊 It sounds like you're figuring out how to express a question. If you want to include a question mark in your writing, you can simply type it at the end of your question. For example, \"How are you?\" If there's anything else you'd like to know or if you have more questions, feel free to ask!",
+            "isUser": false,
+            "timestamp": "2025-04-24T21:44:30.608Z"
+          },
+          {
+            "id": "defab65d-9772-4b0b-8028-d97d47fd4d0f",
+            "content": "thank you for that that's not how to ask a question I appreciate you  how are you doing today hello  question mark",
+            "isUser": true,
+            "timestamp": "2025-04-24T21:45:03.476Z"
+          },
+          {
+            "id": "96450300-7ce0-4eef-ad4a-f9a8e1793881",
+            "content": "You're very welcome! 😊 To ask a question, you can simply add a question mark at the end of your sentence. Like this: \"How are you doing today?\" \n\nAs for me, I'm here and ready to assist you with whatever you need! How's your day going so far?",
+            "isUser": false,
+            "timestamp": "2025-04-24T21:45:06.413Z"
+          },
+          {
+            "id": "e7feaf03-dcb4-4f74-9123-d5e62f0120a3",
+            "content": "my day is going well  I am looking at helping a clients a little bit later I'm with the decision on which spot to pick for their business are you going to be available",
+            "isUser": true,
+            "timestamp": "2025-04-24T21:45:41.467Z"
+          },
+          {
+            "id": "844ad797-576e-4293-8639-98817e9c7cb5",
+            "content": "I'm glad to hear your day is going well! 😊 It sounds like you have an important decision to make with your client. I'm here and ready to assist you whenever you need. If you have a specific time in mind for when you might need assistance, just let me know, and I'll be here to help. If you'd like to schedule a specific time, you can easily do so using our Calendly booking system. Would you like me to share the booking link with you?",
+            "isUser": false,
+            "timestamp": "2025-04-24T21:45:45.656Z"
+          },
+          {
+            "id": "7d18f95b-7d5d-44d6-8bdd-53cd4cabd95b",
+            "content": "no that's fine thank you are we in a position to make phone calls from this system or can we add that",
+            "isUser": true,
+            "timestamp": "2025-04-24T21:46:26.995Z"
+          },
+          {
+            "id": "33db1a6d-362a-4a2b-9035-277c9360c93c",
+            "content": "Currently, YoBot doesn't have the capability to make phone calls directly. However, it excels in scheduling appointments, providing information, and engaging in general conversations. If integrating phone call capabilities is something you're interested in, you might consider using it alongside a VoIP service or another communication tool to handle calls while YoBot manages scheduling and information tasks. If there's anything else you'd like to explore or if you have more questions, feel free to let me know!",
+            "isUser": false,
+            "timestamp": "2025-04-24T21:46:31.365Z"
+          },
+          {
+            "id": "7e8d9cca-b3fd-45e8-be29-5c7abfdc1891",
+            "content": "capability of making a phone call doesn't it",
+            "isUser": true,
+            "timestamp": "2025-04-24T21:47:10.091Z"
+          },
+          {
+            "id": "f76782b6-6499-4763-825a-706046074fbf",
+            "content": "Currently, YoBot doesn't have the capability to make phone calls directly. However, it excels in other areas such as scheduling appointments, providing information, and engaging in general conversations. If making phone calls is a feature you're interested in, you might consider using YoBot alongside a VoIP service or another communication tool to handle calls while YoBot manages scheduling and information tasks. If there's anything else you'd like to know or explore, feel free to ask!",
+            "isUser": false,
+            "timestamp": "2025-04-24T21:47:16.938Z"
           }
         ],
         "createdAt": "2025-04-23T01:01:18.628Z",
-        "updatedAt": "2025-04-24T21:34:44.772Z"
+        "updatedAt": "2025-04-24T21:47:16.938Z"
       }
     ],
     [
