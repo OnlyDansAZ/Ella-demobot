@@ -120,10 +120,70 @@
             "content": "Hello! I’m here and ready to assist you. How can I help you today?",
             "isUser": false,
             "timestamp": "2025-04-24T01:22:35.700Z"
+          },
+          {
+            "id": "401e00b4-a012-47b8-a489-4977d030aafc",
+            "content": "Hi how are you",
+            "isUser": true,
+            "timestamp": "2025-04-24T03:35:30.702Z"
+          },
+          {
+            "id": "2d1f39b7-51cf-4835-a017-5a7bf7380344",
+            "content": "Hello! I'm here and ready to assist you with anything you need. How can I help you today?",
+            "isUser": false,
+            "timestamp": "2025-04-24T03:35:36.983Z"
+          },
+          {
+            "id": "9325cc11-a9ae-4aa3-b6b3-c6d868f800de",
+            "content": "what we're going to be putting on a demo today for one of our clients so I want to make sure that you're all up and ready to go and everything is working well on your end",
+            "isUser": true,
+            "timestamp": "2025-04-24T03:35:55.730Z"
+          },
+          {
+            "id": "3c032cb9-35f8-4b85-90e5-4dbb84613a9e",
+            "content": "I'm all set and ready to assist with your demo today! If you need any specific preparations or have any questions, feel free to let me know. Just to confirm, do you have a specific time scheduled for this demo?",
+            "isUser": false,
+            "timestamp": "2025-04-24T03:35:58.691Z"
+          },
+          {
+            "id": "18cfbb10-5436-452e-a0c2-40073caf2ffe",
+            "content": "not a specific time it's going to be sometime within the next hour or two",
+            "isUser": true,
+            "timestamp": "2025-04-24T03:36:17.988Z"
+          },
+          {
+            "id": "8a428a34-b032-47d2-9543-4e28a6898296",
+            "content": "I understand you're planning something within the next hour or two, but without a specific time, I can't schedule it precisely. If you decide on an exact time, feel free to let me know. Is there anything specific you'd like me to prepare or assist with for this upcoming event?",
+            "isUser": false,
+            "timestamp": "2025-04-24T03:36:21.347Z"
+          },
+          {
+            "id": "470f4aca-131e-40b1-b7b5-c30cda9889ff",
+            "content": "I just wanted to make sure that all of your systems were working",
+            "isUser": true,
+            "timestamp": "2025-04-24T03:36:45.832Z"
+          },
+          {
+            "id": "4cdbc627-ec94-4f50-84e6-92f90962518f",
+            "content": "Absolutely! YoBot's systems, including my voice-enabled assistance and scheduling features, are fully operational and ready to help you with any tasks you have. If there's anything specific you'd like to test or set up, feel free to let me know!",
+            "isUser": false,
+            "timestamp": "2025-04-24T03:36:49.112Z"
+          },
+          {
+            "id": "0fa5c078-2f07-4795-9069-b7055ac845b4",
+            "content": "you're the best talk to you soon",
+            "isUser": true,
+            "timestamp": "2025-04-24T03:37:10.399Z"
+          },
+          {
+            "id": "db8159a5-19cf-4743-9ebe-bff912320f8a",
+            "content": "Thank you! I'm here whenever you need me. Have a great day! 😊",
+            "isUser": false,
+            "timestamp": "2025-04-24T03:37:12.844Z"
           }
         ],
         "createdAt": "2025-04-23T01:01:18.628Z",
-        "updatedAt": "2025-04-24T01:22:35.700Z"
+        "updatedAt": "2025-04-24T03:37:12.844Z"
       }
     ],
     [

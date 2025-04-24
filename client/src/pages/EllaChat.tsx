@@ -452,6 +452,11 @@ export default function EllaChat() {
     return /iPhone|iPad|iPod/i.test(navigator.userAgent);
   };
   
+  // Check for Android device
+  const isAndroid = () => {
+    return /Android/i.test(navigator.userAgent);
+  };
+  
   // Special iOS workaround
   const prepareIOSForSpeech = () => {
     if (window.speechSynthesis) {
@@ -464,67 +469,153 @@ export default function EllaChat() {
     }
   };
   
-  // Mobile-optimized speech recognition start
-  const startMobileRecognition = () => {
-    console.log('Using mobile-optimized speech recognition');
-    
-    if (!recognitionRef.current) {
-      // Initialize for mobile if not already done
-      initializeSpeechRecognition(true);
-    }
-    
-    // Special handling for mobile
+  // Request microphone access explicitly - this helps on many mobile browsers
+  const requestMicrophoneAccess = async (): Promise<boolean> => {
     try {
-      // Create a user gesture alert on mobile that the user must interact with
-      // This helps overcome mobile browser security restrictions
-      setIsListening(true);
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        console.warn('MediaDevices API not supported in this browser');
+        return false;
+      }
       
-      // Special setup for iOS devices
+      // Request audio access with constraints that tend to work better on mobile
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true
+        } 
+      });
+      
+      // Successfully got permission, now immediately stop all tracks
+      // This releases the microphone but keeps the permission
+      stream.getTracks().forEach(track => track.stop());
+      
+      console.log('Explicit microphone permission granted');
+      return true;
+    } catch (error) {
+      console.error('Failed to get microphone permission:', error);
+      alert('Microphone access is required for voice input. Please check your browser settings and try again.');
+      return false;
+    }
+  };
+  
+  // Simplified mobile speech recognition for better reliability
+  const startMobileRecognition = async () => {
+    console.log('Using simplified mobile speech recognition');
+    
+    try {
+      // 1. Always confirm microphone permission first - crucial for mobile
+      const hasPermission = await requestMicrophoneAccess();
+      if (!hasPermission) {
+        console.error('Could not get microphone permission for mobile');
+        setIsListening(false);
+        return;
+      }
+      
+      // 2. For iOS devices, prepare speech synthesis (helps initialize audio system)
       if (isIOS()) {
-        console.log('iOS device detected, using special handling');
-        
-        // iOS requires shorter recognition sessions
-        if (recognitionRef.current) {
-          recognitionRef.current.continuous = false;
-          recognitionRef.current.interimResults = false;
-          recognitionRef.current.maxAlternatives = 1;
-        }
-        
-        // Special iOS initialization - helps with permissions
+        console.log('iOS device detected, performing special initialization');
         prepareIOSForSpeech();
       }
       
-      // Try direct start for mobile - using a slight delay for iOS
-      if (recognitionRef.current) {
-        const startDelay = isIOS() ? 100 : 0;
-        
-        setTimeout(() => {
-          try {
-            recognitionRef.current?.start();
-            console.log('Mobile speech recognition started');
-          } catch (startError) {
-            console.error('Mobile start error:', startError);
-            
-            // Try with a longer delay as fallback
-            setTimeout(() => {
-              try {
-                recognitionRef.current?.start();
-                console.log('Mobile speech recognition started with longer delay');
-              } catch (delayedError) {
-                console.error('Failed even with delay:', delayedError);
-                setIsListening(false);
-                alert('Could not start speech recognition. Please try typing instead.');
-              }
-            }, 300);
-          }
-        }, startDelay);
-      }
-    } catch (error) {
-      console.error('Mobile speech recognition error:', error);
-      setIsListening(false);
+      // 3. Always create a fresh instance for each recognition attempt on mobile
+      //    This avoids many common issues with reusing instances
+      console.log('Creating fresh speech recognition instance for mobile');
       
-      // Simplified error message for mobile
-      alert('Voice input could not be started. Please check your microphone permissions and try again.');
+      if (recognitionRef.current) {
+        try {
+          // Clean up any existing instance
+          recognitionRef.current.onstart = null;
+          recognitionRef.current.onresult = null;
+          recognitionRef.current.onerror = null;
+          recognitionRef.current.onend = null;
+          recognitionRef.current.abort();
+          recognitionRef.current.stop();
+        } catch (error) {
+          // Ignore cleanup errors
+        }
+      }
+      
+      // Create a new instance with very simple settings
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      const recognition = new SpeechRecognition();
+      
+      // Absolute minimum settings for maximum compatibility
+      recognition.continuous = false;
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 1;
+      recognition.lang = 'en-US';
+      
+      // Set up simple handlers directly on this instance
+      recognition.onstart = () => {
+        console.log('Mobile speech recognition started');
+        setIsListening(true);
+      };
+      
+      recognition.onresult = (event: any) => {
+        try {
+          if (event.results && event.results[0]) {
+            const transcript = event.results[0][0].transcript.trim();
+            const confidence = event.results[0][0].confidence || 0.8; // Default reasonable confidence
+            
+            console.log(`Mobile speech recognized: "${transcript}" (${Math.round(confidence * 100)}%)`);
+            
+            // Update input field
+            setInputMessage(transcript);
+            
+            // Auto-submit with delay for feedback
+            if (transcript && transcript.length > 0) {
+              setTimeout(() => {
+                sendMessageWithText(transcript);
+              }, 300);
+            }
+          } else {
+            console.warn('Empty speech recognition result');
+          }
+        } catch (error) {
+          console.error('Error processing speech result:', error);
+        } finally {
+          setIsListening(false);
+        }
+      };
+      
+      recognition.onerror = (event: any) => {
+        console.error('Mobile speech recognition error:', event.error);
+        setIsListening(false);
+        
+        if (event.error === 'not-allowed') {
+          alert('Microphone access is needed for voice input. Please enable it in your browser settings.');
+        }
+      };
+      
+      recognition.onend = () => {
+        console.log('Mobile speech recognition ended');
+        setIsListening(false);
+      };
+      
+      // Store the instance
+      recognitionRef.current = recognition;
+      
+      // 4. Start with a small delay (improves success on mobile browsers)
+      setTimeout(() => {
+        try {
+          recognition.start();
+        } catch (error) {
+          console.error('Failed to start mobile speech recognition:', error);
+          setIsListening(false);
+          
+          if (error instanceof DOMException && isIOS()) {
+            alert('Voice recognition is not working on this iOS device. Please try typing your message instead.');
+          } else {
+            alert('Could not start voice input. Please try again or type your message.');
+          }
+        }
+      }, isIOS() ? 150 : 50);
+      
+    } catch (error) {
+      console.error('Mobile speech recognition setup error:', error);
+      setIsListening(false);
+      alert('Your device doesn\'t support voice input or permission was denied. Please type your message instead.');
     }
   };
   
@@ -632,63 +723,61 @@ export default function EllaChat() {
     };
   };
   
-  // Simple and robust speech recognition start function
-  const startListening = () => {
-    // Check for browser support
+  // Speech recognition main entry point
+  const startListening = async () => {
+    console.log('Speech recognition requested');
+    
+    // Check for browser support of Web Speech API
     if (!('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) {
       alert('Speech recognition is not supported in your browser. Please try using a modern browser like Chrome, Edge, or Safari.');
       setIsVoiceEnabled(false);
       return;
     }
     
-    // Stop speaking if anything is playing
+    // Make sure we're not already in listening mode
+    if (isListening) {
+      console.log('Already listening, ignoring duplicate request');
+      return;
+    }
+    
+    // Stop speaking if anything is playing to avoid conflicts
     if (isSpeaking && currentAudioRef.current) {
       currentAudioRef.current.pause();
       currentAudioRef.current = null;
       setIsSpeaking(false);
     }
     
-    // Different approach for mobile vs desktop
+    // Show listening state immediately for better UX
+    setIsListening(true);
+    
+    // Branch for mobile vs desktop
     if (isMobileDevice()) {
-      // Mobile flow
-      // Special permission handling for mobile
-      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-        navigator.mediaDevices.getUserMedia({ audio: true })
-          .then(() => {
-            console.log('Mobile microphone permission granted');
-            startMobileRecognition();
-          })
-          .catch((error) => {
-            console.error('Mobile microphone permission denied:', error);
-            alert('Microphone access is required for voice input. Please check your browser settings and try again.');
-            setIsListening(false);
-          });
-      } else {
-        // Fallback for older mobile browsers
-        startMobileRecognition();
-      }
-    } else {
-      // Desktop flow
-      // Ensure recognition is initialized for desktop
-      if (!recognitionRef.current) {
-        initializeSpeechRecognition(false);
-      }
+      console.log('Detected mobile device, using mobile-optimized recognition');
       
-      // Get desktop permission
-      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-        navigator.mediaDevices.getUserMedia({ audio: true })
-          .then(() => {
-            console.log('Desktop microphone permission granted');
-            startRecognition();
-          })
-          .catch((error) => {
-            console.error('Desktop microphone permission denied:', error);
-            alert('Microphone permission is required for voice input. Please check your browser settings.');
-            setIsListening(false);
-          });
-      } else {
-        // Legacy desktop browsers
+      // Mobile needs special handling - call our mobile-specific function
+      startMobileRecognition();
+    } else {
+      console.log('Detected desktop device, using standard recognition');
+      
+      try {
+        // Ensure recognition is initialized for desktop
+        if (!recognitionRef.current) {
+          initializeSpeechRecognition(false);
+        }
+        
+        // Request microphone access first
+        const hasPermission = await requestMicrophoneAccess();
+        if (!hasPermission) {
+          setIsListening(false);
+          return;
+        }
+        
+        // Start recognition
         startRecognition();
+      } catch (error) {
+        console.error('Error in desktop speech recognition:', error);
+        setIsListening(false);
+        alert('Could not start speech recognition. Please try again.');
       }
     }
   };
