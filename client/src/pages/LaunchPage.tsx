@@ -118,23 +118,28 @@ export default function LaunchPage() {
   return (
     <div className="flex flex-col min-h-screen">
       {/* Hero Section */}
-      <section className="bg-gradient-to-b from-indigo-900 to-indigo-700 text-white">
-        <div className="container mx-auto py-20 px-4">
+      <section className="relative bg-gradient-to-br from-[#0D82DA] via-indigo-700 to-emerald-700 text-white overflow-hidden">
+        {/* Faint logo watermark in background */}
+        <div className="absolute inset-0 flex items-center justify-center opacity-5 pointer-events-none">
+          <img src={yobotLogo} alt="YoBot Logo Watermark" className="w-[70%] max-w-[800px]" />
+        </div>
+        
+        <div className="container mx-auto py-20 px-4 relative z-10">
           <div className="flex flex-col md:flex-row items-center">
             <div className="md:w-1/2 mb-10 md:mb-0">
-              <h1 className="text-4xl md:text-6xl font-bold mb-4">
-                Meet <span className="text-amber-400">Ella</span>
+              <h1 className="text-4xl md:text-6xl font-bold mb-4 group">
+                Meet <span className="text-[#0D82DA] bg-white px-2 py-1 rounded transition-transform group-hover:scale-105">Ella</span>
               </h1>
               <h2 className="text-2xl md:text-3xl font-medium mb-6">
                 Your AI-powered business companion
               </h2>
-              <p className="text-lg mb-8 text-indigo-100">
+              <p className="text-lg mb-8 text-blue-100">
                 Intelligent voice interaction, seamless scheduling, and personalized assistance for your business needs.
               </p>
               <div className="flex flex-wrap gap-4">
                 <Dialog>
                   <DialogTrigger asChild>
-                    <Button className="bg-amber-500 hover:bg-amber-600 text-white">
+                    <Button className="bg-[#0D82DA] hover:bg-blue-600 text-white transition-all hover:scale-105">
                       <Play className="mr-2 h-4 w-4" />
                       Watch Demo
                     </Button>
@@ -149,42 +154,46 @@ export default function LaunchPage() {
                   </DialogContent>
                 </Dialog>
                 
-                <Button variant="outline" className="bg-transparent border-white text-white hover:bg-white hover:text-indigo-800">
-                  <Calendar className="mr-2 h-4 w-4" />
+                <Button variant="outline" className="bg-transparent border-white text-white hover:bg-white hover:text-[#0D82DA] transition-all hover:scale-105">
+                  <Calendar className="mr-2 h-4 w-4 text-[#0D82DA]" />
                   <Link href="/book-demo">Book a Live Tour</Link>
                 </Button>
               </div>
             </div>
             <div className="md:w-1/2 flex justify-center">
-              <div className="relative h-[400px] w-[320px] bg-white rounded-lg shadow-lg overflow-hidden">
-                <div className="bg-indigo-800 p-4 text-white flex items-center">
-                  <img src={yobotLogo} alt="YoBot Logo" className="h-8 w-8 mr-2" />
+              <div className="relative h-[400px] w-[320px] bg-white rounded-lg shadow-xl overflow-hidden transform transition-transform hover:scale-[1.02]">
+                <div className="bg-[#0D82DA] p-4 text-white flex items-center">
+                  <img src={yobotLogo} alt="YoBot Logo" className="h-8 w-8 mr-2 animate-pulse" />
                   <div>
                     <p className="font-medium">Ella</p>
                     <p className="text-xs opacity-80">Online now</p>
                   </div>
                 </div>
-                <div className="h-[320px] p-4 bg-gray-50 flex flex-col">
+                <div className="h-[320px] p-4 bg-gray-50 flex flex-col relative">
+                  {/* Subtle YoBot face in the background */}
+                  <div className="absolute right-0 bottom-0 opacity-5 pointer-events-none">
+                    <img src={yobotLogo} alt="" className="w-32 h-32" />
+                  </div>
                   <div className="flex flex-col space-y-3 flex-grow">
-                    <div className="bg-indigo-100 text-indigo-900 rounded-lg p-3 max-w-[80%] ml-auto">
+                    <div className="bg-blue-100 text-blue-900 rounded-lg p-3 max-w-[80%] ml-auto transform transition-all hover:scale-[1.03]">
                       Hi there! How can I assist you today?
                     </div>
-                    <div className="bg-indigo-100 text-indigo-900 rounded-lg p-3 max-w-[80%] ml-auto">
+                    <div className="bg-blue-100 text-blue-900 rounded-lg p-3 max-w-[80%] ml-auto transform transition-all hover:scale-[1.03]">
                       I can help schedule meetings, answer questions about your business, generate content, and more!
                     </div>
-                    <div className="bg-indigo-600 text-white rounded-lg p-3 max-w-[80%]">
+                    <div className="bg-[#0D82DA] text-white rounded-lg p-3 max-w-[80%] transform transition-all hover:scale-[1.03]">
                       Can you tell me about the Enterprise plan?
                     </div>
-                    <div className="bg-indigo-100 text-indigo-900 rounded-lg p-3 max-w-[80%] ml-auto">
+                    <div className="bg-blue-100 text-blue-900 rounded-lg p-3 max-w-[80%] ml-auto transform transition-all hover:scale-[1.03]">
                       Our Enterprise plan includes dedicated deployment, unlimited personas, SSO integration, and a dedicated account manager. Would you like me to schedule a demo with our team?
                     </div>
                   </div>
                   <div className="flex items-center gap-2 mt-4">
-                    <Button variant="outline" size="sm" className="flex-grow">
-                      <Mic className="h-4 w-4 mr-2" />
+                    <Button variant="outline" size="sm" className="flex-grow border-[#0D82DA] hover:bg-[#0D82DA] hover:text-white transition-all">
+                      <Mic className="h-4 w-4 mr-2 text-[#0D82DA] group-hover:text-white" />
                       Speak to Ella
                     </Button>
-                    <Button size="sm" className="flex-grow">
+                    <Button size="sm" className="flex-grow bg-[#0D82DA] hover:bg-blue-700 transition-all">
                       <MessageSquare className="h-4 w-4 mr-2" />
                       Chat
                     </Button>
@@ -200,17 +209,19 @@ export default function LaunchPage() {
       <section className="py-20 bg-white">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold mb-4">Why Choose Ella?</h2>
+            <h2 className="text-3xl font-bold mb-4">Why Choose <span className="text-[#0D82DA]">Ella</span>?</h2>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto">
               Ella transforms how your business interacts with clients and manages tasks, delivering measurable ROI through enhanced efficiency and customer satisfaction.
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <Card>
+            <Card className="transition-all hover:shadow-lg hover:-translate-y-1 border-t-4 border-t-[#0D82DA]">
               <CardHeader>
-                <div className="h-12 w-12 rounded-lg bg-indigo-100 flex items-center justify-center mb-4">
-                  <Mic className="h-6 w-6 text-indigo-700" />
+                <div className="h-14 w-14 rounded-full bg-[#0D82DA]/10 flex items-center justify-center mb-4 transform transition-transform hover:rotate-12">
+                  <div className="h-10 w-10 rounded-full bg-[#0D82DA]/20 flex items-center justify-center">
+                    <Mic className="h-6 w-6 text-[#0D82DA]" />
+                  </div>
                 </div>
                 <CardTitle>Natural Voice Interaction</CardTitle>
               </CardHeader>
@@ -221,10 +232,12 @@ export default function LaunchPage() {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="transition-all hover:shadow-lg hover:-translate-y-1 border-t-4 border-t-[#0D82DA]">
               <CardHeader>
-                <div className="h-12 w-12 rounded-lg bg-indigo-100 flex items-center justify-center mb-4">
-                  <Calendar className="h-6 w-6 text-indigo-700" />
+                <div className="h-14 w-14 rounded-full bg-[#0D82DA]/10 flex items-center justify-center mb-4 transform transition-transform hover:rotate-12">
+                  <div className="h-10 w-10 rounded-full bg-[#0D82DA]/20 flex items-center justify-center">
+                    <Calendar className="h-6 w-6 text-[#0D82DA]" />
+                  </div>
                 </div>
                 <CardTitle>Smart Scheduling</CardTitle>
               </CardHeader>
@@ -235,10 +248,12 @@ export default function LaunchPage() {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="transition-all hover:shadow-lg hover:-translate-y-1 border-t-4 border-t-[#0D82DA]">
               <CardHeader>
-                <div className="h-12 w-12 rounded-lg bg-indigo-100 flex items-center justify-center mb-4">
-                  <Monitor className="h-6 w-6 text-indigo-700" />
+                <div className="h-14 w-14 rounded-full bg-[#0D82DA]/10 flex items-center justify-center mb-4 transform transition-transform hover:rotate-12">
+                  <div className="h-10 w-10 rounded-full bg-[#0D82DA]/20 flex items-center justify-center">
+                    <Monitor className="h-6 w-6 text-[#0D82DA]" />
+                  </div>
                 </div>
                 <CardTitle>Cross-Platform</CardTitle>
               </CardHeader>
@@ -249,10 +264,12 @@ export default function LaunchPage() {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="transition-all hover:shadow-lg hover:-translate-y-1 border-t-4 border-t-[#0D82DA]">
               <CardHeader>
-                <div className="h-12 w-12 rounded-lg bg-indigo-100 flex items-center justify-center mb-4">
-                  <BarChart3 className="h-6 w-6 text-indigo-700" />
+                <div className="h-14 w-14 rounded-full bg-[#0D82DA]/10 flex items-center justify-center mb-4 transform transition-transform hover:rotate-12">
+                  <div className="h-10 w-10 rounded-full bg-[#0D82DA]/20 flex items-center justify-center">
+                    <BarChart3 className="h-6 w-6 text-[#0D82DA]" />
+                  </div>
                 </div>
                 <CardTitle>Detailed Analytics</CardTitle>
               </CardHeader>
@@ -263,10 +280,12 @@ export default function LaunchPage() {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="transition-all hover:shadow-lg hover:-translate-y-1 border-t-4 border-t-[#0D82DA]">
               <CardHeader>
-                <div className="h-12 w-12 rounded-lg bg-indigo-100 flex items-center justify-center mb-4">
-                  <Landmark className="h-6 w-6 text-indigo-700" />
+                <div className="h-14 w-14 rounded-full bg-[#0D82DA]/10 flex items-center justify-center mb-4 transform transition-transform hover:rotate-12">
+                  <div className="h-10 w-10 rounded-full bg-[#0D82DA]/20 flex items-center justify-center">
+                    <Landmark className="h-6 w-6 text-[#0D82DA]" />
+                  </div>
                 </div>
                 <CardTitle>Enterprise Integration</CardTitle>
               </CardHeader>
@@ -277,10 +296,12 @@ export default function LaunchPage() {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="transition-all hover:shadow-lg hover:-translate-y-1 border-t-4 border-t-[#0D82DA]">
               <CardHeader>
-                <div className="h-12 w-12 rounded-lg bg-indigo-100 flex items-center justify-center mb-4">
-                  <Shield className="h-6 w-6 text-indigo-700" />
+                <div className="h-14 w-14 rounded-full bg-[#0D82DA]/10 flex items-center justify-center mb-4 transform transition-transform hover:rotate-12">
+                  <div className="h-10 w-10 rounded-full bg-[#0D82DA]/20 flex items-center justify-center">
+                    <Shield className="h-6 w-6 text-[#0D82DA]" />
+                  </div>
                 </div>
                 <CardTitle>Security & Compliance</CardTitle>
               </CardHeader>
@@ -293,12 +314,41 @@ export default function LaunchPage() {
           </div>
         </div>
       </section>
+      
+      {/* Testimonial Section */}
+      <section className="py-16 bg-[#0D82DA]/5">
+        <div className="container mx-auto px-4">
+          <div className="max-w-4xl mx-auto bg-white rounded-xl shadow-md overflow-hidden">
+            <div className="p-8">
+              <div className="flex items-center mb-6">
+                <div className="h-16 w-16 rounded-full bg-gray-200 mr-4"></div>
+                <div>
+                  <h3 className="text-xl font-bold">Amanda Reynolds</h3>
+                  <p className="text-gray-600">CEO, TechInnovate Solutions</p>
+                </div>
+              </div>
+              <blockquote className="text-xl italic text-gray-800 mb-4">
+                "Ella booked my last 9 meetings and never sleeps. Our team's productivity has increased by 30% since we started using her for scheduling and client communications."
+              </blockquote>
+              <div className="flex mt-4">
+                <div className="flex">
+                  {[...Array(5)].map((_, i) => (
+                    <svg key={i} className="h-5 w-5 text-yellow-400 fill-current" viewBox="0 0 24 24">
+                      <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+                    </svg>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
 
       {/* Pricing Section */}
       <section className="py-20 bg-gray-50">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold mb-4">Simple, Transparent Pricing</h2>
+            <h2 className="text-3xl font-bold mb-4">Simple, Transparent <span className="text-[#0D82DA]">Pricing</span></h2>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto">
               Choose the perfect plan for your business needs with our straightforward pricing structure.
             </p>
@@ -306,16 +356,19 @@ export default function LaunchPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {pricingTiers.map((tier, index) => (
-              <Card key={index} className={`flex flex-col ${tier.highlighted ? 'border-indigo-500 shadow-lg' : ''}`}>
-                <CardHeader className={`${tier.highlighted ? 'bg-indigo-50' : ''}`}>
+              <Card key={index} className={`flex flex-col transform transition-all hover:scale-[1.02] ${tier.highlighted ? 'border-[#0D82DA] shadow-lg' : ''}`}>
+                <CardHeader className={`${tier.highlighted ? 'bg-[#0D82DA]/5' : ''} relative`}>
+                  {tier.highlighted && (
+                    <div className="absolute top-0 right-0 left-0 h-2 bg-[#0D82DA]" />
+                  )}
                   <div className="flex justify-between items-center">
                     <CardTitle>{tier.name}</CardTitle>
                     {tier.badge && (
-                      <Badge variant="secondary">{tier.badge}</Badge>
+                      <Badge variant="secondary" className="bg-[#0D82DA] text-white hover:bg-[#0D82DA]/90">{tier.badge}</Badge>
                     )}
                   </div>
                   <div className="mt-4">
-                    <span className="text-3xl font-bold">{tier.price}</span>
+                    <span className="text-3xl font-bold text-[#0D82DA]">{tier.price}</span>
                   </div>
                   <CardDescription className="mt-2">
                     {tier.description}
@@ -324,15 +377,15 @@ export default function LaunchPage() {
                 <CardContent className="flex-grow">
                   <ul className="space-y-3">
                     {tier.features.map((feature, i) => (
-                      <li key={i} className="flex items-start">
-                        <CheckCircle2 className="h-5 w-5 text-indigo-600 mr-2 shrink-0 mt-0.5" />
+                      <li key={i} className="flex items-start group">
+                        <CheckCircle2 className="h-5 w-5 text-[#0D82DA] mr-2 shrink-0 mt-0.5 group-hover:scale-110 transition-transform" />
                         <span>{feature}</span>
                       </li>
                     ))}
                   </ul>
                 </CardContent>
                 <CardFooter>
-                  <Button className={`w-full ${tier.highlighted ? 'bg-indigo-600 hover:bg-indigo-700' : ''}`}>
+                  <Button className={`w-full transition-all hover:scale-[1.03] ${tier.highlighted ? 'bg-[#0D82DA] hover:bg-[#0D82DA]/90' : ''}`}>
                     {tier.cta}
                   </Button>
                 </CardFooter>
@@ -343,16 +396,33 @@ export default function LaunchPage() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 bg-indigo-900 text-white">
-        <div className="container mx-auto px-4 text-center">
-          <h2 className="text-3xl font-bold mb-6">Ready to transform your business with Ella?</h2>
-          <p className="text-xl max-w-3xl mx-auto mb-8">
+      <section className="relative py-20 bg-gradient-to-r from-[#0D82DA] to-indigo-800 text-white overflow-hidden">
+        {/* Background subtle pattern */}
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute top-0 left-0 w-full h-full" style={{ 
+            backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px)',
+            backgroundSize: '20px 20px' 
+          }}></div>
+        </div>
+        
+        <div className="container mx-auto px-4 text-center relative z-10">
+          <h2 className="text-3xl md:text-4xl font-bold mb-6 drop-shadow-sm">Ready to transform your business with <span className="bg-white text-[#0D82DA] px-2 py-1 rounded">Ella</span>?</h2>
+          <p className="text-xl max-w-3xl mx-auto mb-8 text-blue-100">
             Book a live tour with Ella and see how our AI assistant can revolutionize your customer interactions and business operations.
           </p>
-          <Button size="lg" className="bg-amber-500 hover:bg-amber-600">
-            <Calendar className="mr-2 h-5 w-5" />
-            Book a Live Tour with Ella
+          <Button 
+            size="lg" 
+            className="bg-white text-[#0D82DA] hover:bg-blue-50 transition-transform hover:scale-105 shadow-lg"
+            asChild
+          >
+            <Link href="/book-demo" className="flex items-center">
+              <Calendar className="mr-2 h-5 w-5" />
+              Book a Live Tour with Ella
+            </Link>
           </Button>
+          <div className="mt-10 text-sm text-blue-200 max-w-lg mx-auto">
+            <p>Your live tour includes a personalized demonstration focused on your specific business needs and a Q&A session with our team.</p>
+          </div>
         </div>
       </section>
 
@@ -368,15 +438,20 @@ export default function LaunchPage() {
               </div>
             </div>
             <div className="flex gap-6">
-              <Link href="/about" className="text-indigo-300 hover:text-white">About</Link>
-              <Link href="/privacy" className="text-indigo-300 hover:text-white">Privacy</Link>
-              <Link href="/terms" className="text-indigo-300 hover:text-white">Terms</Link>
-              <Link href="/contact" className="text-indigo-300 hover:text-white">Contact</Link>
+              <Link href="/about" className="text-indigo-300 hover:text-white transition-colors">About</Link>
+              <Link href="/privacy" className="text-indigo-300 hover:text-white transition-colors">Privacy</Link>
+              <Link href="/terms" className="text-indigo-300 hover:text-white transition-colors">Terms</Link>
+              <Link href="/contact" className="text-indigo-300 hover:text-white transition-colors">Contact</Link>
             </div>
           </div>
           <Separator className="my-6 bg-indigo-800" />
-          <div className="text-center text-indigo-400 text-sm">
-            &copy; {new Date().getFullYear()} YoBot AI, Inc. All rights reserved.
+          <div className="text-center">
+            <div className="mb-3 font-medium text-blue-400">
+              Powered by YoBot® | <span className="italic">Engage Smarter, Not Harder™</span>
+            </div>
+            <div className="text-indigo-400 text-sm">
+              &copy; {new Date().getFullYear()} YoBot AI, Inc. All rights reserved.
+            </div>
           </div>
         </div>
       </footer>
