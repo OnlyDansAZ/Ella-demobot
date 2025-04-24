@@ -430,131 +430,77 @@ export default function EllaChat() {
   
   // Helper function to restart speech recognition
   const restartListening = () => {
-    if (recognitionRef.current && isListening) {
-      try {
-        recognitionRef.current.start();
-        console.log('Speech recognition restarted');
-      } catch (error) {
-        console.error('Failed to restart speech recognition:', error);
-        setIsListening(false);
-      }
+    // Only restart if we're supposed to be in listening mode
+    if (isListening) {
+      // Small delay to allow previous instance to fully terminate
+      setTimeout(() => {
+        startRecognition();
+      }, 300);
     }
   };
   
-  // Start listening for speech with improved permission handling
+  // Simple and robust speech recognition start function
   const startListening = () => {
-    // First check for browser support before attempting to start
+    // Check for browser support
     if (!('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) {
       alert('Speech recognition is not supported in your browser. Please try using a modern browser like Chrome, Edge, or Safari.');
       setIsVoiceEnabled(false);
       return;
     }
     
-    // Ensure recognition object is properly initialized
-    if (!recognitionRef.current) {
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      recognitionRef.current = new SpeechRecognition();
-      recognitionRef.current.continuous = true;
-      recognitionRef.current.interimResults = true;
-      recognitionRef.current.lang = 'en-US';
-      
-      // Initialize event handlers
-      recognitionRef.current.onresult = (event: any) => {
-        const lastResult = event.results[event.results.length - 1];
-        if (lastResult.isFinal) {
-          const transcript = lastResult[0].transcript.trim();
-          const confidence = lastResult[0].confidence;
-          setVoiceConfidence(confidence);
-          
-          console.log(`Speech recognized with ${Math.round(confidence * 100)}% confidence: "${transcript}"`);
-          setInputMessage(transcript);
-          
-          if (confidence > 0.85 && isListening) {
-            setTimeout(() => {
-              if (transcript && transcript.length > 0) {
-                sendMessageWithText(transcript);
-              }
-            }, 300);
-          }
-        }
-      };
-      
-      recognitionRef.current.onerror = (event: any) => {
-        console.error('Speech recognition error:', event.error, event);
-        
-        if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
-          setIsListening(false);
-          alert('Microphone permission was denied. Please allow microphone access in your browser settings.');
-        } else if (event.error === 'aborted') {
-          setIsListening(false);
-        } else if (event.error === 'network') {
-          console.warn('Network error in speech recognition, trying to restart...');
-          setTimeout(() => {
-            if (isListening) restartListening();
-          }, 1000);
-        } else {
-          setTimeout(() => {
-            if (isListening) restartListening();
-          }, 1000);
-        }
-      };
-      
-      recognitionRef.current.onend = () => {
-        console.log('Speech recognition ended naturally');
-        if (isListening) {
-          restartListening();
-        }
-      };
+    // Stop speaking if anything is playing
+    if (isSpeaking && currentAudioRef.current) {
+      currentAudioRef.current.pause();
+      currentAudioRef.current = null;
+      setIsSpeaking(false);
     }
     
-    // Now try to start the recognition
-    try {
-      // Stop any speaking before starting listening
-      if (isSpeaking && currentAudioRef.current) {
-        currentAudioRef.current.pause();
-        currentAudioRef.current = null;
-        setIsSpeaking(false);
+    // Cancel any ongoing recognition
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.stop();
+      } catch (e) {
+        // Ignore stop errors
       }
-      
-      // Request explicit permission for microphone use through an alternative method
-      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-        navigator.mediaDevices.getUserMedia({ audio: true })
-          .then(() => {
-            console.log('Microphone permission granted');
-            try {
-              recognitionRef.current.start();
-              console.log('Speech recognition started successfully');
-              setIsListening(true);
-            } catch (startError) {
-              console.error('Error starting recognition after permission granted:', startError);
-              setIsListening(false);
-            }
-          })
-          .catch((permissionError) => {
-            console.error('Microphone permission denied:', permissionError);
-            alert('Microphone permission denied. Speech input requires microphone access.');
-            setIsListening(false);
-          });
-      } else {
-        // Fallback for browsers without mediaDevices API
-        try {
-          recognitionRef.current.start();
-          setIsListening(true);
-        } catch (error) {
-          console.error('Failed to start speech recognition:', error);
+    }
+    
+    // Preemptively get permission
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+      navigator.mediaDevices.getUserMedia({ audio: true })
+        .then(() => {
+          console.log('Microphone permission granted explicitly');
+          // Start recognition after permission granted
+          startRecognition();
+        })
+        .catch((error) => {
+          console.error('Microphone permission denied:', error);
+          alert('Microphone permission is required for voice input. Please check your browser settings.');
           setIsListening(false);
-          
-          if (error instanceof DOMException && error.name === 'NotAllowedError') {
-            alert('Microphone permission was denied. Please allow microphone access in your browser settings.');
-          } else {
-            alert('Failed to start speech recognition. Please try again or use text input instead.');
-          }
-        }
-      }
+        });
+    } else {
+      // Direct start for browsers without mediaDevices API
+      startRecognition();
+    }
+  };
+  
+  // Helper function to actually start the recognition
+  const startRecognition = () => {
+    if (!recognitionRef.current) {
+      console.error('Recognition not initialized');
+      return;
+    }
+    
+    try {
+      // Don't set isListening here - let the onstart handler do it
+      recognitionRef.current.start();
+      console.log('Recognition start command sent');
     } catch (error) {
-      console.error('Error initializing speech recognition:', error);
-      alert('Failed to start speech recognition. Please refresh and try again.');
+      console.error('Failed to start recognition:', error);
       setIsListening(false);
+      
+      if (error instanceof DOMException && error.name === 'NotAllowedError') {
+        alert('Microphone access was denied by your browser. Please check your settings and try again.');
+      }
     }
   };
   
@@ -723,91 +669,114 @@ export default function EllaChat() {
     }
   };
   
-  // Initialize speech recognition
+  // Initialize speech recognition - simplified implementation to avoid conflicts
   useEffect(() => {
-    // Initialize speech recognition when component mounts
-    if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
+    // Initialize web speech API only once when component mounts
+    if (!recognitionRef.current && ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) {
+      // We'll use the webkit prefix since it's more widely supported
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      recognitionRef.current = new SpeechRecognition();
-      recognitionRef.current.continuous = true; // Allow continuous listening
-      recognitionRef.current.interimResults = true; // Get interim results for more responsive UI
-      recognitionRef.current.lang = 'en-US';
       
-      // Set up event handlers with enhanced error recovery
-      recognitionRef.current.onresult = (event: any) => {
-        // Get the last result (most recent speech)
-        const lastResult = event.results[event.results.length - 1];
-        
-        // Check if this is a final result
-        if (lastResult.isFinal) {
-          const transcript = lastResult[0].transcript.trim();
-          const confidence = lastResult[0].confidence;
-          setVoiceConfidence(confidence);
+      // Create a new speech recognition instance with more reliable settings
+      const recognition = new SpeechRecognition();
+      recognition.continuous = false; // Use simpler mode for better compatibility
+      recognition.interimResults = false; // Only get final results for more reliability
+      recognition.maxAlternatives = 1; // Only return the most likely match
+      recognition.lang = 'en-US';
+    
+      // Log when recognition is ready
+      console.log('Speech recognition initialized');
+      
+      // Store the recognition instance
+      recognitionRef.current = recognition;
+    }
+    
+    // Set up or update event handlers when isListening changes
+    if (recognitionRef.current) {
+      const recognition = recognitionRef.current;
+      
+      // Clear any existing handlers first to prevent duplicates
+      recognition.onstart = null;
+      recognition.onresult = null;
+      recognition.onerror = null;
+      recognition.onend = null;
+      
+      // Set up event handlers now
+      recognition.onstart = () => {
+        console.log('Speech recognition started, listening for speech...');
+        setIsListening(true);
+      };
+      
+      recognition.onresult = (event: any) => {
+        console.log('Speech recognition result received:', event);
+        try {
+          // Extract the transcript from the first result
+          const transcript = event.results[0][0].transcript.trim();
+          const confidence = event.results[0][0].confidence;
           
           console.log(`Speech recognized with ${Math.round(confidence * 100)}% confidence: "${transcript}"`);
+          setVoiceConfidence(confidence);
           
-          // Set the recognized speech as input message
+          // Update input message with recognized text
           setInputMessage(transcript);
           
-          // If confidence is high enough and we're in listening mode, auto-send the message
-          if (confidence > 0.85 && isListening) {
-            // Use a timeout to give visual feedback before sending
+          // Auto-send message if confidence is high enough
+          if (confidence > 0.7) {
+            // Use a small delay to provide visual feedback
             setTimeout(() => {
               if (transcript && transcript.length > 0) {
                 sendMessageWithText(transcript);
               }
             }, 300);
           }
+        } catch (error) {
+          console.error('Error processing speech result:', error);
+        } finally {
+          // Always set isListening to false since we're using non-continuous mode
+          setIsListening(false);
         }
       };
       
-      recognitionRef.current.onerror = (event: any) => {
-        console.error('Speech recognition error:', event.error);
+      recognition.onerror = (event: any) => {
+        console.error('Speech recognition error:', event.error, event);
         
-        // Only stop listening on critical errors, try to recover from transient ones
         if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
-          setIsListening(false);
-          alert('Speech recognition permission was denied. Please allow microphone access.');
-        } else if (event.error === 'aborted') {
-          // User likely aborted manually, just stop
-          setIsListening(false);
-        } else if (event.error === 'network') {
-          console.warn('Network error in speech recognition, trying to restart...');
-          // Try to restart after a brief delay
-          setTimeout(() => {
-            if (isListening) restartListening();
-          }, 1000);
+          alert('Microphone permission was denied. Please allow microphone access to use voice input.');
+        } else if (event.error === 'no-speech') {
+          console.log('No speech was detected');
         } else {
-          // For other errors, we might try to restart recognition if still in listening mode
-          setTimeout(() => {
-            if (isListening) restartListening();
-          }, 1000);
+          console.error(`Speech recognition error: ${event.error}`);
         }
+        
+        setIsListening(false);
       };
       
-      recognitionRef.current.onend = () => {
-        // Attempt to restart if still in listening mode
-        if (isListening) {
-          restartListening();
-        }
+      recognition.onend = () => {
+        console.log('Speech recognition ended');
+        setIsListening(false);
       };
     }
     
     // Clean up on unmount
     return () => {
       if (recognitionRef.current) {
-        recognitionRef.current.onresult = null;
-        recognitionRef.current.onerror = null;
-        recognitionRef.current.onend = null;
-        
         try {
-          recognitionRef.current.stop();
-        } catch (e) {
-          // Ignore errors during cleanup
+          // Clear all handlers
+          const recognition = recognitionRef.current;
+          recognition.onstart = null;
+          recognition.onresult = null;
+          recognition.onerror = null;
+          recognition.onend = null;
+          
+          // Stop recognition if it's running
+          if (isListening) {
+            recognition.stop();
+          }
+        } catch (error) {
+          console.error('Error cleaning up speech recognition:', error);
         }
       }
     };
-  }, [isListening]);
+  }, []);
   
   // Load appointments when needed
   useEffect(() => {
