@@ -28,6 +28,7 @@ import { Badge } from '@/components/ui/badge';
 import { useCalendly } from '@/hooks/use-calendly';
 import { apiRequest } from '@/lib/queryClient';
 import { useConversation, ChatMessage } from '@/hooks/use-conversation';
+import { useToast } from '@/hooks/use-toast';
 import yobotLogo from "../assets/yobot-logo.png";
 import yobotHeadLogo from "../assets/yobot-head-logo.png";
 import yobotTransparentLogo from "../assets/yobot-transparent-logo.png";
@@ -75,6 +76,9 @@ export default function EllaChat() {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [isLoadingAppointments, setIsLoadingAppointments] = useState(false);
   const { calendlyUrl, meetingTypes } = useCalendly();
+  
+  // Initialize toast
+  const { toast } = useToast();
   
   // Use backend persona management through our hook
   const { 
@@ -807,6 +811,8 @@ export default function EllaChat() {
   const playAudio = async (text: string) => {
     if (!text || text.trim() === '') return;
     
+    let audioUrl: string | null = null;
+    
     try {
       // If there's currently audio playing, stop it
       if (currentAudioRef.current) {
@@ -820,6 +826,16 @@ export default function EllaChat() {
       const activePersona = currentPersona?.id || 'default';
       console.log(`Using persona for speech: ${activePersona}`);
       
+      // Prepare persona-specific voice settings based on current persona if available
+      const voiceSettings = currentPersona?.voiceSettings || {
+        stability: 0.5,
+        similarityBoost: 0.75,
+        style: 0.5,
+        useSpeakerBoost: true
+      };
+      
+      console.log('Using voice settings:', voiceSettings);
+      
       // Call the server to generate and return audio with session and persona info
       const response = await fetch('/api/speech', {
         method: 'POST',
@@ -830,23 +846,23 @@ export default function EllaChat() {
           text,
           // Include the session ID so the server can use persona-specific voice settings
           sessionId: sessionId,
-          // Fallback options in case no persona voice settings are found
-          options: {
-            stability: 0.5,
-            similarityBoost: 0.75,
-            style: 0.5,
-            useSpeakerBoost: true
-          }
+          // Pass voice settings from the current persona or fallback options
+          options: voiceSettings
         })
+      }).catch(error => {
+        console.error('Network error when calling speech API:', error);
+        throw new Error('Failed to connect to speech service. Please check your connection.');
       });
       
       if (!response.ok) {
-        throw new Error('Failed to generate speech');
+        const errorData = await response.json().catch(() => ({}));
+        console.error('Speech API error:', errorData);
+        throw new Error(`Failed to generate speech: ${response.status} ${response.statusText}`);
       }
       
       // Create audio blob from the response
       const audioBlob = await response.blob();
-      const audioUrl = URL.createObjectURL(audioBlob);
+      audioUrl = URL.createObjectURL(audioBlob);
       
       // Play the audio
       const audio = new Audio(audioUrl);
@@ -855,23 +871,52 @@ export default function EllaChat() {
       // Set handlers
       audio.onended = () => {
         setIsSpeaking(false);
-        URL.revokeObjectURL(audioUrl);
+        if (audioUrl) URL.revokeObjectURL(audioUrl);
+        audioUrl = null;
         currentAudioRef.current = null;
       };
       
       audio.onerror = (err) => {
         console.error('Audio playback error:', err);
         setIsSpeaking(false);
-        URL.revokeObjectURL(audioUrl);
+        if (audioUrl) URL.revokeObjectURL(audioUrl);
+        audioUrl = null;
         currentAudioRef.current = null;
+        
+        // Show a toast notification for audio errors
+        toast({
+          title: 'Audio playback error',
+          description: 'Could not play the generated speech audio.',
+          variant: 'destructive',
+          duration: 5000
+        });
       };
       
       currentAudioRef.current = audio;
-      audio.play();
+      
+      try {
+        await audio.play();
+      } catch (playError) {
+        console.error('Audio play() error:', playError);
+        throw new Error('Failed to play audio. This may be due to browser autoplay restrictions.');
+      }
       
     } catch (error) {
       console.error('Speech synthesis error:', error);
       setIsSpeaking(false);
+      
+      // Clean up audio URL if needed
+      if (audioUrl) {
+        URL.revokeObjectURL(audioUrl);
+      }
+      
+      // Show a toast notification for errors
+      toast({
+        title: 'Speech synthesis failed',
+        description: error instanceof Error ? error.message : 'Could not generate speech audio.',
+        variant: 'destructive',
+        duration: 5000
+      });
     }
   };
   

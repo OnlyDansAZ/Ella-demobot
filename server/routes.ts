@@ -199,20 +199,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get persona-specific voice settings if available
       let voiceSettings;
       
-      if (sessionId) {
-        // If session ID is provided, get the persona associated with this session
-        const sessionPersona = personaManager.getSessionPersona(sessionId);
-        if (sessionPersona && sessionPersona.voiceSettings) {
-          voiceSettings = sessionPersona.voiceSettings;
-          console.log(`Using voice settings from session persona: ${sessionPersona.name}`);
+      try {
+        if (sessionId) {
+          // If session ID is provided, get the persona associated with this session
+          const sessionPersona = personaManager.getSessionPersona(sessionId);
+          if (sessionPersona && sessionPersona.voiceSettings) {
+            voiceSettings = sessionPersona.voiceSettings;
+            console.log(`Using voice settings from session persona: ${sessionPersona.name}`);
+          }
+        } else if (personaId) {
+          // If persona ID is directly provided, use that persona's voice settings
+          const specificPersona = personaManager.getPersona(personaId);
+          if (specificPersona && specificPersona.voiceSettings) {
+            voiceSettings = specificPersona.voiceSettings;
+            console.log(`Using voice settings from specific persona: ${specificPersona.name}`);
+          }
         }
-      } else if (personaId) {
-        // If persona ID is directly provided, use that persona's voice settings
-        const specificPersona = personaManager.getPersona(personaId);
-        if (specificPersona && specificPersona.voiceSettings) {
-          voiceSettings = specificPersona.voiceSettings;
-          console.log(`Using voice settings from specific persona: ${specificPersona.name}`);
-        }
+      } catch (error) {
+        console.error('Error retrieving persona voice settings:', error);
+        // Continue with default settings if there's an error
       }
       
       // Fallback to provided options or defaults if no persona voice settings

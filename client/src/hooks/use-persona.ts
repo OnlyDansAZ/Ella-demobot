@@ -44,6 +44,7 @@ interface PersonaResponse {
   success: boolean;
   persona: Persona;
   personaId: string;
+  error?: string; // Optional error message if success is false
 }
 
 /**
@@ -97,7 +98,7 @@ export const usePersona = (sessionId: string) => {
     }
   }, [sessionId]);
 
-  // Set the session's persona by ID
+  // Set the session's persona by ID with enhanced error handling
   const setPersona = useCallback(async (personaId: string) => {
     if (!sessionId) return false;
     
@@ -113,18 +114,34 @@ export const usePersona = (sessionId: string) => {
         })
       });
       
+      // Handle non-OK HTTP responses
+      if (!response.ok) {
+        console.error(`Server error: ${response.status} ${response.statusText}`);
+        setError(`Server error: ${response.status}. Please try again later.`);
+        return false;
+      }
+      
       const data = await response.json() as PersonaResponse;
       
       if (data.success && data.persona) {
         setCurrentPersona(data.persona);
+        // Log the newly set persona's voice and behavior settings
+        if (data.persona.voiceSettings) {
+          console.log(`Applied voice settings for ${data.persona.name}:`, data.persona.voiceSettings);
+        }
+        if (data.persona.behaviorModifiers) {
+          console.log(`Applied behavior modifiers for ${data.persona.name}:`, data.persona.behaviorModifiers);
+        }
         return true;
       } else {
-        setError('Failed to set persona');
+        const errorMsg = data.error || 'Failed to set persona';
+        console.error('Failed to set persona:', errorMsg);
+        setError(errorMsg);
         return false;
       }
     } catch (err) {
       console.error('Error setting persona:', err);
-      setError('Failed to set persona');
+      setError('Failed to set persona. Please check your connection and try again.');
       return false;
     } finally {
       setIsLoading(false);
