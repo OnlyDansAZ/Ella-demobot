@@ -104,22 +104,65 @@ try {
   
   // Add error handler to pool to catch connection errors
   if (pool instanceof Pool) {
-    pool.on('error', (err) => {
-      console.error('Unexpected database error:', err.message);
+    pool.on('error', (err: any) => {
+      // Check for known error types that require special handling
+      const isAdminTermination = err.code === '57P01'; // Administrator command termination
+      const isFatalError = err.severity === 'FATAL';
+      
+      if (isAdminTermination) {
+        console.warn('Database connection terminated by administrator. This is expected in some environments.');
+      } else {
+        console.error('Unexpected database error:', err.message, err.code);
+      }
+      
+      // Update status regardless of error type
       updateDatabaseStatus(false);
       
-      // Try to reconnect
+      // Adjust reconnection strategy based on error type
+      const reconnectDelay = isAdminTermination ? 10000 : 5000; // Longer delay for admin terminations
+      
+      // Try to reconnect with backoff
+      console.log(`Scheduling database reconnection in ${reconnectDelay/1000} seconds...`);
       setTimeout(() => {
         console.log('Attempting to reconnect to database after error...');
-        pool.query('SELECT 1')
-          .then(() => {
-            console.log('Database reconnection successful');
-            updateDatabaseStatus(true);
-          })
-          .catch(err => {
-            console.error('Database reconnection failed:', err.message);
-          });
-      }, 5000);
+        
+        try {
+          // Create a fresh pool if it's a fatal error
+          if (isFatalError && process.env.DATABASE_URL) {
+            console.log('Recreating connection pool after fatal error');
+            pool = new Pool({ 
+              connectionString: process.env.DATABASE_URL,
+              connectionTimeoutMillis: 10000 // 10 second timeout
+            });
+          }
+          
+          pool.query('SELECT 1')
+            .then(() => {
+              console.log('Database reconnection successful');
+              updateDatabaseStatus(true);
+            })
+            .catch(err => {
+              console.error('Database reconnection failed:', err.message);
+              
+              // Schedule another retry with exponential backoff
+              const furtherDelay = reconnectDelay * 2;
+              console.log(`Scheduling another reconnection attempt in ${furtherDelay/1000} seconds...`);
+              setTimeout(() => {
+                console.log('Making another reconnection attempt...');
+                pool.query('SELECT 1')
+                  .then(() => {
+                    console.log('Database reconnection successful on second attempt');
+                    updateDatabaseStatus(true);
+                  })
+                  .catch(e => {
+                    console.error('Database reconnection failed on second attempt. Falling back to file storage:', e.message);
+                  });
+              }, furtherDelay);
+            });
+        } catch (reconnectError) {
+          console.error('Error during reconnection attempt:', reconnectError);
+        }
+      }, reconnectDelay);
     });
   }
 } catch (error) {
@@ -140,18 +183,50 @@ try {
 // Create a function to safely execute database operations with fallback
 export async function safeDbOperation<T>(
   dbOperation: () => Promise<T>,
-  fallbackOperation: () => Promise<T> | T
+  fallbackOperation: () => Promise<T> | T,
+  operationName: string = 'Database operation'
 ): Promise<T> {
+  // First check if database is available
   if (!isDatabaseAvailable) {
-    console.log('Database unavailable, using fallback storage');
+    console.log(`${operationName}: Database unavailable, using fallback storage`);
     return fallbackOperation();
   }
   
   try {
-    return await dbOperation();
-  } catch (error) {
-    console.error('Database operation failed, using fallback:', error);
-    updateDatabaseStatus(false);
+    // Set a timeout for database operations to prevent long-hanging queries
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(() => {
+        reject(new Error(`${operationName} timed out after 5000ms`));
+      }, 5000);
+    });
+    
+    // Race the database operation against the timeout
+    const result = await Promise.race([
+      dbOperation(),
+      timeoutPromise
+    ]) as T;
+    
+    return result;
+  } catch (error: any) {
+    // Handle specific error codes that indicate database connectivity issues
+    const isConnectionError = 
+      error.code === '57P01' || // Administrator command termination
+      error.code === '08006' || // Connection failure
+      error.code === '08001' || // Unable to establish connection
+      error.code === '08004' || // Rejected connection
+      error.code === '57P03' || // Cannot connect now
+      error.message?.includes('timeout') ||
+      error.message?.includes('connection');
+    
+    if (isConnectionError) {
+      console.warn(`${operationName}: Database connection issue, using fallback:`, error.message);
+      // Only update status for connection-related errors
+      updateDatabaseStatus(false);
+    } else {
+      console.error(`${operationName}: Operation failed with non-connection error:`, error);
+    }
+    
+    // Use fallback for all error types
     return fallbackOperation();
   }
 }
