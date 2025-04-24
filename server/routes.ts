@@ -37,6 +37,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use("/api/personas", personaRoutes);
   
   // Twilio phone call routes
+  // Phone call routes with Twilio
   app.use("/api", twilioRoutes);
 
   // Contact form submission endpoint
