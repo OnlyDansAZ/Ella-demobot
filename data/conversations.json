@@ -125,6 +125,36 @@
         "createdAt": "2025-04-23T01:01:18.628Z",
         "updatedAt": "2025-04-24T01:22:35.700Z"
       }
+    ],
+    [
+      "6c5f2a18-410c-47c3-8a20-7267d393f111",
+      {
+        "id": 1745462851953,
+        "sessionId": "6c5f2a18-410c-47c3-8a20-7267d393f111",
+        "userId": null,
+        "messages": [
+          {
+            "id": "de4fb29a-d9ad-4108-90f1-98e1ca124d89",
+            "content": "Hello! I'm Ella, your AI assistant. How can I help you today?",
+            "isUser": false,
+            "timestamp": "2025-04-24T02:47:32.842Z"
+          },
+          {
+            "id": "8fd3ff66-95c9-4722-9fa5-a6f184b52d8c",
+            "content": "Ella?",
+            "isUser": true,
+            "timestamp": "2025-04-24T02:48:07.411Z"
+          },
+          {
+            "id": "251b5851-66bf-4978-84b7-010af383f664",
+            "content": "Yes, that's me! How can I assist you today?",
+            "isUser": false,
+            "timestamp": "2025-04-24T02:48:13.792Z"
+          }
+        ],
+        "createdAt": "2025-04-24T02:47:31.953Z",
+        "updatedAt": "2025-04-24T02:48:13.792Z"
+      }
     ]
   ]
 }
