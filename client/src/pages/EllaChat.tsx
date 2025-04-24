@@ -17,7 +17,8 @@ import {
   SelectValue 
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { predefinedPersonas, customPersonaTemplate, Persona } from '@/lib/personas';
+import { customPersonaTemplate } from '@/lib/personas';
+import { usePersona, Persona } from '@/hooks/use-persona';
 import { motion } from 'framer-motion';
 import { ThemeSelector, ThemeOption } from '@/components/ThemeSelector';
 import { applyTheme, applyFontScale, saveThemeSettings, loadThemeSettings } from '@/lib/themeUtils';
@@ -74,10 +75,19 @@ export default function EllaChat() {
   const [isLoadingAppointments, setIsLoadingAppointments] = useState(false);
   const { calendlyUrl, meetingTypes } = useCalendly();
   
-  // Persona state
-  const [selectedPersona, setSelectedPersona] = useState<string>("default");
-  const [useCustomPersona, setUseCustomPersona] = useState(false);
+  // Use backend persona management through our hook
+  const { 
+    personas, 
+    currentPersona, 
+    isLoading: isLoadingPersona, 
+    setPersona, 
+    setCustomPersona,
+    resetToDefaultPersona
+  } = usePersona(sessionId);
+  
+  // Local state for custom persona text input
   const [customPersonaText, setCustomPersonaText] = useState(customPersonaTemplate);
+  const [useCustomPersona, setUseCustomPersona] = useState(false);
   
   // Voice enhancement states
   const [isVoiceEnabled, setIsVoiceEnabled] = useState<boolean>(true);
@@ -393,9 +403,7 @@ export default function EllaChat() {
             role: msg.isUser ? 'user' : 'assistant',
             content: msg.content
           })),
-          persona: useCustomPersona ? null : selectedPersona,
-          customPersonaPrompt: useCustomPersona ? customPersonaText : null,
-          sessionId: sessionId, // Include the session ID for tracking
+          sessionId: sessionId, // Include the session ID for backend persona and tracking
           isVoiceInput: true // Flag to indicate this came from voice input
         })
       });
