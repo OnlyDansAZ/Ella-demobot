@@ -441,28 +441,120 @@ export default function EllaChat() {
     }
   };
   
-  // Start listening for speech
+  // Start listening for speech with improved permission handling
   const startListening = () => {
-    if (recognitionRef.current) {
-      try {
-        recognitionRef.current.start();
-        setIsListening(true);
-      } catch (error) {
-        console.error('Failed to start speech recognition:', error);
-        
-        // More informative error messages
-        if (error instanceof DOMException && error.name === 'NotAllowedError') {
-          alert('Microphone permission was denied. Please allow microphone access in your browser settings.');
-        } else {
-          alert('Failed to start speech recognition. Please try again or use text input instead.');
-        }
-        setIsListening(false);
-      }
-    } else if (!('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) {
+    // First check for browser support before attempting to start
+    if (!('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) {
       alert('Speech recognition is not supported in your browser. Please try using a modern browser like Chrome, Edge, or Safari.');
       setIsVoiceEnabled(false);
-    } else {
-      alert('Speech recognition failed to initialize. Please refresh the page and try again.');
+      return;
+    }
+    
+    // Ensure recognition object is properly initialized
+    if (!recognitionRef.current) {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      recognitionRef.current = new SpeechRecognition();
+      recognitionRef.current.continuous = true;
+      recognitionRef.current.interimResults = true;
+      recognitionRef.current.lang = 'en-US';
+      
+      // Initialize event handlers
+      recognitionRef.current.onresult = (event: any) => {
+        const lastResult = event.results[event.results.length - 1];
+        if (lastResult.isFinal) {
+          const transcript = lastResult[0].transcript.trim();
+          const confidence = lastResult[0].confidence;
+          setVoiceConfidence(confidence);
+          
+          console.log(`Speech recognized with ${Math.round(confidence * 100)}% confidence: "${transcript}"`);
+          setInputMessage(transcript);
+          
+          if (confidence > 0.85 && isListening) {
+            setTimeout(() => {
+              if (transcript && transcript.length > 0) {
+                sendMessageWithText(transcript);
+              }
+            }, 300);
+          }
+        }
+      };
+      
+      recognitionRef.current.onerror = (event: any) => {
+        console.error('Speech recognition error:', event.error, event);
+        
+        if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+          setIsListening(false);
+          alert('Microphone permission was denied. Please allow microphone access in your browser settings.');
+        } else if (event.error === 'aborted') {
+          setIsListening(false);
+        } else if (event.error === 'network') {
+          console.warn('Network error in speech recognition, trying to restart...');
+          setTimeout(() => {
+            if (isListening) restartListening();
+          }, 1000);
+        } else {
+          setTimeout(() => {
+            if (isListening) restartListening();
+          }, 1000);
+        }
+      };
+      
+      recognitionRef.current.onend = () => {
+        console.log('Speech recognition ended naturally');
+        if (isListening) {
+          restartListening();
+        }
+      };
+    }
+    
+    // Now try to start the recognition
+    try {
+      // Stop any speaking before starting listening
+      if (isSpeaking && currentAudioRef.current) {
+        currentAudioRef.current.pause();
+        currentAudioRef.current = null;
+        setIsSpeaking(false);
+      }
+      
+      // Request explicit permission for microphone use through an alternative method
+      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        navigator.mediaDevices.getUserMedia({ audio: true })
+          .then(() => {
+            console.log('Microphone permission granted');
+            try {
+              recognitionRef.current.start();
+              console.log('Speech recognition started successfully');
+              setIsListening(true);
+            } catch (startError) {
+              console.error('Error starting recognition after permission granted:', startError);
+              setIsListening(false);
+            }
+          })
+          .catch((permissionError) => {
+            console.error('Microphone permission denied:', permissionError);
+            alert('Microphone permission denied. Speech input requires microphone access.');
+            setIsListening(false);
+          });
+      } else {
+        // Fallback for browsers without mediaDevices API
+        try {
+          recognitionRef.current.start();
+          setIsListening(true);
+        } catch (error) {
+          console.error('Failed to start speech recognition:', error);
+          setIsListening(false);
+          
+          if (error instanceof DOMException && error.name === 'NotAllowedError') {
+            alert('Microphone permission was denied. Please allow microphone access in your browser settings.');
+          } else {
+            alert('Failed to start speech recognition. Please try again or use text input instead.');
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error initializing speech recognition:', error);
+      alert('Failed to start speech recognition. Please refresh and try again.');
+      setIsListening(false);
     }
   };
   
