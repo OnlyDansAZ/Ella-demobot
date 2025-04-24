@@ -432,6 +432,22 @@ export default function EllaChat() {
     }
   };
   
+  // State for demo mode
+  const [isDemoMode, setIsDemoMode] = useState<boolean>(false);
+  const [demoScenarioName, setDemoScenarioName] = useState<string>("");
+  
+  // Check for demo mode on component mount
+  useEffect(() => {
+    // Check URL for demo parameter
+    const urlParams = new URLSearchParams(window.location.search);
+    const demoParam = urlParams.get('demo');
+    setIsDemoMode(demoParam === 'true');
+    
+    if (demoParam === 'true') {
+      console.log('Demo mode active! Using pre-defined responses');
+    }
+  }, []);
+  
   // Function to send a message with specific text (for voice input or text input)
   const sendMessageWithText = async (text: string) => {
     if (!text.trim()) return;
@@ -443,6 +459,15 @@ export default function EllaChat() {
     setIsLoading(true);
     
     try {
+      // Check URL for demo parameter in case it was just added
+      const urlParams = new URLSearchParams(window.location.search);
+      const demoParam = urlParams.get('demo');
+      const isInDemoMode = demoParam === 'true' || isDemoMode;
+      
+      if (isInDemoMode && !isDemoMode) {
+        setIsDemoMode(true);
+      }
+      
       // Make the API call to get a response from Ella
       const response = await fetch('/api/chat', {
         method: 'POST',
@@ -456,13 +481,20 @@ export default function EllaChat() {
             content: msg.content
           })),
           sessionId: sessionId, // Include the session ID for backend persona and tracking
-          isVoiceInput: true // Flag to indicate this came from voice input
+          isVoiceInput: true, // Flag to indicate this came from voice input
+          demoMode: isInDemoMode // Flag to use demo responses when demo=true
         })
       });
       
       const data = await response.json();
       
       if (data.success) {
+        // Check if we're in demo mode from the response
+        if (data.isDemoMode) {
+          setIsDemoMode(true);
+          setDemoScenarioName(data.demoScenario || "Default");
+        }
+        
         // Add the bot response using our hook (with persistence)
         const botMessage = await addMessage(data.response, false);
         
@@ -994,6 +1026,42 @@ export default function EllaChat() {
         {/* Main Chat Area - 3/4 width on desktop, hidden on mobile when settings are shown */}
         <div className={`md:col-span-3 ${showSettingsOnMobile ? 'hidden md:block' : 'block'}`}>
           <Card className="border rounded-lg shadow-sm h-[80vh] sm:h-[70vh] flex flex-col">
+            {/* Demo Mode Indicator */}
+            {isDemoMode && (
+              <div className="bg-yellow-50 border-b border-yellow-200 px-4 py-2 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="h-4 w-4 text-yellow-500" />
+                  <span className="text-xs text-yellow-800">
+                    Demo: AI is responding based on a sample conversation 
+                    {demoScenarioName && ` - ${demoScenarioName} scenario`}
+                  </span>
+                </div>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-6 px-2 text-xs"
+                  onClick={() => {
+                    // Remove demo mode param from URL but don't refresh
+                    const url = new URL(window.location.href);
+                    url.searchParams.delete('demo');
+                    window.history.replaceState({}, '', url);
+                    
+                    // Set state to exit demo mode
+                    setIsDemoMode(false);
+                    setDemoScenarioName("");
+                    
+                    // Toast notification
+                    toast({
+                      title: "Exited Demo Mode",
+                      description: "Now using real AI responses",
+                      variant: "default"
+                    });
+                  }}
+                >
+                  Exit Demo
+                </Button>
+              </div>
+            )}
             <CardContent className="flex-1 overflow-y-auto p-1 sm:p-4">
               <div className="space-y-2 sm:space-y-4">
                 {messages.map((message, index) => (
