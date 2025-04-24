@@ -4,6 +4,30 @@ import { setupVite, serveStatic, log } from "./vite";
 import { initVectorDB } from "./vectordb";
 import { seedKnowledgeBase } from "./documentProcessor";
 
+// Global error handler for uncaught database errors 
+// to prevent app crashes on database connection issues
+process.on('uncaughtException', (error) => {
+  // Check if it's a database connection error
+  if (error.code && 
+      (error.code === '57P01' || // Terminating connection
+       error.code === '08006' || // Connection failure
+       error.code === '08001' || // Unable to connect
+       error.code === '57P03')) { // Cannot connect now
+    
+    console.error('Uncaught database connection error:', error.message);
+    
+    // Log the error but prevent app from crashing
+    console.error('Database connection was interrupted. The application will continue running with degraded functionality.');
+    
+    // Don't throw the error further, just log it and keep the app running
+    return;
+  }
+  
+  // For non-database uncaught errors, log and let Node.js handle normally
+  console.error('Uncaught exception:', error);
+  throw error;
+});
+
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
