@@ -1013,6 +1013,21 @@ export default function EllaChat() {
             <Calendar className="h-3.5 w-3.5" />
             <span className="hidden sm:inline ml-1">Appointments</span>
           </Button>
+          
+          {/* Demo dashboard link - only visible when in demo mode */}
+          {isDemoMode && (
+            <Link href="/demo-dashboard">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="text-xs px-2 py-1 h-7 flex items-center gap-1 bg-yellow-50 text-yellow-800 border-yellow-200 hover:bg-yellow-100 hover:text-yellow-900"
+              >
+                <BarChart2 className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline ml-1">Demo Dashboard</span>
+              </Button>
+            </Link>
+          )}
+          
           <Link href="/">
             <Button variant="ghost" size="sm" className="hidden sm:flex items-center gap-1">
               <ArrowLeft className="h-4 w-4" />

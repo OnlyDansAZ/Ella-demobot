@@ -142,9 +142,38 @@ export default function Admin() {
         </TabsContent>
         
         <TabsContent value="analytics" className="mt-6">
-          <div className="rounded-md bg-amber-50 border border-amber-200 p-4 text-amber-800">
-            <h3 className="font-medium">Analytics Dashboard</h3>
-            <p>This would display usage statistics, popular questions, and performance metrics for Ella.</p>
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-2xl font-semibold mb-4">Performance Analytics</h2>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="rounded-md bg-amber-50 border border-amber-200 p-4 text-amber-800">
+                  <h3 className="font-medium">Analytics Dashboard</h3>
+                  <p className="text-sm mt-2">This would display usage statistics, popular questions, and performance metrics for Ella.</p>
+                </div>
+                
+                <div className="rounded-md bg-blue-50 border border-blue-200 p-4 flex flex-col justify-between">
+                  <div>
+                    <h3 className="font-medium text-blue-800">Interactive Demo Dashboard</h3>
+                    <p className="text-sm text-blue-800 mt-2">Visualize appointments, personas, and images for demos and presentations</p>
+                  </div>
+                  <div className="mt-4">
+                    <Link href="/demo-dashboard">
+                      <Button className="w-full flex items-center justify-center gap-2">
+                        <Image className="h-4 w-4" />
+                        <span>Open Demo Dashboard</span>
+                      </Button>
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div>
+              <h2 className="text-2xl font-semibold mb-4">Usage Reports</h2>
+              <div className="rounded-md bg-amber-50 border border-amber-200 p-4 text-amber-800">
+                <p>Detailed usage reports and data exports would be available here in the full version.</p>
+              </div>
+            </div>
           </div>
         </TabsContent>
       </Tabs>
