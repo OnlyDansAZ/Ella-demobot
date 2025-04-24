@@ -216,10 +216,34 @@
             "content": "No, I can't create images. My main abilities include assisting with scheduling appointments, providing information, and having general conversations. If you have any questions or need help with something else, feel free to ask!",
             "isUser": false,
             "timestamp": "2025-04-24T06:38:58.946Z"
+          },
+          {
+            "id": "b85fc761-736b-4241-bf75-e7ac6dde40d6",
+            "content": "hello good morning Ella",
+            "isUser": true,
+            "timestamp": "2025-04-24T07:10:00.850Z"
+          },
+          {
+            "id": "cdcaf68f-7a3b-4fe0-8410-a68c8ac9493a",
+            "content": "Good morning! How can I assist you today?",
+            "isUser": false,
+            "timestamp": "2025-04-24T07:10:06.785Z"
+          },
+          {
+            "id": "9014cedd-d99a-45f6-8470-77660d3400d5",
+            "content": "I was just thinking I want to see an image of  a giraffe wearing a tuxedo",
+            "isUser": true,
+            "timestamp": "2025-04-24T07:10:29.079Z"
+          },
+          {
+            "id": "88e47437-edd7-48e2-aa8a-9a16aa14fc8a",
+            "content": "That sounds like a fun image! While I can't create images myself, you might be able to find something similar by doing a quick search online. If there's anything else I can help with, just let me know!",
+            "isUser": false,
+            "timestamp": "2025-04-24T07:10:32.160Z"
           }
         ],
         "createdAt": "2025-04-23T01:01:18.628Z",
-        "updatedAt": "2025-04-24T06:38:58.947Z"
+        "updatedAt": "2025-04-24T07:10:32.160Z"
       }
     ],
     [
