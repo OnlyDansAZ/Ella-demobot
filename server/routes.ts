@@ -11,6 +11,8 @@ import documentRoutes from './routes/documentRoutes';
 import calendlyRouter from './routes/calendlyRoutes';
 import appointmentRoutes from './routes/appointmentRoutes';
 import conversationRoutes from './routes/conversationRoutes';
+import personaRoutes from './routes/personaRoutes';
+import { personaManager } from './personaManager';
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // API Routes
@@ -29,6 +31,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Conversation history routes
   app.use("/api/conversations", conversationRoutes);
+  
+  // Persona management routes
+  app.use("/api/personas", personaRoutes);
 
   // Contact form submission endpoint
   app.post("/api/contact", (req, res) => {
@@ -55,12 +60,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // OpenAI-powered chat API
   app.post("/api/chat", async (req, res) => {
     try {
-      const { message, history = [], persona = null, customPersonaPrompt = null } = req.body;
+      const { message, history = [], sessionId } = req.body;
       
       if (!message) {
         return res.status(400).json({ 
           success: false, 
           message: "Please provide a message" 
+        });
+      }
+      
+      if (!sessionId) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Please provide a sessionId" 
         });
       }
       
@@ -79,19 +91,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           history.map((msg: any) => `${msg.role}: ${msg.content.substring(0, 50)}${msg.content.length > 50 ? '...' : ''}`));
       }
       
-      // Log if a custom persona is being used
-      if (persona) {
-        console.log(`Using persona: ${persona}`);
-      }
-      
-      if (customPersonaPrompt) {
-        console.log("Using custom persona instructions");
-      }
+      // Get the active persona for this session
+      const persona = personaManager.getSessionPersona(sessionId);
+      console.log(`Using persona: ${persona.id}`);
       
       // Generate AI response using OpenAI
       try {
         console.log("Generating OpenAI response for:", message);
-        const aiResponse = await generateResponse(message, history, persona, customPersonaPrompt);
+        const aiResponse = await generateResponse(message, history, persona.id, persona.systemPrompt);
         
         // Log the AI's response for important queries to help diagnose context issues
         if (message.toLowerCase().includes("schedule") || 

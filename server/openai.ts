@@ -493,15 +493,15 @@ export async function generateResponse(
     let personaDescription = "default";
     
     if (customPersonaPrompt) {
-      // If a custom persona prompt is provided, use that
+      // If a system prompt override is provided from the server-side persona manager, use that
       baseSystemPrompt = customPersonaPrompt;
-      personaDescription = "custom";
-      console.log("Using custom persona prompt");
+      personaDescription = "server-managed";
+      console.log("Using server-managed persona prompt");
     } else if (persona && personaSystemPrompts[persona]) {
-      // If a predefined persona is specified, use its system prompt
+      // Legacy support: If a predefined persona is specified by ID, use its system prompt
       baseSystemPrompt = personaSystemPrompts[persona];
       personaDescription = persona;
-      console.log(`Using ${persona} persona system prompt`);
+      console.log(`Using ${persona} persona system prompt (legacy mode)`);
     }
     
     // STEP 5: BUILD COMPREHENSIVE SYSTEM PROMPT
