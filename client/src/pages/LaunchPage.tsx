@@ -156,9 +156,24 @@ export default function LaunchPage() {
                 </Dialog>
                 
                 <Button variant="outline" className="bg-transparent border-white text-white hover:bg-white hover:text-[#0D82DA] transition-all hover:scale-105">
-                  <Calendar className="mr-2 h-4 w-4 text-[#0D82DA]" />
+                  <Calendar className="mr-2 h-4 w-4" />
                   <Link href="/book-demo">Book a Live Tour</Link>
                 </Button>
+                
+                <div className="flex gap-4 w-full mt-4">
+                  <Link href="/chat?voice=true" className="flex-1">
+                    <Button variant="outline" className="w-full bg-transparent border-white text-white hover:bg-white hover:text-[#0D82DA] transition-all hover:scale-105">
+                      <Mic className="mr-2 h-4 w-4" />
+                      Speak to Ella
+                    </Button>
+                  </Link>
+                  <Link href="/chat" className="flex-1">
+                    <Button className="w-full bg-white text-[#0D82DA] hover:bg-gray-100 transition-all hover:scale-105">
+                      <MessageSquare className="mr-2 h-4 w-4" />
+                      Chat with Ella
+                    </Button>
+                  </Link>
+                </div>
               </div>
             </div>
             <div className="md:w-1/2 flex justify-center">

@@ -408,10 +408,22 @@
             "content": "Currently, YoBot doesn't have the capability to make phone calls directly. However, it excels in other areas such as scheduling appointments, providing information, and engaging in general conversations. If making phone calls is a feature you're interested in, you might consider using YoBot alongside a VoIP service or another communication tool to handle calls while YoBot manages scheduling and information tasks. If there's anything else you'd like to know or explore, feel free to ask!",
             "isUser": false,
             "timestamp": "2025-04-24T21:47:16.938Z"
+          },
+          {
+            "id": "5c85a6c6-17cc-4024-9557-db60cf3a4a58",
+            "content": " what if I told you that you would have the ability to make phone calls soon",
+            "isUser": true,
+            "timestamp": "2025-04-24T23:49:55.287Z"
+          },
+          {
+            "id": "b919b7fc-7fa7-4732-a863-181c420226f4",
+            "content": "That sounds exciting! If YoBot were to gain the ability to make phone calls in the future, it would certainly enhance its capabilities and provide even more convenience for users. This feature could streamline communication tasks and integrate seamlessly with scheduling and information management. If there's anything specific you'd like to know about current features or future possibilities, feel free to ask!",
+            "isUser": false,
+            "timestamp": "2025-04-24T23:50:03.429Z"
           }
         ],
         "createdAt": "2025-04-23T01:01:18.628Z",
-        "updatedAt": "2025-04-24T21:47:16.938Z"
+        "updatedAt": "2025-04-24T23:50:03.429Z"
       }
     ],
     [
