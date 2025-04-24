@@ -119,7 +119,7 @@ export default function LaunchPage() {
   return (
     <div className="flex flex-col min-h-screen">
       {/* Hero Section */}
-      <section className="relative bg-gradient-to-br from-[#0D82DA] via-indigo-700 to-emerald-700 text-white overflow-hidden">
+      <section className="relative bg-gradient-to-b from-[#0956a3] via-[#0D82DA] to-[#134b73] text-white overflow-hidden">
         {/* Faint logo watermark in background */}
         <div className="absolute inset-0 flex items-center justify-center opacity-5 pointer-events-none">
           <img src={yobotLogo} alt="YoBot Logo Watermark" className="w-[70%] max-w-[800px]" />
