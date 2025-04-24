@@ -192,10 +192,34 @@
             "content": "Hello! Yes, I can hear you. How can I assist you today?",
             "isUser": false,
             "timestamp": "2025-04-24T04:28:50.150Z"
+          },
+          {
+            "id": "ccdc03fb-03d5-4480-a109-e4b7f81eff28",
+            "content": "how big are your pictures",
+            "isUser": true,
+            "timestamp": "2025-04-24T06:38:25.425Z"
+          },
+          {
+            "id": "6928c4e9-0ef3-4dd7-9e41-4b9e41a74119",
+            "content": "I don't have pictures of my own, but when it comes to digital images, their size can vary depending on the resolution and format. For example, a high-resolution image might be several megabytes in size, while a lower resolution image could be just a few kilobytes. If you have a specific type of image or format in mind, I can help explain more about it!",
+            "isUser": false,
+            "timestamp": "2025-04-24T06:38:33.166Z"
+          },
+          {
+            "id": "a92c1e03-3d24-43b2-850f-35d4e5cd3f79",
+            "content": "are you able to create images",
+            "isUser": true,
+            "timestamp": "2025-04-24T06:38:56.652Z"
+          },
+          {
+            "id": "bc3b7712-25ca-4775-acb1-f85e04180a53",
+            "content": "No, I can't create images. My main abilities include assisting with scheduling appointments, providing information, and having general conversations. If you have any questions or need help with something else, feel free to ask!",
+            "isUser": false,
+            "timestamp": "2025-04-24T06:38:58.946Z"
           }
         ],
         "createdAt": "2025-04-23T01:01:18.628Z",
-        "updatedAt": "2025-04-24T04:28:50.150Z"
+        "updatedAt": "2025-04-24T06:38:58.947Z"
       }
     ],
     [

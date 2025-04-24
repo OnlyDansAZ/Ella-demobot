@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import DocumentUpload from '@/components/DocumentUpload';
+import AdminPersonaManager from '@/components/AdminPersonaManager';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
@@ -110,9 +111,25 @@ export default function Admin() {
         </TabsContent>
         
         <TabsContent value="settings" className="mt-6">
-          <div className="rounded-md bg-amber-50 border border-amber-200 p-4 text-amber-800">
-            <h3 className="font-medium">Settings Panel</h3>
-            <p>This would contain configuration options for Ella's behavior, voice settings, and other system parameters.</p>
+          <div className="space-y-8">
+            <div>
+              <h2 className="text-2xl font-semibold mb-4">Persona Management</h2>
+              <AdminPersonaManager />
+            </div>
+            
+            <div>
+              <h2 className="text-2xl font-semibold mb-4">Voice Settings</h2>
+              <div className="rounded-md bg-amber-50 border border-amber-200 p-4 text-amber-800">
+                <p>Voice configuration settings would appear here.</p>
+              </div>
+            </div>
+            
+            <div>
+              <h2 className="text-2xl font-semibold mb-4">System Parameters</h2>
+              <div className="rounded-md bg-amber-50 border border-amber-200 p-4 text-amber-800">
+                <p>Additional system configuration options would appear here.</p>
+              </div>
+            </div>
           </div>
         </TabsContent>
         
