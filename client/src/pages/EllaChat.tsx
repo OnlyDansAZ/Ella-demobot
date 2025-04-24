@@ -131,7 +131,13 @@ export default function EllaChat() {
     if (voiceMode === 'true') {
       // Automatically start voice mode
       setIsListening(true);
-      startListening();
+      // Start voice recognition after a short delay
+      setTimeout(() => {
+        // Ensure the function exists in scope before calling it
+        if (typeof startRecognition === 'function') {
+          startRecognition();
+        }
+      }, 1000);
     }
   }, []);
 
