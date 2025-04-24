@@ -190,14 +190,18 @@ export default function LaunchPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2 mt-4">
-                    <Button variant="outline" size="sm" className="flex-grow border-[#0D82DA] hover:bg-[#0D82DA] hover:text-white transition-all">
-                      <Mic className="h-4 w-4 mr-2 text-[#0D82DA] group-hover:text-white" />
-                      <Link href="/chat?voice=true">Speak to Ella</Link>
-                    </Button>
-                    <Button size="sm" className="flex-grow bg-[#0D82DA] hover:bg-blue-700 transition-all">
-                      <MessageSquare className="h-4 w-4 mr-2" />
-                      <Link href="/chat">Chat with Ella</Link>
-                    </Button>
+                    <Link href="/chat?voice=true">
+                      <Button variant="outline" size="sm" className="flex-grow border-[#0D82DA] hover:bg-[#0D82DA] hover:text-white transition-all">
+                        <Mic className="h-4 w-4 mr-2 text-[#0D82DA] group-hover:text-white" />
+                        Speak to Ella
+                      </Button>
+                    </Link>
+                    <Link href="/chat">
+                      <Button size="sm" className="flex-grow bg-[#0D82DA] hover:bg-blue-700 transition-all">
+                        <MessageSquare className="h-4 w-4 mr-2" />
+                        Chat with Ella
+                      </Button>
+                    </Link>
                   </div>
                 </div>
               </div>
