@@ -21,6 +21,14 @@ interface ConversationResponse {
   }>;
 }
 
+// Define chat response type from API
+interface ChatResponse {
+  success: boolean;
+  response: string;
+  isDemoMode?: boolean;
+  demoScenario?: string;
+}
+
 // Main hook for conversation management with persistence
 export const useConversation = () => {
   // State for messages

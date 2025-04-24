@@ -60,7 +60,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // OpenAI-powered chat API
   app.post("/api/chat", async (req, res) => {
     try {
-      const { message, history = [], sessionId } = req.body;
+      const { message, history = [], sessionId, demoMode } = req.body;
       
       if (!message) {
         return res.status(400).json({ 
@@ -76,6 +76,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
+      // Check if we're in demo mode - triggered by URL parameter or request body
+      if (demoMode === 'true' || demoMode === true) {
+        console.log("DEMO MODE ACTIVE: Using pre-defined sales demo responses");
+        
+        // Import demo scenarios
+        const { getRelevantDemoScenario, getDemoContinuation } = await import('./demoScenarios');
+        
+        // Get the most relevant scenario based on the user's message
+        const scenario = getRelevantDemoScenario(message);
+        
+        // If no scenario is found, use default response
+        if (!scenario) {
+          console.log("No matching demo scenario found, using default response");
+          return res.json({
+            success: true,
+            response: "Thank you for your interest in YoBot! Our AI assistant helps businesses automate conversations and improve customer service. What specific features would you like to know more about?",
+            isDemoMode: true,
+            demoScenario: "Default"
+          });
+        }
+        
+        console.log(`Demo scenario selected: ${scenario.name}`);
+        
+        // Generate a demo response
+        const demoResponse = getDemoContinuation(scenario, history, message);
+        
+        // Return the demo response with demo mode flag
+        return res.json({ 
+          success: true, 
+          response: demoResponse,
+          isDemoMode: true,
+          demoScenario: scenario.name
+        });
+      }
+      
+      // Regular mode processing continues below
       // Check if OpenAI API key is available
       if (!process.env.OPENAI_API_KEY) {
         console.warn("OpenAI API key not found, using fallback responses");

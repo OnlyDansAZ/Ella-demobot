@@ -115,9 +115,9 @@ export const DEMO_SCENARIOS: DemoScenario[] = [
 /**
  * Get a demo scenario based on the content of the user's message
  * @param userMessage The content of the user's message
- * @returns The most relevant demo scenario, or undefined if none matches
+ * @returns The most relevant demo scenario
  */
-export function getRelevantDemoScenario(userMessage: string): DemoScenario | undefined {
+export function getRelevantDemoScenario(userMessage: string): DemoScenario {
   const messageLower = userMessage.toLowerCase();
   
   // Check if any scenario triggers match the user message

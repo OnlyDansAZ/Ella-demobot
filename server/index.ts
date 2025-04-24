@@ -6,7 +6,7 @@ import { seedKnowledgeBase } from "./documentProcessor";
 
 // Global error handler for uncaught database errors 
 // to prevent app crashes on database connection issues
-process.on('uncaughtException', (error) => {
+process.on('uncaughtException', (error: any) => {
   // Check if it's a database connection error
   if (error.code && 
       (error.code === '57P01' || // Terminating connection
