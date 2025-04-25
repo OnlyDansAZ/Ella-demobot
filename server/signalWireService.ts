@@ -234,7 +234,7 @@ export async function makeOutboundCall(
   <!-- Using high-quality ElevenLabs voice -->
   <Play>${audioUrl}</Play>
   <Pause length="1"/>
-  <Gather input="speech dtmf" timeout="10" action="${baseUrl}/api/phone-call/response" method="POST">
+  <Gather input="speech dtmf" timeout="10" action="${baseUrl}/api/phone-call/response" method="POST" transcribe="true" transcribeCallback="${baseUrl}/api/phone-call/transcription">
     <Say voice="woman" language="en-US">
       Would you like to learn more about YoBot and what we offer? 
       Say yes or press 1 for pricing information.
@@ -252,7 +252,7 @@ export async function makeOutboundCall(
   <!-- Using fallback TTS (ElevenLabs generation failed) -->
   <Say voice="woman" language="en-US">${script}</Say>
   <Pause length="1"/>
-  <Gather input="speech dtmf" timeout="10" action="${baseUrl}/api/phone-call/response" method="POST">
+  <Gather input="speech dtmf" timeout="10" action="${baseUrl}/api/phone-call/response" method="POST" transcribe="true" transcribeCallback="${baseUrl}/api/phone-call/transcription">
     <Say voice="woman" language="en-US">
       Would you like to learn more about YoBot and what we offer? 
       Say yes or press 1 for pricing information.

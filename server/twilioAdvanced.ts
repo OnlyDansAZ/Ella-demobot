@@ -25,6 +25,14 @@ export interface PhoneCallRequest {
   callbackUrl?: string; // Optional: webhook for call status updates
 }
 
+// Transcript entry interface
+export interface TranscriptEntry {
+  timestamp: string;     // ISO timestamp
+  speaker: 'system' | 'user' | 'unknown';  // Who is speaking
+  text: string;          // What was said
+  confidence?: number;   // Confidence score (0-1)
+}
+
 // Call record interface for storing call history
 export interface CallRecord {
   id: string;
@@ -43,6 +51,7 @@ export interface CallRecord {
   updatedAt: Date;
   scheduledTime?: Date;
   notes?: string[];          // Array of notes about the call
+  transcript?: TranscriptEntry[];  // Call transcript entries
 }
 
 // File-backed call records storage
