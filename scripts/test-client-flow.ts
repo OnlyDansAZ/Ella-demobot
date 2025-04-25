@@ -12,8 +12,8 @@
 import { v4 as uuidv4 } from 'uuid';
 import { personaManager } from '../server/personaManager';
 import { conversationStorage, type ChatMessage } from '../server/conversationStorage';
-// Use the signalWireService for call records
-import { createCallRecord, updateCallStatus } from '../server/signalWireService';
+// Import directly from the twilio implementation that SignalWire uses
+import { callRecordStorage, type CallRecord } from '../server/twilioAdvanced';
 
 // Simulate delay between operations
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -111,23 +111,32 @@ async function simulateClientFlow() {
     const persistentCallId = `call_${uuidv4()}`;
     
     // Create call records (simulating what happens when a call is made)
-    await callRecordStorage.createCallRecord({
-      callSid: statelessCallId,
+    const statelessCallRecord: CallRecord = {
+      id: statelessCallId,
       to: '+15551234567',
       from: '+15559876543',
       status: 'initiated',
-      direction: 'outbound',
-      sessionId: statelessSessionId
-    });
+      script: 'This is a test script for the stateless persona call.',
+      persona: salesPersona.id,
+      voice: 'female',
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
     
-    await callRecordStorage.createCallRecord({
-      callSid: persistentCallId,
+    const persistentCallRecord: CallRecord = {
+      id: persistentCallId,
       to: '+15552345678',
       from: '+15559876543',
       status: 'initiated',
-      direction: 'outbound',
-      sessionId: persistentSessionId
-    });
+      script: 'This is a test script for the persistent persona call.',
+      persona: assistantPersona.id,
+      voice: 'female',
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    
+    callRecordStorage.saveCall(statelessCallRecord);
+    callRecordStorage.saveCall(persistentCallRecord);
     
     console.log(`Call initiation simulation:
     - Stateless call ID: ${statelessCallId}
