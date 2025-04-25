@@ -9,11 +9,6 @@ import { promisify } from 'util';
 // Initialize Twilio client with environment variables
 let twilioClient: twilio.Twilio | null = null;
 
-// Initialize ElevenLabs for better voice quality
-const elevenLabs = new ElevenLabs({
-  apiKey: process.env.ELEVENLABS_API_KEY || '',
-});
-
 // Define voice IDs for ElevenLabs
 const ELEVEN_LABS_VOICES = {
   female: 'KgleQSAupUuS391XuXpI', // Nicole voice
@@ -26,7 +21,7 @@ if (!fs.existsSync(TEMP_DIR)) {
   fs.mkdirSync(TEMP_DIR, { recursive: true });
 }
 
-// Helper function for ElevenLabs voice generation using direct API
+// Helper function for ElevenLabs voice generation using direct HTTP requests
 const generateSpeech = async (text: string, voiceId: string, options: any): Promise<string> => {
   try {
     // Create output file path
@@ -41,7 +36,8 @@ const generateSpeech = async (text: string, voiceId: string, options: any): Prom
       .replace(/\*/g, "")        // Remove asterisks completely
       .replace(/-\s+/g, "")      // Remove hyphens followed by whitespace
       .replace(/^\s*-\s*/gm, "") // Remove hyphens at the beginning of each line
-      .replace(/\n\s*-\s*/g, "\n"); // Replace newline-hyphen patterns with just newlines
+      .replace(/\n\s*-\s*/g, "\n") // Replace newline-hyphen patterns with just newlines
+      .replace(/\n+/g, ". "); // Replace multiple newlines with periods to improve speech flow
       
     // Get API key from environment
     const ELEVENLABS_API_KEY = process.env.ELEVENLABS_API_KEY;
@@ -49,13 +45,7 @@ const generateSpeech = async (text: string, voiceId: string, options: any): Prom
       throw new Error("ElevenLabs API key is not configured or missing");
     }
     
-    // Create a fresh ElevenLabs instance with the API key
-    const elevenlabsInstance = new ElevenLabs({
-      apiKey: ELEVENLABS_API_KEY,
-      voiceId: voiceId // Set the voiceId during initialization
-    });
-    
-    // Configure speech parameters with either persona-specific, user-provided, or defaults
+    // Configure speech parameters
     const stability = options.stability !== undefined ? options.stability : 0.5;
     const similarityBoost = options.similarityBoost !== undefined ? options.similarityBoost : 0.75;
     const style = options.style !== undefined ? options.style : 0.5;
@@ -65,44 +55,68 @@ const generateSpeech = async (text: string, voiceId: string, options: any): Prom
       stability, similarityBoost, style, useSpeakerBoost 
     });
     
-    // Create a promise to handle the ElevenLabs API call
-    return new Promise((resolve, reject) => {
-      try {
-        // Make direct API call to ElevenLabs following the type definition
-        elevenlabsInstance.textToSpeech({
-          textInput: processedText,
-          fileName: outputFile,
+    // Create fetch options for ElevenLabs API
+    // We're using direct API call instead of the library
+    const url = `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`;
+    
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Accept': 'audio/mpeg',
+        'Content-Type': 'application/json',
+        'xi-api-key': ELEVENLABS_API_KEY
+      },
+      body: JSON.stringify({
+        text: processedText,
+        model_id: "eleven_multilingual_v2", // Use latest model
+        voice_settings: {
           stability: stability,
-          similarityBoost: similarityBoost,
+          similarity_boost: similarityBoost,
           style: style,
-          speakerBoost: useSpeakerBoost,
-          modelId: "eleven_turbo_v2"
-        }).then((result: any) => {
-          console.log("ElevenLabs API response:", result);
-          
-          // Verify file exists
-          if (fs.existsSync(outputFile)) {
-            console.log(`Verified ElevenLabs audio file exists: ${outputFile}`);
-            const stats = fs.statSync(outputFile);
-            console.log(`File size: ${stats.size} bytes`);
-            
-            if (stats.size === 0) {
-              reject(new Error("Generated audio file is empty"));
-            } else {
-              resolve(outputFile);
-            }
-          } else {
-            reject(new Error(`ElevenLabs audio file not found at expected location: ${outputFile}`));
-          }
-        }).catch((err: any) => {
-          console.error("ElevenLabs API error:", err);
-          reject(err);
-        });
-      } catch (err) {
-        console.error("Exception making ElevenLabs API call:", err);
-        reject(err);
-      }
+          use_speaker_boost: useSpeakerBoost
+        }
+      })
     });
+    
+    // Handle API response
+    if (!response.ok) {
+      let errorText = '';
+      try {
+        const errorData = await response.json();
+        errorText = JSON.stringify(errorData);
+      } catch (e) {
+        errorText = await response.text();
+      }
+      
+      throw new Error(`ElevenLabs API error (${response.status}): ${errorText}`);
+    }
+    
+    // Get audio as buffer
+    const audioBuffer = await response.arrayBuffer();
+    
+    // Check if we got a valid audio response
+    if (!audioBuffer || audioBuffer.byteLength === 0) {
+      throw new Error('Received empty audio response from ElevenLabs');
+    }
+    
+    console.log(`Received audio response: ${audioBuffer.byteLength} bytes`);
+    
+    // Save audio to file
+    await fs.promises.writeFile(outputFile, Buffer.from(audioBuffer));
+    
+    // Verify file exists and has content
+    if (fs.existsSync(outputFile)) {
+      const stats = fs.statSync(outputFile);
+      console.log(`Saved ElevenLabs audio file: ${outputFile} (${stats.size} bytes)`);
+      
+      if (stats.size === 0) {
+        throw new Error("Generated audio file is empty");
+      }
+    } else {
+      throw new Error(`Failed to save audio file to: ${outputFile}`);
+    }
+    
+    return outputFile;
   } catch (error) {
     console.error('ElevenLabs speech generation error:', error);
     throw error;
