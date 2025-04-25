@@ -222,6 +222,51 @@ router.get('/phone-call/:id', (req: Request, res: Response) => {
 });
 
 /**
+ * Serve LAML (XML) for SignalWire calls
+ * GET /api/signalwire-laml/:id
+ * This endpoint serves the LAML instructions for a specific call
+ */
+router.get('/signalwire-laml/:id', (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    
+    // Get the LAML from temporary storage
+    const laml = getTempLaml(id);
+    
+    if (!laml) {
+      console.error(`LAML not found for call ID: ${id}`);
+      
+      // Return a basic error LAML
+      const errorLaml = `<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+  <Say voice="woman">Sorry, there was an error retrieving call instructions. Please try again later.</Say>
+</Response>`;
+      
+      res.setHeader('Content-Type', 'text/xml');
+      return res.send(errorLaml);
+    }
+    
+    // Log that we're serving LAML
+    console.log(`Serving LAML for call ID: ${id}`);
+    
+    // Set appropriate content type and send the LAML
+    res.setHeader('Content-Type', 'text/xml');
+    res.send(laml);
+  } catch (error) {
+    console.error('Error serving LAML:', error);
+    
+    // Return a basic error LAML
+    const errorLaml = `<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+  <Say voice="woman">Sorry, there was an error retrieving call instructions. Please try again later.</Say>
+</Response>`;
+    
+    res.setHeader('Content-Type', 'text/xml');
+    res.send(errorLaml);
+  }
+});
+
+/**
  * Directly serve audio files for SignalWire
  * GET /api/signalwire-audio/:filename
  * Enhanced for better reliability with SignalWire
