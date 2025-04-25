@@ -30,6 +30,60 @@ export class ConversationStorage {
   
   constructor() {
     this.loadFromFile();
+    
+    // Set up periodic cleanup of old sessions (every 6 hours)
+    setInterval(() => this.cleanupOldSessions(), 6 * 60 * 60 * 1000);
+    
+    // Run initial cleanup on startup
+    this.cleanupOldSessions();
+  }
+  
+  /**
+   * Clean up old sessions to prevent memory leaks
+   * - Removes sessions older than 30 days
+   * - Removes empty sessions (no messages)
+   * - Logs statistics about cleanup
+   */
+  private cleanupOldSessions(): void {
+    try {
+      console.log('[ConversationStorage] Starting periodic session cleanup');
+      
+      const now = new Date();
+      const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      let oldSessionsRemoved = 0;
+      let emptySessionsRemoved = 0;
+      let totalMessages = 0;
+      let totalSessions = this.sessions.size;
+      
+      // Convert to array to avoid modification during iteration
+      Array.from(this.sessions.entries()).forEach(([sessionId, session]) => {
+        // Count total messages for statistics
+        totalMessages += session.messages.length;
+        
+        // Remove old sessions (older than 30 days)
+        if (new Date(session.updatedAt) < thirtyDaysAgo) {
+          this.sessions.delete(sessionId);
+          oldSessionsRemoved++;
+          return;
+        }
+        
+        // Remove empty sessions that are older than 1 day
+        const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+        if (session.messages.length === 0 && new Date(session.updatedAt) < oneDayAgo) {
+          this.sessions.delete(sessionId);
+          emptySessionsRemoved++;
+        }
+      });
+      
+      // Save changes to file
+      this.saveToFile();
+      
+      // Log cleanup statistics
+      console.log(`[ConversationStorage] Cleanup complete: ${oldSessionsRemoved} old sessions removed, ${emptySessionsRemoved} empty sessions removed`);
+      console.log(`[ConversationStorage] Storage statistics: ${this.sessions.size} sessions (down from ${totalSessions}), ${totalMessages} total messages`);
+    } catch (error) {
+      console.error('[ConversationStorage] Error during session cleanup:', error);
+    }
   }
   
   // Save conversations to file

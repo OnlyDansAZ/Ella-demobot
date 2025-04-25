@@ -137,8 +137,35 @@ router.post('/phone-call/status-callback', async (req: Request, res: Response) =
         await conversationStorage.resetStatelessSession(sessionId);
         
         console.log(`Memory management: Call ${CallSid} ended with status ${CallStatus}. Memory cleaned if stateless.`);
+        
+        // Add a fallback timeout task to double-check memory reset in case this call fails
+        setTimeout(async () => {
+          try {
+            // Get the current session to check if it was properly reset
+            const session = await conversationStorage.getOrCreateSession(sessionId);
+            const { personaManager } = require('../personaManager');
+            const persona = personaManager.getSessionPersona(sessionId);
+            
+            // If the persona is stateless and still has messages, try again
+            if (persona.memoryMode === 'stateless' && session.messages.length > 0) {
+              console.log(`Memory management fallback: Re-attempting memory cleanup for call ${CallSid}`);
+              await conversationStorage.resetStatelessSession(sessionId);
+            }
+          } catch (fallbackError) {
+            console.error(`Fallback memory cleanup error for call ${CallSid}:`, fallbackError);
+          }
+        }, 5000); // 5 second fallback timeout
       } catch (memoryError) {
         console.error(`Error handling memory cleanup for call ${CallSid}:`, memoryError);
+        
+        // Critical error recovery path - attempt to force cleanup
+        try {
+          const { conversationStorage } = require('../conversationStorage');
+          console.log(`Memory management critical path: Forcing memory cleanup for call ${CallSid}`);
+          await conversationStorage.clearMessages(CallSid);
+        } catch (criticalError) {
+          console.error(`Critical memory cleanup failure for call ${CallSid}:`, criticalError);
+        }
       }
     }
     
