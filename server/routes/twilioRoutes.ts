@@ -107,9 +107,9 @@ router.post('/phone-call/response', (req: Request, res: Response) => {
     // Add a small pause for more natural conversation flow
     twiml.pause({ length: 1 });
     
-    // Use a high-quality premium Google voice that sounds more human
-    // Google voices have better prosody and intonation than the default voices
-    const voiceType = 'Google.en-US-Neural2-F'; // Using the newer neural voices which sound more natural
+    // Use Google's highest quality Wavenet voice for truly natural speech
+    // Wavenet voices offer the most human-like speech patterns available via Twilio
+    const voiceType = 'Google.en-US-Wavenet-F'; // Premium female voice with natural intonation
     
     if (SpeechResult) {
       // User said something, respond to them with appropriate context
@@ -177,7 +177,7 @@ router.post('/phone-call/response', (req: Request, res: Response) => {
     // Provide a helpful error response
     const errorTwiml = new twilio.twiml.VoiceResponse();
     errorTwiml.say({
-      voice: 'Google.en-US-Neural2-F',
+      voice: 'Google.en-US-Wavenet-F',
       language: 'en-US'
     }, `<speak>
           <prosody rate="0.9" pitch="medium">

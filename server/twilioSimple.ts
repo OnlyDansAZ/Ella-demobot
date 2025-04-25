@@ -185,9 +185,11 @@ export async function makeOutboundCall(request: PhoneCallRequest): Promise<CallR
     // Use Twilio's built-in TTS for maximum compatibility
     console.log("Using Twilio's built-in TTS for reliable voice delivery");
       
-    // Use Google's newer Neural voices which sound much more natural
-    // These high-quality premium voices have better intonation and less robotic qualities
-    const voiceType = request.voice === 'male' ? 'Google.en-US-Neural2-D' : 'Google.en-US-Neural2-F';
+    // Use Google's highest quality Neural Wavenet voices which sound almost human
+    // These premium voices offer the most natural speech patterns and intonation available
+    const voiceType = request.voice === 'male' 
+      ? 'Google.en-US-Wavenet-D'  // Male voice with natural intonation
+      : 'Google.en-US-Wavenet-F'; // Female voice with natural intonation
     
     // Enhanced SSML with natural pauses and more subtle prosody adjustments
     // This creates a more human-like conversational tone
@@ -258,14 +260,17 @@ export async function makeOutboundCall(request: PhoneCallRequest): Promise<CallR
     // Save the temporary record so UI shows something immediately
     callRecordStorage.saveCall(tempCallRecord);
     
-    // Create the call
+    // Create the call with improved webhook configuration
+    // Note: We're avoiding webhooks that might cause application errors
+    // for now until we can set up proper webhook handling with ngrok or similar
     const call = await twilioClient.calls.create({
       to: request.to,
       from: fromNumber,
       twiml: twiml.toString(),
-      statusCallback: request.callbackUrl,
-      statusCallbackEvent: ['initiated', 'ringing', 'answered', 'completed'],
-      statusCallbackMethod: 'POST',
+      // Removing webhooks that may be causing application errors
+      // statusCallback: request.callbackUrl,
+      // statusCallbackEvent: ['initiated', 'ringing', 'answered', 'completed'],
+      // statusCallbackMethod: 'POST',
     });
     
     // Remove the temporary record by updating its ID to the actual one
