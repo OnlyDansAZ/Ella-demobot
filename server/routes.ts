@@ -11,10 +11,10 @@ import calendlyRouter from './routes/calendlyRoutes';
 import appointmentRoutes from './routes/appointmentRoutes';
 import conversationRoutes from './routes/conversationRoutes';
 import personaRoutes from './routes/personaRoutes';
-import twilioRoutes from './routes/twilioRoutes';
 import { personaManager } from './personaManager';
-// Import the simplified Twilio service instead
-import { TEMP_DIR } from './twilioSimple';
+// Import the advanced Twilio service with ElevenLabs integration
+import twilioAdvancedRoutes from './routes/twilioAdvancedRoutes';
+import { ELEVENLABS_AUDIO_DIR } from './elevenLabsService';
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // API Routes
@@ -38,8 +38,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use("/api/personas", personaRoutes);
   
   // Twilio phone call routes
-  // Phone call routes with Twilio
-  app.use("/api", twilioRoutes);
+  // Use the advanced Twilio implementation with ElevenLabs
+  app.use("/api", twilioAdvancedRoutes);
   
   // Serve temporary audio files for Twilio calls
   app.get("/temp/:filename", (req, res) => {
@@ -52,7 +52,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Build path to the requested file
-      const filePath = path.join(TEMP_DIR, filename);
+      const filePath = path.join(ELEVENLABS_AUDIO_DIR, filename);
       
       // Check if file exists
       if (!fs.existsSync(filePath)) {
