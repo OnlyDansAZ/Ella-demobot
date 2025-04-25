@@ -601,18 +601,29 @@
     "script": "Hello, this is Ella from YoBot. I'm calling to follow up about our recent conversation.",
     "persona": "default",
     "voice": "female",
-    "createdAt": "2025-04-25T11:43:19.805Z",
-    "updatedAt": "2025-04-25T11:43:20.654Z"
+    "createdAt": "2025-04-25T11:43:20.655Z",
+    "updatedAt": "2025-04-25T11:43:20.655Z"
   },
   {
-    "id": "d79de325-95dd-4bda-9756-5f5e16940cee",
+    "id": "0401c494-ef90-45c7-8082-a65cf42f1234",
     "to": "+16027850165",
     "from": "+1 (602) 731-2050",
     "status": "queued",
     "script": "Hello, this is Ella from YoBot. I'm calling to follow up about our recent conversation.",
     "persona": "default",
     "voice": "female",
-    "createdAt": "2025-04-25T11:43:20.655Z",
-    "updatedAt": "2025-04-25T11:43:20.655Z"
+    "createdAt": "2025-04-25T11:45:54.868Z",
+    "updatedAt": "2025-04-25T11:45:55.820Z"
+  },
+  {
+    "id": "0401c494-ef90-45c7-8082-a65cf42f1234",
+    "to": "+16027850165",
+    "from": "+1 (602) 731-2050",
+    "status": "queued",
+    "script": "Hello, this is Ella from YoBot. I'm calling to follow up about our recent conversation.",
+    "persona": "default",
+    "voice": "female",
+    "createdAt": "2025-04-25T11:45:55.821Z",
+    "updatedAt": "2025-04-25T11:45:55.821Z"
   }
 ]
