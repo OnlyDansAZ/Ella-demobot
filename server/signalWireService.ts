@@ -124,13 +124,16 @@ export async function makeOutboundCall(request: PhoneCallRequest): Promise<CallR
     // Create audio URL that SignalWire can access
     const audioUrl = `${baseUrl}/api/signalwire-audio/${audioFilename}`;
     
-    // For now, let's use a simpler approach with just <Say>
-    // This avoids any issues with accessing our audio files
+    // Let's use a more interactive approach with a Gather for user input
+    // This will keep the call active and allow for interaction
     const laml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Say voice="woman">${script}</Say>
+  <Say voice="woman" language="en-US">${script}</Say>
   <Pause length="1"/>
-  <Say voice="woman">Thank you for your time. Goodbye.</Say>
+  <Gather input="speech dtmf" timeout="5" action="${baseUrl}/api/phone-call/response" method="POST">
+    <Say voice="woman" language="en-US">Would you like to learn more about YoBot and what we offer? Say yes or press 1 to continue.</Say>
+  </Gather>
+  <Say voice="woman" language="en-US">Thank you for your time. Goodbye.</Say>
 </Response>`;
     
     // Update call record status
