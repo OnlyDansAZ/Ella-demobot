@@ -162,7 +162,7 @@ export default function LaunchPage() {
                 </Button>
                 
                 <div className="flex gap-4 w-full mt-4">
-                  <Link href="/chat?voice=true" className="flex-1">
+                  <Link href="/ai-caller" className="flex-1">
                     <Button variant="outline" className="w-full bg-transparent border-white text-white hover:bg-white hover:text-[#0D82DA] transition-all hover:scale-105">
                       <Phone className="mr-2 h-4 w-4" />
                       Make a Call
@@ -206,7 +206,7 @@ export default function LaunchPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2 mt-4">
-                    <Link href="/chat?voice=true">
+                    <Link href="/ai-caller">
                       <Button variant="outline" size="sm" className="flex-grow border-[#0D82DA] hover:bg-[#0D82DA] hover:text-white transition-all">
                         <Phone className="h-4 w-4 mr-2 text-[#0D82DA] group-hover:text-white" />
                         Make a Call
