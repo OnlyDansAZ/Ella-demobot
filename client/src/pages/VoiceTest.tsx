@@ -65,7 +65,7 @@ export default function VoiceTest() {
       } else {
         throw new Error(data.error || "Failed to generate voice");
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Voice generation error:", error);
       toast({
         title: "Voice generation failed",

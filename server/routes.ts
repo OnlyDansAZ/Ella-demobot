@@ -156,12 +156,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         audioUrl: `/temp/${audioFilename}`,
         message: "Voice generated successfully"
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error generating test voice:', error);
       return res.status(500).json({
         success: false,
         message: "Failed to generate voice sample",
-        error: error.message
+        error: error.message || "Unknown error"
       });
     }
   });
