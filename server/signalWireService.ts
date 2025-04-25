@@ -68,15 +68,15 @@ export async function makeOutboundCall(request: PhoneCallRequest): Promise<CallR
     const voiceGender = voice === 'male' ? 'male' : 'female';
     const voiceId = getVoiceId(voiceGender);
     
-    // Generate the speech
+    // Generate the speech with optimized settings for call quality
     const audioFilename = await generateSpeech(
       script,
       voiceId,
       {
-        stability: 0.35,           // Lower for more natural speech pattern variation
-        similarityBoost: 0.75,     // Higher for more consistent voice
-        style: 0.6,                // Moderate style injection
-        useSpeakerBoost: true      // Enhance speaker clarity
+        stability: 0.30,           // Lower stability for more natural expression/emotion
+        similarityBoost: 0.80,     // Higher similarity for consistent voice character
+        style: 0.65,               // Slightly higher style for more personality
+        useSpeakerBoost: true      // Enhanced clarity for phone calls
       }
     );
     
@@ -88,16 +88,15 @@ export async function makeOutboundCall(request: PhoneCallRequest): Promise<CallR
     // Create audio URL that SignalWire can access
     const audioUrl = `${baseUrl}/api/signalwire-audio/${audioFilename}`;
     
-    // Create LAML (SignalWire's XML) document
+    // Create LAML (SignalWire's XML) document with improved call flow
     const laml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Say voice="${voiceGender === 'male' ? 'man' : 'woman'}">Hello, this is ${persona} from YoBot. One moment please.</Say>
   <Play>${audioUrl}</Play>
-  <Pause length="1"/>
-  <Gather input="speech" timeout="5" action="${baseUrl}/api/phone-call/response" method="POST">
-    <Say voice="${voiceGender === 'male' ? 'man' : 'woman'}">I'll pause for a moment if you'd like to respond.</Say>
+  <Pause length="2"/>
+  <Gather input="speech" timeout="6" action="${baseUrl}/api/phone-call/response" method="POST">
+    <Say voice="${voiceGender === 'male' ? 'man' : 'woman'}">I'll wait a moment in case you'd like to respond.</Say>
   </Gather>
-  <Say voice="${voiceGender === 'male' ? 'man' : 'woman'}">I understand you might be busy. I'll try reaching out at a better time. Have a great day!</Say>
+  <Say voice="${voiceGender === 'male' ? 'man' : 'woman'}">Thank you for your time. Feel free to call this number back if you have any questions. Have a wonderful day!</Say>
 </Response>`;
     
     // Update call record status
