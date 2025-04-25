@@ -335,7 +335,13 @@ export async function makeOutboundCall(request: PhoneCallRequest): Promise<CallR
         // Convert the local file path to a publicly accessible URL
         // For Replit, we need to serve this file via Express
         const tempFilename = path.basename(audioFilePath);
+        
+        // In Replit, we can just use a relative URL path since Twilio will resolve it
+        // relative to the webhook URL
         const publicTempUrl = `/temp/${tempFilename}`;
+        
+        // Log the URL we're using
+        console.log(`Using audio URL path for Twilio: ${publicTempUrl}`);
         
         // Play the audio file (higher quality)
         twiml.play({ loop: 1 }, publicTempUrl);
