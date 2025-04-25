@@ -96,9 +96,15 @@ export interface PhoneCallRequest {
  * - Comprehensive error handling
  * - Fallback mechanisms when audio fails
  * - Detailed logging for debugging
- * - Retry logic for transient errors
+ * - Automatic retry logic for transient errors
+ * - Session-based tracking for better observability
+ * - Graceful degradation when services are unavailable
  */
-export async function makeOutboundCall(request: PhoneCallRequest): Promise<CallRecord | null> {
+export async function makeOutboundCall(
+  request: PhoneCallRequest, 
+  retryCount: number = 0, 
+  maxRetries: number = 2
+): Promise<CallRecord | null> {
   const startTime = Date.now();
   const sessionId = `call_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
   
@@ -438,6 +444,54 @@ export async function makeOutboundCall(request: PhoneCallRequest): Promise<CallR
     // Log the detailed error for debugging
     console.error(`[${new Date().toISOString()}] [SESSION:${sessionId}] [ERROR] Call failed: ${detailedError}`);
     
+    // Determine if this error is eligible for retry
+    const isRetryable = 
+      (errorType === 'network-error' || 
+       errorType === 'timeout' || 
+       errorType === 'rate-limited' ||
+       errorMessage.includes('temporarily unavailable')) &&
+      retryCount < maxRetries;
+      
+    // If this is a retryable error and we haven't exceeded max retries
+    if (isRetryable) {
+      // Calculate exponential backoff delay
+      const delayMs = Math.min(1000 * Math.pow(2, retryCount), 10000); // Max 10 second delay
+      
+      console.log(`[${new Date().toISOString()}] [SESSION:${sessionId}] Will retry in ${delayMs}ms (attempt ${retryCount + 1} of ${maxRetries})`);
+      
+      // Create a temporary record to show retry status in UI
+      const retryPendingRecord: CallRecord = {
+        id: `retry_${Date.now()}`,
+        to: request.to,
+        from: process.env.SIGNALWIRE_PHONE_NUMBER || 'unknown',
+        status: 'retrying',
+        script: request.script,
+        persona: request.persona || 'default',
+        voice: request.voice || 'female',
+        errorDetails: `Temporary failure: ${errorMessage}. Automatically retrying...`,
+        errorCode: errorCode,
+        retryCount: retryCount + 1,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        scheduledTime: request.scheduledTime
+      };
+      
+      // Save the retry pending record
+      callRecordStorage.saveCall(retryPendingRecord);
+      
+      // Wait for the backoff period
+      await new Promise(resolve => setTimeout(resolve, delayMs));
+      
+      // Then retry the call with incremented retry count
+      console.log(`[${new Date().toISOString()}] [SESSION:${sessionId}] Retrying call now (attempt ${retryCount + 1})`);
+      return makeOutboundCall(request, retryCount + 1, maxRetries);
+    }
+    
+    // If we get here, either the error is not retryable or we've exceeded max retries
+    console.log(`[${new Date().toISOString()}] [SESSION:${sessionId}] Not retrying: ${
+      !isRetryable ? 'Error type not eligible for retry' : 'Max retry attempts exceeded'
+    }`);
+    
     // Create a failed call record with enhanced error information
     const failedCall: CallRecord = {
       id: `failed_${Date.now()}`,
@@ -447,15 +501,19 @@ export async function makeOutboundCall(request: PhoneCallRequest): Promise<CallR
       script: request.script,
       persona: request.persona || 'default',
       voice: request.voice || 'female',
-      errorDetails: detailedError,
+      errorDetails: retryCount > 0 
+        ? `${detailedError} (Failed after ${retryCount} retry attempts)`
+        : detailedError,
       errorCode: errorCode,
+      retryCount: retryCount,
       createdAt: new Date(),
       updatedAt: new Date(),
       scheduledTime: request.scheduledTime
     };
     
     // Log the error separately for debugging
-    console.error('Call failed with error:', error instanceof Error ? error.message : 'Unknown error');
+    console.error(`[${new Date().toISOString()}] [SESSION:${sessionId}] [ERROR] Call failed with error:`, 
+      error instanceof Error ? error.message : 'Unknown error');
     
     callRecordStorage.saveCall(failedCall);
     return failedCall;

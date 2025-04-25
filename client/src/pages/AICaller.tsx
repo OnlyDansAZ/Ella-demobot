@@ -361,6 +361,8 @@ export default function AICaller() {
       tooltip = 'Call is being initiated. This typically takes a few seconds.';
     } else if (displayStatus === 'generating-audio') {
       tooltip = 'Generating high-quality speech audio with ElevenLabs.';
+    } else if (displayStatus === 'retrying') {
+      tooltip = `Temporary failure occurred. System is automatically retrying the call${errorCode ? ` (Retry #${errorCode})` : ''}.`;
     }
     
     // Add error code to tooltip if available
@@ -423,6 +425,10 @@ export default function AICaller() {
           return <Badge className="bg-blue-600"><Phone className="h-3 w-3 mr-1" /> Initiating</Badge>;
         case 'generating-audio':
           return <Badge className="bg-purple-600"><Play className="h-3 w-3 mr-1" /> Generating Audio</Badge>;
+        
+        // Retry states
+        case 'retrying':
+          return <Badge className="bg-amber-600 animate-pulse"><Clock className="h-3 w-3 mr-1" /> Retrying</Badge>;
         
         // Default/unknown status
         default:
