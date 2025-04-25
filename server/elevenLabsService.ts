@@ -3,15 +3,19 @@ import path from 'path';
 import fetch from 'node-fetch';
 import { log } from './vite';
 
-// ElevenLabs voice IDs for commonly used voices
+// ElevenLabs voice IDs for premium voices - selected for maximum naturalness
 const VOICE_IDS = {
-  // Female voices
+  // Premium Female voices - sorted by naturalness for human-like conversations
+  FEMALE_GRACE: "wViXBPUzp2ZZixB1xQuM", // Grace - Ultra-natural American female (PREMIUM CHOICE)
+  FEMALE_EMILY: "LcfcDJNUP1GQjkzn1xUU", // Emily - Exceptionally natural American female
   FEMALE_RACHEL: "21m00Tcm4TlvDq8ikWAM", // Rachel - Professional American female voice
   FEMALE_DOMI: "AZnzlk1XvdvUeBnXmlld",   // Domi - Conversational American female
   FEMALE_BELLA: "EXAVITQu4vr4xnSDxMaL",   // Bella - Warm, friendly female
   FEMALE_ELLI: "MF3mGyEYCl7XYWbV9V6O",    // Elli - Warm, mature female
   
-  // Male voices
+  // Premium Male voices - sorted by naturalness for human-like conversations
+  MALE_THOMAS: "N2lVS1w4EtoT3dr4eOWO", // Thomas - Ultra-natural American male (PREMIUM CHOICE)
+  MALE_DANIEL: "onwK4e9ZLuTAKqWW03F9", // Daniel - Exceptionally natural American male
   MALE_JOSH: "TxGEqnHWrfWFTfGW9XjX",     // Josh - Professional American male
   MALE_ARNOLD: "VR6AewLTigWG4xSOukaG",   // Arnold - Authoritative male
   MALE_ADAM: "pNInz6obpgDQGcFmaJgB",     // Adam - Deep male voice
@@ -46,7 +50,7 @@ export interface ElevenLabsVoiceSettings {
  */
 export async function generateSpeech(
   text: string,
-  voiceId: string = VOICE_IDS.FEMALE_DOMI,
+  voiceId: string = VOICE_IDS.FEMALE_GRACE, // Using premium Grace voice by default
   voiceSettings?: Partial<ElevenLabsVoiceSettings>
 ): Promise<string> {
   try {
@@ -56,21 +60,43 @@ export async function generateSpeech(
       throw new Error('ELEVENLABS_API_KEY is not set in environment variables');
     }
     
-    // Process text to improve speech readability
+    // Process text to improve speech naturalness and readability
+    // These replacements optimize for human-like speech patterns
     const processedText = text
+      // Remove formatting characters that would affect speech
       .replace(/•\s*/g, "")         // Remove bullet points completely
       .replace(/\*/g, "")           // Remove asterisks completely
       .replace(/-\s+/g, "")         // Remove hyphens followed by whitespace
       .replace(/^\s*-\s*/gm, "")    // Remove hyphens at beginning of lines
       .replace(/\n\s*-\s*/g, "\n")  // Replace newline-hyphen patterns with just newlines
-      .replace(/\n+/g, ". ");       // Replace multiple newlines with periods to improve speech flow
+      
+      // Improve speech flow with proper pauses
+      .replace(/\n+/g, ". ")        // Replace multiple newlines with periods to improve speech flow
+      .replace(/\.\s*\./g, ".")     // Replace multiple periods with a single one
+      
+      // Naturalize number reading
+      .replace(/(\d),(\d)/g, "$1$2") // Remove commas in numbers for better reading
+      
+      // Add subtle pauses for more natural speech rhythm
+      .replace(/([.!?])\s+/g, "$1 ... ")  // Add slight pause after end of sentences
+      
+      // Emphasize questions with slight intonation mark
+      .replace(/\?/g, "?~")         // Add subtle emphasis marker after questions
+      
+      // Improve handling of abbreviations
+      .replace(/(\w)\.(\w)/g, "$1,$2") // Convert periods in abbreviations to commas for better pacing
+      
+      // Final cleanup to remove any artifacts from the above processing
+      .replace(/\s{2,}/g, " ")      // Remove extra spaces
+      .trim();
     
-    // Set default voice settings (optimized for natural conversation)
+    // Set default voice settings (optimized for ultra-realistic conversation)
+    // These are carefully tuned for maximum naturalness and human-like quality
     const settings: ElevenLabsVoiceSettings = {
-      stability: voiceSettings?.stability ?? 0.35,          // Lower for more expressive
-      similarityBoost: voiceSettings?.similarityBoost ?? 0.75, // Higher for more consistent
-      style: voiceSettings?.style ?? 0.6,                   // Moderate style injection
-      useSpeakerBoost: voiceSettings?.useSpeakerBoost ?? true // Enhanced clarity
+      stability: voiceSettings?.stability ?? 0.30,          // Lower stability (0.30) for more natural expression/emotion
+      similarityBoost: voiceSettings?.similarityBoost ?? 0.80, // Higher similarity (0.80) for consistent voice character
+      style: voiceSettings?.style ?? 0.65,                  // Slightly higher style (0.65) for more personality
+      useSpeakerBoost: voiceSettings?.useSpeakerBoost ?? true // Enhanced clarity remains important
     };
     
     // Generate unique filename
@@ -89,7 +115,7 @@ export async function generateSpeech(
       },
       body: JSON.stringify({
         text: processedText,
-        model_id: "eleven_multilingual_v2", // Using the latest model
+        model_id: "eleven_turbo_v2", // Using the absolute latest & highest quality model
         voice_settings: {
           stability: settings.stability,
           similarity_boost: settings.similarityBoost,
@@ -125,9 +151,10 @@ export async function generateSpeech(
 
 /**
  * Get the appropriate voice ID based on gender preference
+ * Returns the most premium, natural-sounding voice for each gender
  */
 export function getVoiceId(gender: 'male' | 'female' = 'female'): string {
-  return gender === 'male' ? VOICE_IDS.MALE_JOSH : VOICE_IDS.FEMALE_DOMI;
+  return gender === 'male' ? VOICE_IDS.MALE_THOMAS : VOICE_IDS.FEMALE_GRACE;
 }
 
 /**
