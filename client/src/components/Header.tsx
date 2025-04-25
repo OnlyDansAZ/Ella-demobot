@@ -103,11 +103,11 @@ const Header: React.FC = () => {
         {/* Mobile Navigation Menu */}
         <div className={`md:hidden ${mobileMenuOpen ? 'block' : 'hidden'} pt-4`}>
           <nav className="border-t border-blue-400 pt-4">
-            <ul className="flex flex-col space-y-3">
+            <ul className="flex flex-col space-y-4">
               <li>
                 <a
                   href="#features"
-                  className="text-white hover:text-blue-200 transition block py-2"
+                  className="text-white hover:text-blue-200 transition block py-2.5 px-1 text-base"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   Features
@@ -116,7 +116,7 @@ const Header: React.FC = () => {
               <li>
                 <a
                   href="#tiers"
-                  className="text-white hover:text-blue-200 transition block py-2"
+                  className="text-white hover:text-blue-200 transition block py-2.5 px-1 text-base"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   Plans
@@ -125,7 +125,7 @@ const Header: React.FC = () => {
               <li>
                 <a
                   href="#contact"
-                  className="text-white hover:text-blue-200 transition block py-2"
+                  className="text-white hover:text-blue-200 transition block py-2.5 px-1 text-base"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   Contact
@@ -134,7 +134,7 @@ const Header: React.FC = () => {
               <li>
                 <Link
                   href="/admin"
-                  className="text-white hover:text-blue-200 transition block py-2"
+                  className="text-white hover:text-blue-200 transition block py-2.5 px-1 text-base"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   Admin
@@ -143,16 +143,16 @@ const Header: React.FC = () => {
               <li>
                 <Link
                   href="/ai-caller"
-                  className="text-white hover:text-blue-200 transition block py-2"
+                  className="text-white hover:text-blue-200 transition block py-2.5 px-1 text-base"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   Make a Call
                 </Link>
               </li>
-              <li className="pt-2">
+              <li className="pt-3">
                 <Link
                   href="/chat"
-                  className="bg-white text-[#0D82DA] px-4 py-2 rounded-md font-medium hover:bg-blue-100 transition inline-block"
+                  className="bg-white text-[#0D82DA] px-5 py-2.5 rounded-md font-medium hover:bg-blue-100 transition inline-block text-base w-full text-center"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   Chat with Ella
