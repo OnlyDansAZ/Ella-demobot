@@ -165,7 +165,7 @@ export default function AICaller() {
         throw new Error("Please enter a longer script message (at least 20 characters)");
       }
       
-      return apiRequest('/api/phone-call', 'POST', values);
+      return apiRequest('POST', '/api/phone-call', values);
     },
     onSuccess: (data) => {
       toast({
