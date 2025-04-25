@@ -6,7 +6,7 @@ import {
   getCallHistory,
   getCallRecord,
   initTwilioClient
-} from '../twilioService';
+} from '../twilioSimple';
 import { z } from 'zod';
 
 const router = Router();
