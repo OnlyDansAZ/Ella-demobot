@@ -115,10 +115,14 @@ export async function makeOutboundCall(request: PhoneCallRequest): Promise<CallR
     const audioUrl = `${baseUrl}/api/signalwire-audio/${audioFilename}`;
     
     // Create LAML (SignalWire's XML) document with improved call flow
+    // Adding redundant Say elements in case the Play element doesn't work
     const laml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
+  <Say voice="${voiceGender === 'male' ? 'man' : 'woman'}">Hello, this is a call from YoBot.</Say>
   <Play>${audioUrl}</Play>
   <Pause length="2"/>
+  <Say voice="${voiceGender === 'male' ? 'man' : 'woman'}">The message was: ${script.substring(0, 100)}${script.length > 100 ? '...' : ''}</Say>
+  <Pause length="1"/>
   <Gather input="speech" timeout="6" action="${baseUrl}/api/phone-call/response" method="POST">
     <Say voice="${voiceGender === 'male' ? 'man' : 'woman'}">I'll wait a moment in case you'd like to respond.</Say>
   </Gather>

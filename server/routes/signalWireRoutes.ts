@@ -224,6 +224,7 @@ router.get('/phone-call/:id', (req: Request, res: Response) => {
 /**
  * Directly serve audio files for SignalWire
  * GET /api/signalwire-audio/:filename
+ * Enhanced for better reliability with SignalWire
  */
 router.get('/signalwire-audio/:filename', (req: Request, res: Response) => {
   try {
@@ -231,6 +232,7 @@ router.get('/signalwire-audio/:filename', (req: Request, res: Response) => {
     
     // Validate filename (prevent path traversal)
     if (!filename || filename.includes('..') || filename.includes('/')) {
+      console.error(`Invalid SignalWire audio filename requested: ${filename}`);
       return res.status(400).json({ error: 'Invalid filename' });
     }
     
@@ -239,8 +241,15 @@ router.get('/signalwire-audio/:filename', (req: Request, res: Response) => {
     
     // Check if file exists
     if (!fs.existsSync(filePath)) {
-      console.error(`Audio file not found: ${filePath}`);
+      console.error(`SignalWire audio file not found: ${filePath}`);
       return res.status(404).json({ error: 'Audio file not found' });
+    }
+    
+    // Check file size to ensure it's not empty
+    const fileStats = fs.statSync(filePath);
+    if (fileStats.size === 0) {
+      console.error(`Empty SignalWire audio file: ${filePath}`);
+      return res.status(500).json({ error: "Audio file is empty" });
     }
     
     // Determine MIME type based on file extension
@@ -253,15 +262,39 @@ router.get('/signalwire-audio/:filename', (req: Request, res: Response) => {
       contentType = 'audio/wav';
     }
     
-    // Set appropriate headers
+    // Set appropriate headers for better compatibility
     res.setHeader('Content-Type', contentType);
+    res.setHeader('Content-Length', fileStats.size);
+    res.setHeader('Accept-Ranges', 'bytes');
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
     
-    // Stream the file to the response
-    const fileStream = fs.createReadStream(filePath);
-    fileStream.pipe(res);
+    console.log(`Serving SignalWire audio file (${fileStats.size} bytes): ${filename}`);
     
-    console.log(`Serving SignalWire audio file: ${filename}`);
+    // Stream the file to the response with error handling
+    const fileStream = fs.createReadStream(filePath);
+    
+    fileStream.on('error', (streamError) => {
+      console.error(`Error streaming SignalWire audio file ${filename}:`, streamError);
+      if (!res.headersSent) {
+        res.status(500).json({ error: "Failed to stream audio file" });
+      }
+    });
+    
+    // Set a timeout in case the file streaming hangs
+    const timeout = setTimeout(() => {
+      if (!res.writableEnded) {
+        console.error(`Timeout streaming SignalWire audio file: ${filename}`);
+        res.end();
+      }
+    }, 30000); // 30 second timeout
+    
+    // Clean up the timeout when the response ends
+    res.on('close', () => {
+      clearTimeout(timeout);
+    });
+    
+    fileStream.pipe(res);
   } catch (error) {
     console.error('Error serving SignalWire audio file:', error);
     res.status(500).json({ error: 'Failed to serve audio file' });
