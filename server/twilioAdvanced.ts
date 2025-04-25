@@ -206,30 +206,44 @@ export async function makeOutboundCall(request: PhoneCallRequest): Promise<CallR
     // This removes complexity that might be causing issues
     const twiml = new twilio.twiml.VoiceResponse();
     
-    // Start with a simple built-in voice message
+    // In a real production environment, this would use ElevenLabs streaming for ultra-realistic voice
+    // instead of Twilio's basic TTS. The current implementation is a technical limitation of this
+    // development environment.
+    
+    // Create a conversational introduction that doesn't sound automated
     twiml.say({
       voice: voiceGender === 'male' ? 'man' : 'woman',
       language: 'en-US'
-    }, "Hello, this is an automated message from YoBot.");
+    }, `Hi there, this is ${request.persona || 'Ella'} from YoBot. Hope I'm not catching you at a bad time?`);
     
-    // Add a pause for timing
-    twiml.pause({ length: 1 });
+    // Add a strategic pause to simulate a human conversation rhythm
+    twiml.pause({ length: 2 });
     
-    // Instead of trying to stream ElevenLabs audio, which might be problematic in Replit,
-    // let's just use the Twilio voice for now to ensure something works
+    // Main sales script - this would ideally be a dynamic script tailored to the prospect
     twiml.say({
       voice: voiceGender === 'male' ? 'man' : 'woman',
       language: 'en-US'
     }, request.script);
     
-    // Add a pause
-    twiml.pause({ length: 1 });
+    // Add a pause for response opportunity
+    twiml.pause({ length: 2 });
     
-    // End message
+    // Add a gather with speech recognition to handle interactive responses
+    const gather = twiml.gather({
+      input: ['speech'],
+      speechTimeout: 'auto',
+      speechModel: 'phone_call',
+      language: 'en-US',
+      timeout: 8,
+      action: '/api/phone-call/response',
+      method: 'POST'
+    });
+    
+    // If no response, add a closing that opens the door for future contact
     twiml.say({
       voice: voiceGender === 'male' ? 'man' : 'woman',
       language: 'en-US'
-    }, "Thank you for your time. Have a great day.");
+    }, "I understand you might be busy right now. I'll try reaching out again at a better time, or feel free to call us back when it's convenient for you.");
     
     // Update call record to show initiating call
     callRecordStorage.updateCallStatus(tempCallId, 'initiating', {
