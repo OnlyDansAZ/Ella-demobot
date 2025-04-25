@@ -634,18 +634,32 @@
     "script": "Hello, this is Ella from YoBot. I'm calling to follow up about our recent conversation.",
     "persona": "default",
     "voice": "female",
-    "createdAt": "2025-04-25T11:57:02.655Z",
-    "updatedAt": "2025-04-25T11:57:03.481Z"
-  },
-  {
-    "id": "daeff631-5ea6-432d-a1ae-e3bd55393c9d",
-    "to": "+16027850165",
-    "from": "+1 (602) 731-2050",
-    "status": "queued",
-    "script": "Hello, this is Ella from YoBot. I'm calling to follow up about our recent conversation.",
-    "persona": "default",
-    "voice": "female",
     "createdAt": "2025-04-25T11:57:03.482Z",
     "updatedAt": "2025-04-25T11:57:03.482Z"
+  },
+  {
+    "id": "temp_1745600211758",
+    "to": "+17013718391",
+    "from": "+1 (602) 731-2050",
+    "status": "initiating",
+    "script": "Hello, this is Ella from YoBot.\n\nI'm calling to follow up about our conversation earlier regarding our AI assistant services. \n\nI wanted to check if you had any questions about our platform or if you'd like to schedule a demonstration with one of our team members.\n\nWould you be available for a 15-minute call this week to discuss how YoBot can help streamline your business operations?",
+    "persona": "friendly",
+    "voice": "female",
+    "createdAt": "2025-04-25T16:56:51.758Z",
+    "updatedAt": "2025-04-25T16:56:58.634Z"
+  },
+  {
+    "id": "failed_1745600222670",
+    "to": "+17013718391",
+    "from": "+1 (602) 731-2050",
+    "status": "failed-unknown-error",
+    "script": "Hello, this is Ella from YoBot.\n\nI'm calling to follow up about our conversation earlier regarding our AI assistant services. \n\nI wanted to check if you had any questions about our platform or if you'd like to schedule a demonstration with one of our team members.\n\nWould you be available for a 15-minute call this week to discuss how YoBot can help streamline your business operations?",
+    "persona": "friendly",
+    "voice": "female",
+    "errorDetails": "Failed to create call: SignalWire API error (422): {\"code\":\"21219\",\"message\":\"To Your Space is currently in Trial and you're attempting to initiate an outbound call or message, but the 'To' number you specified is not a purchased or verified number in your Project. Sending from your Space in Trial is limited to purchased or verified phone numbers only. Upgrading your Space from Trial will remove this limitation.\",\"more_info\":\"https://developer.signalwire.com/compatibility-api/reference/error-codes\",\"status\":400}. Error occurred after 11s. SessionID: call_1745600211758_5eli2a8",
+    "errorCode": "422",
+    "retryCount": 0,
+    "createdAt": "2025-04-25T16:57:02.670Z",
+    "updatedAt": "2025-04-25T16:57:02.670Z"
   }
 ]

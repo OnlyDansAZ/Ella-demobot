@@ -123,15 +123,22 @@ export default function LaunchPage() {
       <nav className="absolute top-0 left-0 right-0 z-50 py-4 px-6">
         <div className="container mx-auto flex justify-between items-center">
           <div className="flex items-center">
-            <img src={yobotLogo} alt="YoBot Logo" className="h-12 w-12" />
+            <img src={yobotLogo} alt="YoBot Logo" className="h-10 w-10 sm:h-12 sm:w-12" />
             <span className="ml-2 text-white font-bold text-xl">YoBot</span>
           </div>
-          <div className="flex space-x-6">
+          <div className="hidden sm:flex space-x-6">
             <Link href="/chat" className="text-white hover:text-blue-200 transition-colors">
               Chat with Ella
             </Link>
             <Link href="/ai-caller" className="bg-white text-[#0D82DA] px-4 py-2 rounded-md font-medium hover:bg-blue-100 transition">
               Make a Call
+            </Link>
+          </div>
+          
+          {/* Mobile Navigation - Simplified */}
+          <div className="flex sm:hidden">
+            <Link href="/ai-caller" className="bg-white text-[#0D82DA] px-3 py-1.5 rounded-md font-medium hover:bg-blue-100 transition text-sm">
+              <Phone className="h-4 w-4" />
             </Link>
           </div>
         </div>
@@ -156,7 +163,8 @@ export default function LaunchPage() {
               <p className="text-base sm:text-lg mb-6 sm:mb-8 text-blue-100">
                 Intelligent voice interaction, seamless scheduling, and personalized assistance for your business needs.
               </p>
-              <div className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 justify-center md:justify-start">
+              {/* Desktop Buttons */}
+              <div className="hidden sm:flex flex-row flex-wrap gap-4 justify-center md:justify-start">
                 <Dialog>
                   <DialogTrigger asChild>
                     <Button className="bg-[#0D82DA] hover:bg-blue-600 text-white transition-all hover:scale-105">
@@ -179,57 +187,116 @@ export default function LaunchPage() {
                   <Link href="/book-demo">Book a Live Tour</Link>
                 </Button>
                 
-                <div className="flex gap-4 w-full mt-4">
-                  <Link href="/chat" className="w-full">
-                    <Button className="w-full bg-white text-[#0D82DA] hover:bg-gray-100 transition-all hover:scale-105">
-                      <MessageSquare className="mr-2 h-4 w-4" />
-                      Chat with Ella
+                <Link href="/chat">
+                  <Button className="bg-white text-[#0D82DA] hover:bg-gray-100 transition-all hover:scale-105">
+                    <MessageSquare className="mr-2 h-4 w-4" />
+                    Chat with Ella
+                  </Button>
+                </Link>
+              </div>
+              
+              {/* Mobile Buttons - Simplified */}
+              <div className="flex sm:hidden flex-col gap-3 mt-4 w-full">
+                <Link href="/chat" className="w-full">
+                  <Button className="w-full bg-white text-[#0D82DA] hover:bg-gray-100 transition-all hover:scale-105 py-5 text-base">
+                    <MessageSquare className="mr-2 h-5 w-5" />
+                    Chat with Ella
+                  </Button>
+                </Link>
+                
+                <div className="flex gap-3">
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button className="bg-[#0D82DA] hover:bg-blue-600 text-white transition-all hover:scale-105 flex-1 py-4">
+                        <Play className="h-5 w-5" />
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-[800px] p-0 bg-black">
+                      <div className="aspect-video relative bg-black">
+                        {/* Replace with your actual demo video */}
+                        <div className="absolute inset-0 flex items-center justify-center text-white">
+                          <p>Demo video would play here</p>
+                        </div>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                
+                  <Link href="/book-demo" className="flex-1">
+                    <Button variant="outline" className="w-full bg-transparent border-white text-white hover:bg-white hover:text-[#0D82DA] transition-all hover:scale-105 py-4">
+                      <Calendar className="h-5 w-5" />
                     </Button>
                   </Link>
                 </div>
               </div>
             </div>
-            <div className="md:w-1/2 flex justify-center mt-8 md:mt-0">
-              <div className="relative w-[300px] sm:w-[320px] h-[380px] sm:h-[400px] bg-white rounded-lg shadow-xl overflow-hidden transform transition-transform hover:scale-[1.02]">
-                <div className="bg-[#0D82DA] p-3 sm:p-4 text-white flex items-center">
-                  <img src={yobotLogo} alt="YoBot Logo" className="h-7 sm:h-8 w-7 sm:w-8 mr-2 animate-pulse" />
+            {/* Chat Preview - Desktop Version */}
+            <div className="md:w-1/2 hidden md:flex justify-center">
+              <div className="relative w-[320px] h-[400px] bg-white rounded-lg shadow-xl overflow-hidden transform transition-transform hover:scale-[1.02]">
+                <div className="bg-[#0D82DA] p-4 text-white flex items-center">
+                  <img src={yobotLogo} alt="YoBot Logo" className="h-8 w-8 mr-2 animate-pulse" />
                   <div>
                     <p className="font-medium">Ella</p>
                     <p className="text-xs opacity-80">Online now</p>
                   </div>
                 </div>
-                <div className="h-[300px] sm:h-[320px] p-3 sm:p-4 bg-gray-50 flex flex-col relative">
+                <div className="h-[320px] p-4 bg-gray-50 flex flex-col relative">
                   {/* Subtle YoBot face in the background */}
                   <div className="absolute right-0 bottom-0 opacity-5 pointer-events-none">
-                    <img src={yobotLogo} alt="" className="w-24 sm:w-32 h-24 sm:h-32" />
+                    <img src={yobotLogo} alt="" className="w-32 h-32" />
                   </div>
-                  <div className="flex flex-col space-y-2 sm:space-y-3 flex-grow overflow-y-auto scrollbar-thin">
-                    <div className="bg-blue-100 text-blue-900 rounded-lg p-2 sm:p-3 max-w-[80%] text-sm ml-auto transform transition-all hover:scale-[1.03]">
+                  <div className="flex flex-col space-y-3 flex-grow overflow-y-auto scrollbar-thin">
+                    <div className="bg-blue-100 text-blue-900 rounded-lg p-3 max-w-[80%] text-sm ml-auto transform transition-all hover:scale-[1.03]">
                       Hi there! How can I assist you today?
                     </div>
-                    <div className="bg-blue-100 text-blue-900 rounded-lg p-2 sm:p-3 max-w-[80%] text-sm ml-auto transform transition-all hover:scale-[1.03]">
+                    <div className="bg-blue-100 text-blue-900 rounded-lg p-3 max-w-[80%] text-sm ml-auto transform transition-all hover:scale-[1.03]">
                       I can help schedule meetings, answer questions about your business, generate content, and more!
                     </div>
-                    <div className="bg-[#0D82DA] text-white rounded-lg p-2 sm:p-3 max-w-[80%] text-sm transform transition-all hover:scale-[1.03]">
+                    <div className="bg-[#0D82DA] text-white rounded-lg p-3 max-w-[80%] text-sm transform transition-all hover:scale-[1.03]">
                       Can you tell me about the Enterprise plan?
                     </div>
-                    <div className="bg-blue-100 text-blue-900 rounded-lg p-2 sm:p-3 max-w-[80%] text-sm ml-auto transform transition-all hover:scale-[1.03]">
+                    <div className="bg-blue-100 text-blue-900 rounded-lg p-3 max-w-[80%] text-sm ml-auto transform transition-all hover:scale-[1.03]">
                       Our Enterprise plan includes dedicated deployment, unlimited personas, SSO integration, and a dedicated account manager. Would you like me to schedule a demo with our team?
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 mt-3 sm:mt-4">
+                  <div className="flex items-center gap-2 mt-4">
                     <Link href="/book-demo" className="flex-1">
-                      <Button variant="outline" size="sm" className="w-full text-xs sm:text-sm border-[#0D82DA] hover:bg-[#0D82DA] hover:text-white transition-all">
-                        <Calendar className="h-3 sm:h-4 w-3 sm:w-4 mr-1 sm:mr-2 text-[#0D82DA] group-hover:text-white" />
+                      <Button variant="outline" size="sm" className="w-full text-sm border-[#0D82DA] hover:bg-[#0D82DA] hover:text-white transition-all">
+                        <Calendar className="h-4 w-4 mr-2 text-[#0D82DA] group-hover:text-white" />
                         <span className="whitespace-nowrap">Schedule Demo</span>
                       </Button>
                     </Link>
                     <Link href="/chat" className="flex-1">
-                      <Button size="sm" className="w-full text-xs sm:text-sm bg-[#0D82DA] hover:bg-blue-700 transition-all">
-                        <MessageSquare className="h-3 sm:h-4 w-3 sm:w-4 mr-1 sm:mr-2" />
+                      <Button size="sm" className="w-full text-sm bg-[#0D82DA] hover:bg-blue-700 transition-all">
+                        <MessageSquare className="h-4 w-4 mr-2" />
                         <span className="whitespace-nowrap">Chat with Ella</span>
                       </Button>
                     </Link>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            {/* Chat Preview - Mobile Version (Simplified) */}
+            <div className="w-full flex md:hidden justify-center mt-10">
+              <div className="relative w-full max-w-[280px] bg-white rounded-lg shadow-xl overflow-hidden">
+                <div className="bg-[#0D82DA] p-3 text-white flex items-center">
+                  <img src={yobotLogo} alt="YoBot Logo" className="h-6 w-6 mr-2 animate-pulse" />
+                  <div>
+                    <p className="font-medium">Ella</p>
+                    <p className="text-xs opacity-80">Online now</p>
+                  </div>
+                </div>
+                <div className="p-3 bg-gray-50 flex flex-col relative">
+                  <div className="flex flex-col space-y-2 overflow-hidden">
+                    <div className="bg-blue-100 text-blue-900 rounded-lg p-2 max-w-[80%] text-sm ml-auto">
+                      Hi there! How can I assist you today?
+                    </div>
+                    <div className="bg-[#0D82DA] text-white rounded-lg p-2 max-w-[80%] text-sm">
+                      Tell me about your Enterprise plan
+                    </div>
+                    <div className="bg-blue-100 text-blue-900 rounded-lg p-2 max-w-[80%] text-sm ml-auto">
+                      Our Enterprise plan includes dedicated deployment, unlimited personas, and SSO integration!
+                    </div>
                   </div>
                 </div>
               </div>
