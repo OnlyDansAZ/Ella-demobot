@@ -1,5 +1,7 @@
 import express, { Request, Response } from 'express';
 import twilio from 'twilio';
+import fs from 'fs';
+import path from 'path';
 import {
   makeOutboundCall,
   handleStatusCallback,
@@ -7,7 +9,7 @@ import {
   getCallRecord,
   PhoneCallRequest
 } from '../twilioAdvanced';
-import { generateSpeech, getVoiceId } from '../elevenLabsService';
+import { generateSpeech, getVoiceId, ELEVENLABS_AUDIO_DIR } from '../elevenLabsService';
 
 const router = express.Router();
 
@@ -221,6 +223,53 @@ router.get('/phone-call/:id', (req: Request, res: Response) => {
   } catch (error) {
     console.error('Error getting call record:', error);
     return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+/**
+ * Directly serve audio files for Twilio
+ * GET /api/twilio-audio/:filename
+ */
+router.get('/twilio-audio/:filename', (req: Request, res: Response) => {
+  try {
+    const { filename } = req.params;
+    
+    // Validate filename (prevent path traversal)
+    if (!filename || filename.includes('..') || filename.includes('/')) {
+      return res.status(400).json({ error: 'Invalid filename' });
+    }
+    
+    // Build path to the requested file
+    const filePath = path.join(ELEVENLABS_AUDIO_DIR, filename);
+    
+    // Check if file exists
+    if (!fs.existsSync(filePath)) {
+      console.error(`Audio file not found: ${filePath}`);
+      return res.status(404).json({ error: 'Audio file not found' });
+    }
+    
+    // Determine MIME type based on file extension
+    const extension = path.extname(filePath).toLowerCase();
+    let contentType = 'application/octet-stream'; // Default
+    
+    if (extension === '.mp3') {
+      contentType = 'audio/mpeg';
+    } else if (extension === '.wav') {
+      contentType = 'audio/wav';
+    }
+    
+    // Set appropriate headers
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    
+    // Stream the file to the response
+    const fileStream = fs.createReadStream(filePath);
+    fileStream.pipe(res);
+    
+    console.log(`Serving Twilio audio file: ${filename}`);
+  } catch (error) {
+    console.error('Error serving Twilio audio file:', error);
+    res.status(500).json({ error: 'Failed to serve audio file' });
   }
 });
 

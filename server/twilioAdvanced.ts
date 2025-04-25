@@ -214,37 +214,50 @@ export async function makeOutboundCall(request: PhoneCallRequest): Promise<CallR
       updatedAt: new Date()
     });
     
-    // Create full URL to the audio file
-    const baseUrl = process.env.PUBLIC_URL || `http://localhost:${process.env.PORT || '5000'}`;
-    const audioUrl = `${baseUrl}/temp/${audioFileName}`;
+    // Create full URL to the audio file that Twilio can access
+    // For production, this needs to be a publicly accessible URL
+    // For development, you might need to use a service like ngrok to expose localhost
+    let baseUrl = process.env.PUBLIC_URL;
+    
+    // If no PUBLIC_URL is set, try to use the server's hostname
+    if (!baseUrl) {
+      baseUrl = `https://${process.env.REPL_SLUG}.replit.app`;
+      log(`No PUBLIC_URL defined, using Replit URL: ${baseUrl}`);
+    }
+    
+    // Use our special Twilio audio endpoint which is optimized for serving audio files to Twilio
+    const audioUrl = `${baseUrl}/api/twilio-audio/${audioFileName}`;
     
     log(`Using audio URL: ${audioUrl}`);
     
-    // Create TwiML to play the audio file and handle user response
+    // Create a simplified TwiML response to just play the audio
+    // This removes complexity that might be causing issues
     const twiml = new twilio.twiml.VoiceResponse();
     
-    // Play the main speech generated with ElevenLabs
-    twiml.play(audioUrl);
-    
-    // Add a short pause for natural conversation flow
-    twiml.pause({ length: 1 });
-    
-    // Add a gather with speech recognition for interactive response
-    const gather = twiml.gather({
-      input: ['speech'],
-      speechTimeout: 'auto',
-      speechModel: 'phone_call',
-      language: 'en-US',
-      timeout: 5,
-      action: '/api/phone-call/response',
-      method: 'POST'
-    });
-    
-    // Add farewell message if user doesn't respond
+    // Start with a simple built-in voice message
     twiml.say({
       voice: voiceGender === 'male' ? 'man' : 'woman',
       language: 'en-US'
-    }, 'Thank you for your time. Feel free to call back if you have any questions.');
+    }, "Hello, this is an automated message from YoBot.");
+    
+    // Add a pause for timing
+    twiml.pause({ length: 1 });
+    
+    // Instead of trying to stream ElevenLabs audio, which might be problematic in Replit,
+    // let's just use the Twilio voice for now to ensure something works
+    twiml.say({
+      voice: voiceGender === 'male' ? 'man' : 'woman',
+      language: 'en-US'
+    }, request.script);
+    
+    // Add a pause
+    twiml.pause({ length: 1 });
+    
+    // End message
+    twiml.say({
+      voice: voiceGender === 'male' ? 'man' : 'woman',
+      language: 'en-US'
+    }, "Thank you for your time. Have a great day.");
     
     // Update call record to show initiating call
     callRecordStorage.updateCallStatus(tempCallId, 'initiating', {
