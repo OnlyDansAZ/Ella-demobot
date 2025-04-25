@@ -133,10 +133,19 @@ export async function makeOutboundCall(request: PhoneCallRequest): Promise<CallR
     // Determine callback URL for status updates
     const statusCallback = callbackUrl ? `${baseUrl}${callbackUrl}` : `${baseUrl}/api/phone-call/status-callback`;
     
+    // Ensure phone numbers are in the correct format
+    // SignalWire is very picky about the formatting
+    const cleanToNumber = to.replace(/[\s()]/g, '');
+    const cleanFromNumber = (process.env.SIGNALWIRE_PHONE_NUMBER || '').replace(/[\s()]/g, '');
+    
+    console.log('Making outbound call with phone numbers:');
+    console.log('- To:', cleanToNumber);
+    console.log('- From:', cleanFromNumber);
+    
     // Make the actual call
     const call = await client.calls.create({
-      to,
-      from: process.env.SIGNALWIRE_PHONE_NUMBER || '',
+      to: cleanToNumber,
+      from: cleanFromNumber,
       laml,
       statusCallback,
       statusCallbackMethod: 'POST'

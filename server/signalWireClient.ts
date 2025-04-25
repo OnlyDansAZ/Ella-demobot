@@ -45,14 +45,23 @@ export async function createClient(): Promise<SignalWireClient> {
           console.log('Making real SignalWire call with direct HTTP approach:', params);
           
           // Format the request body according to SignalWire API documentation
+          // NOTE: SignalWire is very picky about phone number formats
+          // Strip any spaces or parentheses from phone numbers
+          const cleanTo = params.to ? params.to.replace(/[\s()]/g, '') : '';
+          const cleanFrom = params.from ? params.from.replace(/[\s()]/g, '') : '';
+          
+          console.log('Cleaned phone numbers for API request:');
+          console.log('- To:', cleanTo);
+          console.log('- From:', cleanFrom);
+          
           const requestBody: Record<string, any> = {
-            to: params.to,
-            from: params.from,
-            url: params.laml ? undefined : params.url,
-            method: params.method || 'POST',
-            status_callback: params.statusCallback,
-            status_callback_method: params.statusCallbackMethod || 'POST',
-            twiml: params.laml // SignalWire uses "twiml" parameter for LAML
+            To: cleanTo,        // Capital 'T' - SignalWire is case-sensitive
+            From: cleanFrom,    // Capital 'F' - SignalWire is case-sensitive
+            Url: params.url,    // Capital 'U' - SignalWire is case-sensitive
+            Method: params.method || 'POST',
+            StatusCallback: params.statusCallback,
+            StatusCallbackMethod: params.statusCallbackMethod || 'POST',
+            Twiml: params.laml  // SignalWire uses "Twiml" parameter (capitalized) for LAML
           };
           
           // Remove undefined values
@@ -137,9 +146,17 @@ export async function createClient(): Promise<SignalWireClient> {
             const auth = Buffer.from(`${projectId}:${token}`).toString('base64');
             
             // Format the request body
+            // Strip any spaces or parentheses from phone numbers
+            const cleanTo = params.to ? params.to.replace(/[\s()]/g, '') : '';
+            const cleanFrom = params.from ? params.from.replace(/[\s()]/g, '') : '';
+            
+            console.log('Cleaned phone numbers for SMS API request:');
+            console.log('- To:', cleanTo);
+            console.log('- From:', cleanFrom);
+            
             const requestBody: Record<string, any> = {
-              To: params.to,
-              From: params.from,
+              To: cleanTo,
+              From: cleanFrom,
               Body: params.body
             };
             
