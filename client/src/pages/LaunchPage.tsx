@@ -144,19 +144,19 @@ export default function LaunchPage() {
           <img src={yobotLogo} alt="YoBot Logo Watermark" className="w-[70%] max-w-[800px]" />
         </div>
         
-        <div className="container mx-auto pt-32 pb-20 px-4 relative z-10">
+        <div className="container mx-auto pt-20 sm:pt-24 md:pt-32 pb-16 sm:pb-20 px-4 relative z-10">
           <div className="flex flex-col md:flex-row items-center">
-            <div className="md:w-1/2 mb-10 md:mb-0">
-              <h1 className="text-4xl md:text-6xl font-bold mb-4 group">
+            <div className="md:w-1/2 mb-10 md:mb-0 text-center md:text-left">
+              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-3 sm:mb-4 group">
                 Meet <span className="text-[#0D82DA] bg-white px-2 py-1 rounded transition-transform group-hover:scale-105">Ella</span>
               </h1>
-              <h2 className="text-2xl md:text-3xl font-medium mb-6">
+              <h2 className="text-xl sm:text-2xl md:text-3xl font-medium mb-4 sm:mb-6">
                 Your AI-powered business companion
               </h2>
-              <p className="text-lg mb-8 text-blue-100">
+              <p className="text-base sm:text-lg mb-6 sm:mb-8 text-blue-100">
                 Intelligent voice interaction, seamless scheduling, and personalized assistance for your business needs.
               </p>
-              <div className="flex flex-wrap gap-4">
+              <div className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 justify-center md:justify-start">
                 <Dialog>
                   <DialogTrigger asChild>
                     <Button className="bg-[#0D82DA] hover:bg-blue-600 text-white transition-all hover:scale-105">
@@ -378,16 +378,16 @@ export default function LaunchPage() {
       </section>
 
       {/* Pricing Section */}
-      <section className="py-20 bg-gray-50">
+      <section className="py-12 sm:py-20 bg-gray-50">
         <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold mb-4">Simple, Transparent <span className="text-[#0D82DA]">Pricing</span></h2>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+          <div className="text-center mb-10 sm:mb-16">
+            <h2 className="text-2xl sm:text-3xl font-bold mb-3 sm:mb-4">Simple, Transparent <span className="text-[#0D82DA]">Pricing</span></h2>
+            <p className="text-base sm:text-lg text-gray-600 max-w-2xl mx-auto">
               Choose the perfect plan for your business needs with our straightforward pricing structure.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 overflow-x-auto pb-4">
             {pricingTiers.map((tier, index) => (
               <Card key={index} className={`flex flex-col transform transition-all hover:scale-[1.02] ${tier.highlighted ? 'border-[#0D82DA] shadow-lg' : ''}`}>
                 <CardHeader className={`${tier.highlighted ? 'bg-[#0D82DA]/5' : ''} relative`}>
