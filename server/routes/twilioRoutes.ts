@@ -107,9 +107,9 @@ router.post('/phone-call/response', (req: Request, res: Response) => {
     // Add a small pause for more natural conversation flow
     twiml.pause({ length: 1 });
     
-    // Use Google's highest quality Wavenet voice for truly natural speech
-    // Wavenet voices offer the most human-like speech patterns available via Twilio
-    const voiceType = 'Google.en-US-Wavenet-F'; // Premium female voice with natural intonation
+    // Use Amazon Polly voice for maximum reliability
+    // Polly voices are known to be very reliable with Twilio
+    const voiceType = 'Polly.Joanna'; // Reliable female Polly voice
     
     if (SpeechResult) {
       // User said something, respond to them with appropriate context
@@ -132,16 +132,11 @@ router.post('/phone-call/response', (req: Request, res: Response) => {
         responseText = "YoBot integrates seamlessly with most business systems including CRMs like Salesforce, calendar apps like Google Calendar and Microsoft Outlook, and communication platforms like Slack. What systems are you currently using that you'd need integration with?";
       }
       
-      // Use advanced SSML with enhanced prosody markers for more natural speech
-      // These adjustments create more natural intonation patterns
+      // Simple response without SSML for maximum reliability
       twiml.say({
         voice: voiceType,
         language: 'en-US'
-      }, `<speak>
-            <prosody rate="1.0" pitch="+0.15st" volume="loud">
-              ${responseText}
-            </prosody>
-          </speak>`);
+      }, responseText);
       
       // Continue the conversation with another gather
       // We need to cast the entire options object to any to avoid TypeScript errors
@@ -156,16 +151,11 @@ router.post('/phone-call/response', (req: Request, res: Response) => {
       };
       twiml.gather(gatherOptions);
     } else {
-      // No speech detected, provide a helpful prompt
+      // No speech detected, provide a simple helpful prompt
       twiml.say({
         voice: voiceType,
         language: 'en-US'
-      }, `<speak>
-            <prosody rate="0.95" pitch="+0.05st">
-              I'm sorry, I didn't catch what you said. If you're interested in learning more about YoBot, 
-              please visit our website or call us back at a more convenient time. Thank you for your interest!
-            </prosody>
-          </speak>`);
+      }, "I'm sorry, I didn't catch what you said. If you're interested in learning more about YoBot, please visit our website or call us back at a more convenient time. Thank you for your interest!");
     }
     
     // Set the appropriate content type and send the TwiML response
@@ -177,13 +167,9 @@ router.post('/phone-call/response', (req: Request, res: Response) => {
     // Provide a helpful error response
     const errorTwiml = new twilio.twiml.VoiceResponse();
     errorTwiml.say({
-      voice: 'Google.en-US-Wavenet-F',
+      voice: 'Polly.Joanna',
       language: 'en-US'
-    }, `<speak>
-          <prosody rate="0.9" pitch="medium">
-            I apologize, but we encountered a technical issue. Please call us back later or visit our website for more information.
-          </prosody>
-        </speak>`);
+    }, "I apologize, but we encountered a technical issue. Please call us back later or visit our website for more information.");
     
     res.setHeader('Content-Type', 'text/xml');
     res.send(errorTwiml.toString());

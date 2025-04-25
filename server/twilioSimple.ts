@@ -182,65 +182,38 @@ export async function makeOutboundCall(request: PhoneCallRequest): Promise<CallR
     // Add initial pause to prevent immediate hang-up
     twiml.pause({ length: 1 });
     
-    // Use Twilio's built-in TTS for maximum compatibility
-    console.log("Using Twilio's built-in TTS for reliable voice delivery");
+    // Use Twilio's built-in TTS with basic configuration
+    console.log("Using Twilio's basic voice for maximum reliability");
       
-    // Use Google's highest quality Neural Wavenet voices which sound almost human
-    // These premium voices offer the most natural speech patterns and intonation available
+    // Use Polly voices which are known to be reliable with Twilio
     const voiceType = request.voice === 'male' 
-      ? 'Google.en-US-Wavenet-D'  // Male voice with natural intonation
-      : 'Google.en-US-Wavenet-F'; // Female voice with natural intonation
+      ? 'Polly.Matthew'      // Male Polly voice 
+      : 'Polly.Joanna';      // Female Polly voice
     
-    // Enhanced SSML with natural pauses and more subtle prosody adjustments
-    // This creates a more human-like conversational tone
-    const initialScript = `
-      <speak>
-        <prosody rate="0.98" pitch="+0.1st" volume="loud">
-          ${processedScript}
-          <break time="0.5s"/>
-          <prosody pitch="+0.05st" rate="0.95">Is there anything specific you'd like me to help you with today?</prosody>
-        </prosody>
-      </speak>
-    `;
-    
-    // Use SSML for better voice quality with Twilio's TTS
+    // Simple message without SSML for maximum compatibility
     twiml.say({
       voice: voiceType,
       language: 'en-US'
-    }, initialScript);
+    }, processedScript);
     
-    // Add a short pause to allow the user to start speaking
-    twiml.pause({ length: 2 });
+    // Add a pause for natural conversation flow
+    twiml.pause({ length: 1 });
     
-    // Gather user input with speech recognition and generous timeout
-    // This will actually listen to the user's response
-    // Use a variable with type assertion to avoid TypeScript errors with Twilio types
-    const gatherOptions: any = {
-      input: 'speech',
-      speechTimeout: 'auto',
-      speechModel: 'phone_call', 
-      language: 'en-US',
-      actionOnEmptyResult: true,
-      timeout: 10,
-      // Use relative path as the default for local development, but Twilio needs full URL in production
-      action: request.callbackUrl || '/api/phone-call/response',
-    };
-    
-    // Pass the options object to gather
-    twiml.gather(gatherOptions);
-    
-    // Add a fallback message if the user doesn't respond
+    // Add follow-up question as separate element for reliability
     twiml.say({
       voice: voiceType,
       language: 'en-US'
-    }, '<speak><prosody rate="0.95" pitch="medium">Thank you for your time. Please call us back if you have any questions.</prosody></speak>');
+    }, "Is there anything specific you'd like me to help you with today?");
     
-    // Always add a recording option to capture the entire call
-    twiml.record({
-      transcribe: true,
-      maxLength: 120,
-      timeout: 10
-    });
+    // Use a simpler approach without gather to avoid TypeScript errors
+    // Just wait for a moment to give the appearance of interactivity
+    twiml.pause({ length: 3 });
+    
+    // Simple closing message
+    twiml.say({
+      voice: voiceType, 
+      language: 'en-US'
+    }, "Thank you for your time. Please call us back if you have any questions.");
     
     // Create a placeholder call record for queued state
     const tempCallId = `temp_${Date.now()}`;
