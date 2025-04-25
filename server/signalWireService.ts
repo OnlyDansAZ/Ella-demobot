@@ -124,26 +124,22 @@ export async function makeOutboundCall(request: PhoneCallRequest): Promise<CallR
     // Create audio URL that SignalWire can access
     const audioUrl = `${baseUrl}/api/signalwire-audio/${audioFilename}`;
     
-    // Create enhanced LAML (SignalWire's XML) document for more reliable call quality
-    // Implementing multiple approaches to ensure audio delivery
+    // Create simpler LAML that doesn't rely on streaming audio files
+    // Using only SignalWire's built-in Text-to-Speech for reliability
     const laml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <!-- Initial greeting with a distinct ring pattern to help prevent carrier filtering -->
+  <!-- Initial greeting with clear introduction -->
   <Pause length="1"/>
   <Say voice="${voiceGender === 'male' ? 'man' : 'woman'}">Hello, this is an important call from YoBot.</Say>
   <Pause length="1"/>
   
-  <!-- First attempt to play the high-quality ElevenLabs audio -->
-  <Play>${audioUrl}</Play>
-  <Pause length="1"/>
-  
-  <!-- Fallback - deliver the message using SignalWire's text-to-speech -->
-  <Say voice="${voiceGender === 'male' ? 'man' : 'woman'}">If you didn't hear the previous message, here it is again: ${script}</Say>
+  <!-- Deliver the message using SignalWire's text-to-speech (no external audio file) -->
+  <Say voice="${voiceGender === 'male' ? 'man' : 'woman'}">${script}</Say>
   <Pause length="2"/>
   
   <!-- Interactive response gathering with clear instructions -->
   <Gather input="speech dtmf" timeout="8" action="${baseUrl}/api/phone-call/response" method="POST" hints="yes,no,maybe,tell me more">
-    <Say voice="${voiceGender === 'male' ? 'man' : 'woman'}">I'll wait a moment if you'd like to respond. You can speak now, or press any key on your phone to continue.</Say>
+    <Say voice="${voiceGender === 'male' ? 'man' : 'woman'}">I'll wait a moment if you'd like to respond. You can speak now, or press any key on your phone.</Say>
   </Gather>
   
   <!-- Friendly closing message -->
