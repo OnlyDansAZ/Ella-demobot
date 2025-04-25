@@ -54,13 +54,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Use the SignalWire implementation with ElevenLabs
   app.use("/api", signalWireRoutes);
   
-  // Serve temporary audio files for Twilio calls
+  // Serve temporary audio files with improved reliability
   app.get("/temp/:filename", (req, res) => {
     try {
       const { filename } = req.params;
       
       // Validate filename (prevent path traversal)
       if (!filename || filename.includes('..') || filename.includes('/')) {
+        console.error(`Invalid audio filename requested: ${filename}`);
         return res.status(400).json({ success: false, error: "Invalid filename" });
       }
       
@@ -73,6 +74,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ success: false, error: "Audio file not found" });
       }
       
+      const fileStats = fs.statSync(filePath);
+      if (fileStats.size === 0) {
+        console.error(`Empty audio file: ${filePath}`);
+        return res.status(500).json({ success: false, error: "Audio file is empty" });
+      }
+      
       // Determine MIME type based on file extension
       const extension = path.extname(filePath).toLowerCase();
       let contentType = 'application/octet-stream'; // Default
@@ -83,15 +90,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         contentType = 'audio/wav';
       }
       
-      // Set appropriate headers
+      // Set appropriate headers for better browser compatibility
       res.setHeader('Content-Type', contentType);
-      res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
+      res.setHeader('Content-Length', fileStats.size);
+      res.setHeader('Accept-Ranges', 'bytes');
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`); // Changed to attachment for more reliable playback
       
-      // Stream the file to the response
+      console.log(`Serving temporary audio file (${fileStats.size} bytes): ${filename}`);
+      
+      // Stream the file to the response with error handling
       const fileStream = fs.createReadStream(filePath);
-      fileStream.pipe(res);
       
-      console.log(`Serving temporary audio file: ${filename}`);
+      fileStream.on('error', (streamError) => {
+        console.error(`Error streaming audio file ${filename}:`, streamError);
+        if (!res.headersSent) {
+          res.status(500).json({ success: false, error: "Failed to stream audio file" });
+        }
+      });
+      
+      fileStream.pipe(res);
     } catch (error) {
       console.error('Error serving audio file:', error);
       res.status(500).json({ success: false, error: "Failed to serve audio file" });
