@@ -212,17 +212,20 @@ export async function makeOutboundCall(request: PhoneCallRequest): Promise<CallR
     
     // Gather user input with speech recognition and generous timeout
     // This will actually listen to the user's response
-    // Directly use the gather method with type casting
-    twiml.gather({
-      // Force type to any to avoid TypeScript issues
-      input: 'speech' as any,
+    // Use a variable with type assertion to avoid TypeScript errors with Twilio types
+    const gatherOptions: any = {
+      input: 'speech',
       speechTimeout: 'auto',
       speechModel: 'phone_call', 
       language: 'en-US',
       actionOnEmptyResult: true,
       timeout: 10,
-      action: request.callbackUrl || 'https://vite.replit.dev/api/phone-call/response',
-    });
+      // Use relative path as the default for local development, but Twilio needs full URL in production
+      action: request.callbackUrl || '/api/phone-call/response',
+    };
+    
+    // Pass the options object to gather
+    twiml.gather(gatherOptions);
     
     // Add a fallback message if the user doesn't respond
     twiml.say({

@@ -444,10 +444,34 @@
             "content": "I'm sorry to hear you're experiencing issues with the application. Let's try to troubleshoot this together. Here are a few steps we can take to resolve the problem:\n\n1. **Restart the Application**: Sometimes, simply closing and reopening the application can fix minor glitches.\n\n2. **Check for Updates**: Ensure that the application is up-to-date. Updates often include fixes for known issues.\n\n3. **Clear Cache**: If the application has a cache, clearing it can help resolve performance issues.\n\n4. **Reboot Your Device**: Restarting your device can resolve many temporary issues.\n\n5. **Check Internet Connection**: Ensure you have a stable internet connection, as connectivity issues can affect performance.\n\nIf these steps don't resolve the issue, please let me know, and we can explore other options. Additionally, if you have any error messages or more details about the problem, feel free to share them!",
             "isUser": false,
             "timestamp": "2025-04-25T03:06:09.309Z"
+          },
+          {
+            "id": "ba124390-11a2-43f0-be00-cc145819f863",
+            "content": "hello how are you",
+            "isUser": true,
+            "timestamp": "2025-04-25T03:26:55.560Z"
+          },
+          {
+            "id": "31ee56a3-711c-4cdf-b638-f99d0a4c9ee0",
+            "content": "Hello! I'm doing well, thank you for asking. 😊 How about you? Is there anything specific I can assist you with today?",
+            "isUser": false,
+            "timestamp": "2025-04-25T03:27:01.872Z"
+          },
+          {
+            "id": "60e8e521-e8d9-4a6d-a068-d16f59f831fa",
+            "content": "you're selling extra Soldier right now what's going on",
+            "isUser": true,
+            "timestamp": "2025-04-25T03:27:21.396Z"
+          },
+          {
+            "id": "91ccf739-4fd3-408b-86d1-24a01325d576",
+            "content": "It sounds like there might be some confusion or a mix-up. Could you provide a bit more context or clarify what you mean by \"selling extra Soldier\"? I'm here to help, so any additional details you can share would be great. If it's related to a specific task or issue, just let me know, and I'll do my best to assist you!",
+            "isUser": false,
+            "timestamp": "2025-04-25T03:27:25.309Z"
           }
         ],
         "createdAt": "2025-04-23T01:01:18.628Z",
-        "updatedAt": "2025-04-25T03:06:09.309Z"
+        "updatedAt": "2025-04-25T03:27:25.309Z"
       }
     ],
     [

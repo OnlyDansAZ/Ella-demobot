@@ -144,13 +144,15 @@ router.post('/phone-call/response', (req: Request, res: Response) => {
           </speak>`);
       
       // Continue the conversation with another gather
-      const gatherOptions = {
-        input: 'speech' as any,
+      // We need to cast the entire options object to any to avoid TypeScript errors
+      // with the Twilio types which are quite strict
+      const gatherOptions: any = {
+        input: 'speech',
         speechTimeout: 'auto',
         speechModel: 'phone_call',
         language: 'en-US',
         timeout: 8,
-        action: 'https://vite.replit.dev/api/phone-call/response',
+        action: '/api/phone-call/response',
       };
       twiml.gather(gatherOptions);
     } else {
