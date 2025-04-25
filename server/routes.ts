@@ -13,7 +13,8 @@ import conversationRoutes from './routes/conversationRoutes';
 import personaRoutes from './routes/personaRoutes';
 import twilioRoutes from './routes/twilioRoutes';
 import { personaManager } from './personaManager';
-import { TEMP_DIR } from './twilioService';
+// Import the simplified Twilio service instead
+import { TEMP_DIR } from './twilioSimple';
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // API Routes

@@ -2,13 +2,11 @@ import twilio from 'twilio';
 import { log } from './vite';
 import * as fs from 'fs';
 import * as path from 'path';
-import { promisify } from 'util';
-import fetch from 'node-fetch';
 
 // Initialize Twilio client with environment variables
 let twilioClient: twilio.Twilio | null = null;
 
-// Make temp directory for audio files
+// Make temp directory for audio files if needed
 export const TEMP_DIR = path.join(process.cwd(), 'temp');
 if (!fs.existsSync(TEMP_DIR)) {
   fs.mkdirSync(TEMP_DIR, { recursive: true });
@@ -30,7 +28,7 @@ export interface PhoneCallRequest {
   to: string;           // The phone number to call
   script: string;       // What Ella should say
   persona: string;      // Which persona is making the call
-  voice: string;        // Which voice to use (Twilio voice or ElevenLabs)
+  voice: string;        // Which voice to use (male/female)
   scheduledTime?: Date; // Optional: when to make the call
   callbackUrl?: string; // Optional: webhook for call status updates
 }
@@ -146,7 +144,7 @@ export function initTwilioClient(): void {
 }
 
 /**
- * Make an outbound phone call using Twilio
+ * Make an outbound phone call using Twilio with simple TTS
  */
 export async function makeOutboundCall(request: PhoneCallRequest): Promise<CallRecord | null> {
   try {
