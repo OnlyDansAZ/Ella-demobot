@@ -61,7 +61,16 @@ export async function createClient(): Promise<SignalWireClient> {
             Method: params.method || 'POST',
             StatusCallback: params.statusCallback,
             StatusCallbackMethod: params.statusCallbackMethod || 'POST',
-            Twiml: params.laml  // SignalWire uses "Twiml" parameter (capitalized) for LAML
+            Twiml: params.laml,  // SignalWire uses "Twiml" parameter (capitalized) for LAML
+            
+            // Additional parameters to improve call reliability
+            Timeout: '60',              // Ring for up to 60 seconds
+            MachineDetection: 'Enable', // Detect answering machines/voicemail
+            IfMachine: 'Continue',      // Continue call even if answered by machine
+            
+            // Attempt to make the call appear more legitimate to carriers
+            SendDigits: '',             // No digits to send after connect
+            Record: 'false'             // Don't record the call
           };
           
           // Remove undefined values

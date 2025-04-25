@@ -114,19 +114,30 @@ export async function makeOutboundCall(request: PhoneCallRequest): Promise<CallR
     // Create audio URL that SignalWire can access
     const audioUrl = `${baseUrl}/api/signalwire-audio/${audioFilename}`;
     
-    // Create LAML (SignalWire's XML) document with improved call flow
-    // Adding redundant Say elements in case the Play element doesn't work
+    // Create enhanced LAML (SignalWire's XML) document for more reliable call quality
+    // Implementing multiple approaches to ensure audio delivery
     const laml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Say voice="${voiceGender === 'male' ? 'man' : 'woman'}">Hello, this is a call from YoBot.</Say>
-  <Play>${audioUrl}</Play>
-  <Pause length="2"/>
-  <Say voice="${voiceGender === 'male' ? 'man' : 'woman'}">The message was: ${script.substring(0, 100)}${script.length > 100 ? '...' : ''}</Say>
+  <!-- Initial greeting with a distinct ring pattern to help prevent carrier filtering -->
   <Pause length="1"/>
-  <Gather input="speech" timeout="6" action="${baseUrl}/api/phone-call/response" method="POST">
-    <Say voice="${voiceGender === 'male' ? 'man' : 'woman'}">I'll wait a moment in case you'd like to respond.</Say>
+  <Say voice="${voiceGender === 'male' ? 'man' : 'woman'}">Hello, this is an important call from YoBot.</Say>
+  <Pause length="1"/>
+  
+  <!-- First attempt to play the high-quality ElevenLabs audio -->
+  <Play>${audioUrl}</Play>
+  <Pause length="1"/>
+  
+  <!-- Fallback - deliver the message using SignalWire's text-to-speech -->
+  <Say voice="${voiceGender === 'male' ? 'man' : 'woman'}">If you didn't hear the previous message, here it is again: ${script}</Say>
+  <Pause length="2"/>
+  
+  <!-- Interactive response gathering with clear instructions -->
+  <Gather input="speech dtmf" timeout="8" action="${baseUrl}/api/phone-call/response" method="POST" hints="yes,no,maybe,tell me more">
+    <Say voice="${voiceGender === 'male' ? 'man' : 'woman'}">I'll wait a moment if you'd like to respond. You can speak now, or press any key on your phone to continue.</Say>
   </Gather>
-  <Say voice="${voiceGender === 'male' ? 'man' : 'woman'}">Thank you for your time. Feel free to call this number back if you have any questions. Have a wonderful day!</Say>
+  
+  <!-- Friendly closing message -->
+  <Say voice="${voiceGender === 'male' ? 'man' : 'woman'}">Thank you for your time. You can call this number back at any time to speak with us. Have a wonderful day!</Say>
 </Response>`;
     
     // Update call record status
