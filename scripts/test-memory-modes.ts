@@ -19,11 +19,36 @@ async function testMemoryModes() {
 
   try {
     // 1. Set up different personas for each session
-    // Use 'sales' for stateless (should reset after use)
+    // Create a stateless sales persona 
+    console.log('Creating stateless sales persona for testing...');
+    const salesPersona = personaManager.createPersona({
+      name: 'Sales Specialist',
+      description: 'A persuasive, solution-oriented persona focused on sales.',
+      systemPrompt: 'You are a sales specialist AI. Focus on understanding needs and positioning solutions.',
+      memoryMode: 'stateless',
+      voiceSettings: {
+        stability: 0.5,
+        similarityBoost: 0.75,
+        style: 0.5,
+        useSpeakerBoost: true
+      },
+      behaviorModifiers: {
+        usesEmojis: false,
+        verbosity: 0.5,
+        formality: 0.5,
+        creativity: 0.5,
+        persuasiveness: 0.8,
+        usesBulletPoints: true
+      }
+    });
+    
+    console.log(`Created sales persona with ID: ${salesPersona.id}`);
+    
+    // Use the generated sales persona ID for stateless
     // Use 'default' for persistent (should keep memory)
     console.log('\nStep 1: Setting up test personas...');
     
-    personaManager.setSessionPersona(statelessSessionId, 'sales');
+    personaManager.setSessionPersona(statelessSessionId, salesPersona.id);
     personaManager.setSessionPersona(persistentSessionId, 'default');
     
     // Verify personas are set correctly
