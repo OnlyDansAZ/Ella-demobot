@@ -101,54 +101,69 @@ router.post('/phone-call/response', (req: Request, res: Response) => {
     
     console.log(`Received speech from call ${CallSid}: "${SpeechResult}" (confidence: ${Confidence})`);
     
-    // Create TwiML response
+    // Create TwiML response - this handles the user's voice response
     const twiml = new twilio.twiml.VoiceResponse();
     
-    // Add a small pause
+    // Add a small pause for more natural conversation flow
     twiml.pause({ length: 1 });
     
-    // Choose voice type (Google voices sound better)
-    const voiceType = 'Google.en-US-Standard-F';
+    // Use a high-quality premium Google voice that sounds more human
+    // Google voices have better prosody and intonation than the default voices
+    const voiceType = 'Google.en-US-Neural2-F'; // Using the newer neural voices which sound more natural
     
     if (SpeechResult) {
-      // User said something, respond to them
-      let responseText = "Thank you for your feedback. I've made a note of that.";
+      // User said something, respond to them with appropriate context
+      let responseText = "Thank you for your feedback. I've noted that down and will have our team follow up with you soon.";
       
-      // Simple response logic based on keywords
+      // Enhanced response logic based on keywords
       const userSpeech = SpeechResult.toLowerCase();
       
-      if (userSpeech.includes('price') || userSpeech.includes('cost') || userSpeech.includes('expensive')) {
-        responseText = "Our pricing is very competitive. We offer multiple tiers starting with our Starter package at five thousand dollars plus a monthly fee of four hundred ninety-nine dollars.";
-      } else if (userSpeech.includes('demo') || userSpeech.includes('try')) {
-        responseText = "I'd be happy to arrange a demo for you. Would you like me to have our sales team contact you to schedule one?";
-      } else if (userSpeech.includes('features') || userSpeech.includes('what can you do')) {
-        responseText = "YoBot can handle appointments, answer customer questions, make outbound calls, and integrate with your existing systems. Our AI is highly customizable to your specific needs.";
-      } else if (userSpeech.includes('thank') || userSpeech.includes('goodbye') || userSpeech.includes('bye')) {
-        responseText = "You're welcome! Thank you for your interest in YoBot. Have a wonderful day!";
+      if (userSpeech.includes('price') || userSpeech.includes('cost') || userSpeech.includes('expensive') || userSpeech.includes('pricing') || userSpeech.includes('how much')) {
+        responseText = "Our pricing is very competitive. We offer multiple tiers starting with our Starter package at five thousand dollars plus a monthly fee of four hundred ninety-nine dollars. Would you like me to send you our detailed pricing information?";
+      } else if (userSpeech.includes('demo') || userSpeech.includes('try') || userSpeech.includes('test') || userSpeech.includes('see')) {
+        responseText = "I'd be happy to arrange a personalized demo for you. Our team can show you how Ella would work specifically with your business needs. What's the best email to reach you at for scheduling?";
+      } else if (userSpeech.includes('features') || userSpeech.includes('what can you do') || userSpeech.includes('capabilities') || userSpeech.includes('do')) {
+        responseText = "YoBot's Ella can handle appointment scheduling, answer customer questions 24/7, make outbound calls to follow up with leads, and seamlessly integrate with your existing business systems. She learns your business through your knowledge base and can be customized to your specific industry needs. What specific capabilities are you most interested in?";
+      } else if (userSpeech.includes('thank') || userSpeech.includes('goodbye') || userSpeech.includes('bye') || userSpeech.includes('later')) {
+        responseText = "You're welcome! Thank you for your interest in YoBot. We'll follow up with additional information. Have a wonderful day, and feel free to reach out if you have any other questions!";
+      } else if (userSpeech.includes('hello') || userSpeech.includes('hi') || userSpeech.includes('hey')) {
+        responseText = "Hello there! It's great to connect with you. I'm Ella, YoBot's AI assistant. How can I help you today?";
+      } else if (userSpeech.includes('integration') || userSpeech.includes('connect') || userSpeech.includes('work with')) {
+        responseText = "YoBot integrates seamlessly with most business systems including CRMs like Salesforce, calendar apps like Google Calendar and Microsoft Outlook, and communication platforms like Slack. What systems are you currently using that you'd need integration with?";
       }
       
-      // Respond with SSML for better voice quality
+      // Use advanced SSML with enhanced prosody markers for more natural speech
+      // These adjustments create more natural intonation patterns
       twiml.say({
         voice: voiceType,
         language: 'en-US'
-      }, `<speak><prosody rate="1.05" pitch="+0.2st">${responseText}</prosody></speak>`);
+      }, `<speak>
+            <prosody rate="1.0" pitch="+0.15st" volume="loud">
+              ${responseText}
+            </prosody>
+          </speak>`);
       
-      // Add another gather to continue the conversation
-      // Use type assertion to avoid TypeScript errors
-      twiml.gather({
+      // Continue the conversation with another gather
+      const gatherOptions = {
         input: 'speech' as any,
         speechTimeout: 'auto',
         speechModel: 'phone_call',
         language: 'en-US',
         timeout: 8,
-        action: '/api/phone-call/response',
-      });
+        action: 'https://vite.replit.dev/api/phone-call/response',
+      };
+      twiml.gather(gatherOptions);
     } else {
-      // No speech detected
+      // No speech detected, provide a helpful prompt
       twiml.say({
         voice: voiceType,
         language: 'en-US'
-      }, "<speak><prosody rate='0.95'>I didn't catch that. Thank you for your time. Please call us back if you have any questions.</prosody></speak>");
+      }, `<speak>
+            <prosody rate="0.95" pitch="+0.05st">
+              I'm sorry, I didn't catch what you said. If you're interested in learning more about YoBot, 
+              please visit our website or call us back at a more convenient time. Thank you for your interest!
+            </prosody>
+          </speak>`);
     }
     
     // Set the appropriate content type and send the TwiML response
@@ -157,9 +172,16 @@ router.post('/phone-call/response', (req: Request, res: Response) => {
   } catch (error) {
     console.error('Error handling speech response:', error);
     
-    // Return a simple response on error
+    // Provide a helpful error response
     const errorTwiml = new twilio.twiml.VoiceResponse();
-    errorTwiml.say('Sorry, we encountered an error. Please try again later.');
+    errorTwiml.say({
+      voice: 'Google.en-US-Neural2-F',
+      language: 'en-US'
+    }, `<speak>
+          <prosody rate="0.9" pitch="medium">
+            I apologize, but we encountered a technical issue. Please call us back later or visit our website for more information.
+          </prosody>
+        </speak>`);
     
     res.setHeader('Content-Type', 'text/xml');
     res.send(errorTwiml.toString());

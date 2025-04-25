@@ -432,10 +432,22 @@
             "content": "It sounds like you're dealing with a bit of a chaotic situation! If you need help with something specific, like confirming a process or getting information on a particular topic, feel free to let me know. I'm here to help you sort things out as quickly as possible. If it's about YoBot features or anything else, just give me a bit more detail, and I'll do my best to assist you right away!",
             "isUser": false,
             "timestamp": "2025-04-25T00:19:23.273Z"
+          },
+          {
+            "id": "ba8bacf0-3b44-4958-afa9-2b0068b9bc00",
+            "content": "SHe can not respond. She said an application error has occured. SHe still sounds robotic",
+            "isUser": true,
+            "timestamp": "2025-04-25T03:06:00.078Z"
+          },
+          {
+            "id": "81fecdbc-898a-4fa1-a30e-db3f03d89182",
+            "content": "I'm sorry to hear you're experiencing issues with the application. Let's try to troubleshoot this together. Here are a few steps we can take to resolve the problem:\n\n1. **Restart the Application**: Sometimes, simply closing and reopening the application can fix minor glitches.\n\n2. **Check for Updates**: Ensure that the application is up-to-date. Updates often include fixes for known issues.\n\n3. **Clear Cache**: If the application has a cache, clearing it can help resolve performance issues.\n\n4. **Reboot Your Device**: Restarting your device can resolve many temporary issues.\n\n5. **Check Internet Connection**: Ensure you have a stable internet connection, as connectivity issues can affect performance.\n\nIf these steps don't resolve the issue, please let me know, and we can explore other options. Additionally, if you have any error messages or more details about the problem, feel free to share them!",
+            "isUser": false,
+            "timestamp": "2025-04-25T03:06:09.309Z"
           }
         ],
         "createdAt": "2025-04-23T01:01:18.628Z",
-        "updatedAt": "2025-04-25T00:19:23.273Z"
+        "updatedAt": "2025-04-25T03:06:09.309Z"
       }
     ],
     [

@@ -185,17 +185,18 @@ export async function makeOutboundCall(request: PhoneCallRequest): Promise<CallR
     // Use Twilio's built-in TTS for maximum compatibility
     console.log("Using Twilio's built-in TTS for reliable voice delivery");
       
-    // Improve speech quality with enhanced SSML
-    // Use Google voices which sound more natural than the default Twilio voices
-    const voiceType = request.voice === 'male' ? 'Google.en-US-Standard-D' : 'Google.en-US-Standard-F';
+    // Use Google's newer Neural voices which sound much more natural
+    // These high-quality premium voices have better intonation and less robotic qualities
+    const voiceType = request.voice === 'male' ? 'Google.en-US-Neural2-D' : 'Google.en-US-Neural2-F';
     
-    // Create enhanced SSML with just the initial message
+    // Enhanced SSML with natural pauses and more subtle prosody adjustments
+    // This creates a more human-like conversational tone
     const initialScript = `
       <speak>
-        <prosody rate="1.05" pitch="+0.3st" volume="loud">
+        <prosody rate="0.98" pitch="+0.1st" volume="loud">
           ${processedScript}
-          <break time="0.7s"/>
-          Is there anything you'd like me to help you with today?
+          <break time="0.5s"/>
+          <prosody pitch="+0.05st" rate="0.95">Is there anything specific you'd like me to help you with today?</prosody>
         </prosody>
       </speak>
     `;
@@ -220,7 +221,7 @@ export async function makeOutboundCall(request: PhoneCallRequest): Promise<CallR
       language: 'en-US',
       actionOnEmptyResult: true,
       timeout: 10,
-      action: request.callbackUrl || '/api/phone-call/response',
+      action: request.callbackUrl || 'https://vite.replit.dev/api/phone-call/response',
     });
     
     // Add a fallback message if the user doesn't respond
