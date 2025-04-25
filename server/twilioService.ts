@@ -2,9 +2,9 @@ import twilio from 'twilio';
 import { log } from './vite';
 import * as fs from 'fs';
 import * as path from 'path';
-// @ts-ignore
-import ElevenLabs from 'elevenlabs-node';
+// Note: We no longer use the elevenlabs-node SDK - we're using direct API calls instead
 import { promisify } from 'util';
+import fetch from 'node-fetch';
 
 // Initialize Twilio client with environment variables
 let twilioClient: twilio.Twilio | null = null;
