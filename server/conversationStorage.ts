@@ -1,5 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import { personaManager } from './personaManager';
 
 // Define the message structure
 export interface ChatMessage {

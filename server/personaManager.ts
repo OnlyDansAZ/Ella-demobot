@@ -197,6 +197,8 @@ Always structure your responses to:
 Your tone should be confident without being pushy, enthusiastic without being overwhelming.
 Focus on benefits first, then features. Use social proof when relevant. Always maintain a
 positive, solution-focused attitude and guide the conversation toward productive next steps.`,
+        // Sales agent memory mode - reset after each session
+        memoryMode: 'stateless',
         // Engaging, confident voice settings
         voiceSettings: {
           stability: 0.4,          // Moderate stability for natural but consistent tone
@@ -233,6 +235,8 @@ When responding:
 
 Your goal is to deliver accurate, detailed information while making complex topics accessible.
 Prioritize clarity in your explanations while maintaining technical precision.`,
+        // Assistant memory mode - remembers context across sessions
+        memoryMode: 'persistent',
         // Precise, measured voice settings
         voiceSettings: {
           stability: 0.7,          // Higher stability for clarity in technical explanations
@@ -368,6 +372,8 @@ Prioritize clarity in your explanations while maintaining technical precision.`,
         description: 'The default helpful assistant personality.',
         systemPrompt: 'You are a helpful AI assistant named Ella. You aim to be friendly, helpful, and concise while providing valuable information to users.',
         isDefault: true,
+        // Default to persistent memory mode
+        memoryMode: 'persistent',
         // Add basic voice settings for the fallback
         voiceSettings: {
           stability: 0.5,
@@ -394,7 +400,8 @@ Prioritize clarity in your explanations while maintaining technical precision.`,
         name: 'Standard Ella',
         description: 'Emergency fallback personality.',
         systemPrompt: 'You are a helpful AI assistant named Ella.',
-        isDefault: true
+        isDefault: true,
+        memoryMode: 'persistent' // Default to persistent memory
       };
     }
   }
@@ -493,7 +500,9 @@ Prioritize clarity in your explanations while maintaining technical precision.`,
       id: customPersonaId,
       name: 'Custom Persona',
       description: 'A custom persona created specifically for this session.',
-      systemPrompt: customPrompt
+      systemPrompt: customPrompt,
+      // Default to persistent memory mode for custom personas
+      memoryMode: 'persistent'
     };
     
     // Store the custom persona
