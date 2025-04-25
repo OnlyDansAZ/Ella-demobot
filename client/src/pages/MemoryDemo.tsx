@@ -77,15 +77,23 @@ export default function MemoryDemo() {
   const handlePersonaChange = async (personaId: string) => {
     try {
       setLoading(true);
+      
+      // Reset any memory mode override when changing persona
+      setMemoryOverride(null);
+      
       // Set the session persona
-      await apiRequest('POST', `/api/session/${sessionId}/persona`, {
+      const response = await apiRequest('POST', `/api/session/${sessionId}/persona`, {
         personaId
       });
       
+      if (!response.ok) {
+        throw new Error(`Failed to change persona: ${response.status}`);
+      }
+      
       setSelectedPersona(personaId);
       
-      // Get the messages for this session
-      await fetchMessages();
+      // Clear messages to start fresh
+      setMessages([]);
       
       // Show success toast
       const persona = personas.find(p => p.id === personaId);
@@ -108,7 +116,12 @@ export default function MemoryDemo() {
   // Fetch messages for the current session
   const fetchMessages = async () => {
     try {
-      const response = await apiRequest('GET', `/api/session/${sessionId}/messages`);
+      // If we have a memory mode override, include it in the request
+      const queryParams = memoryOverride && memoryOverride.personaId === selectedPersona
+        ? `?memoryModeOverride=${memoryOverride.overrideMode}`
+        : '';
+      
+      const response = await apiRequest('GET', `/api/session/${sessionId}/messages${queryParams}`);
       const data = await response.json();
       setMessages(data);
     } catch (error) {
@@ -201,6 +214,9 @@ export default function MemoryDemo() {
     // If we already have an override, remove it
     if (memoryOverride && memoryOverride.personaId === selectedPersona) {
       setMemoryOverride(null);
+      // Clear messages when toggling to demonstrate the effect
+      setMessages([]);
+      
       toast({
         title: "Memory Mode Reset",
         description: `Reverted to original ${currentPersona.memoryMode} memory mode.`,
@@ -264,6 +280,7 @@ export default function MemoryDemo() {
                       <div className="font-medium">{persona.name}</div>
                       <div className="text-sm text-muted-foreground">{persona.description}</div>
                       <div className="mt-1">
+                        {/* Memory mode badge */}
                         <span className={`text-xs px-2 py-1 rounded-full ${
                           // Show override memory mode if applicable
                           (memoryOverride && memoryOverride.personaId === persona.id)
@@ -325,14 +342,23 @@ export default function MemoryDemo() {
         <div className="md:col-span-2">
           <Card className="h-full flex flex-col">
             <CardHeader>
-              <CardTitle>
+              <CardTitle className="flex items-center">
                 {selectedPersona && personas.find(p => p.id === selectedPersona)?.name || 'Chat'}
                 {selectedPersona && (
-                  <span className="ml-2 text-sm font-normal">
-                    ({memoryOverride && memoryOverride.personaId === selectedPersona
-                      ? `${memoryOverride.overrideMode} memory (demo)` 
-                      : `${personas.find(p => p.id === selectedPersona)?.memoryMode} memory`
-                    })
+                  <span className={`ml-2 text-sm font-normal px-2 py-1 rounded-full ${
+                    // Color the memory mode tag appropriately
+                    memoryOverride && memoryOverride.personaId === selectedPersona
+                      ? (memoryOverride.overrideMode === 'stateless' 
+                          ? 'bg-orange-100 text-orange-800' 
+                          : 'bg-green-100 text-green-800')
+                      : (personas.find(p => p.id === selectedPersona)?.memoryMode === 'stateless'
+                          ? 'bg-orange-100 text-orange-800' 
+                          : 'bg-green-100 text-green-800')
+                  }`}>
+                    {memoryOverride && memoryOverride.personaId === selectedPersona
+                      ? `${memoryOverride.overrideMode.toUpperCase()} MEMORY (DEMO)` 
+                      : `${personas.find(p => p.id === selectedPersona)?.memoryMode.toUpperCase()} MEMORY`
+                    }
                   </span>
                 )}
               </CardTitle>

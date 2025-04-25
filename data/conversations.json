@@ -238,6 +238,17 @@
         "createdAt": "2025-04-25T19:04:32.691Z",
         "updatedAt": "2025-04-25T19:04:32.693Z"
       }
+    ],
+    [
+      "memory_demo_1745614152337",
+      {
+        "id": 1745622646236,
+        "sessionId": "memory_demo_1745614152337",
+        "userId": null,
+        "messages": [],
+        "createdAt": "2025-04-25T23:10:46.236Z",
+        "updatedAt": "2025-04-25T23:10:46.236Z"
+      }
     ]
   ]
 }
