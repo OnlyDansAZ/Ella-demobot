@@ -111,8 +111,8 @@ export default function VoiceTest() {
                     <SelectValue placeholder="Select voice gender" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="female">Female (Grace - Premium)</SelectItem>
-                    <SelectItem value="male">Male (Thomas - Premium)</SelectItem>
+                    <SelectItem value="female">Female (Rachel - Natural American)</SelectItem>
+                    <SelectItem value="male">Male (Josh - Professional American)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

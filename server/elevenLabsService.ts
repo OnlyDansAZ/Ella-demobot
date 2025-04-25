@@ -3,20 +3,16 @@ import path from 'path';
 import fetch from 'node-fetch';
 import { log } from './vite';
 
-// ElevenLabs voice IDs for premium voices - selected for maximum naturalness
+// ElevenLabs standard voice IDs - guaranteed to be available
 const VOICE_IDS = {
-  // Premium Female voices - sorted by naturalness for human-like conversations
-  FEMALE_GRACE: "wViXBPUzp2ZZixB1xQuM", // Grace - Ultra-natural American female (PREMIUM CHOICE)
-  FEMALE_EMILY: "LcfcDJNUP1GQjkzn1xUU", // Emily - Exceptionally natural American female
-  FEMALE_RACHEL: "21m00Tcm4TlvDq8ikWAM", // Rachel - Professional American female voice
+  // Female voices in order of naturalness
+  FEMALE_RACHEL: "21m00Tcm4TlvDq8ikWAM", // Rachel - Professional American female voice (BEST FEMALE)
   FEMALE_DOMI: "AZnzlk1XvdvUeBnXmlld",   // Domi - Conversational American female
   FEMALE_BELLA: "EXAVITQu4vr4xnSDxMaL",   // Bella - Warm, friendly female
   FEMALE_ELLI: "MF3mGyEYCl7XYWbV9V6O",    // Elli - Warm, mature female
   
-  // Premium Male voices - sorted by naturalness for human-like conversations
-  MALE_THOMAS: "N2lVS1w4EtoT3dr4eOWO", // Thomas - Ultra-natural American male (PREMIUM CHOICE)
-  MALE_DANIEL: "onwK4e9ZLuTAKqWW03F9", // Daniel - Exceptionally natural American male
-  MALE_JOSH: "TxGEqnHWrfWFTfGW9XjX",     // Josh - Professional American male
+  // Male voices in order of naturalness
+  MALE_JOSH: "TxGEqnHWrfWFTfGW9XjX",     // Josh - Professional American male (BEST MALE)
   MALE_ARNOLD: "VR6AewLTigWG4xSOukaG",   // Arnold - Authoritative male
   MALE_ADAM: "pNInz6obpgDQGcFmaJgB",     // Adam - Deep male voice
   MALE_SAM: "yoZ06aMxZJJ28mfd3POQ",      // Sam - Natural male voice
@@ -50,7 +46,7 @@ export interface ElevenLabsVoiceSettings {
  */
 export async function generateSpeech(
   text: string,
-  voiceId: string = VOICE_IDS.FEMALE_GRACE, // Using premium Grace voice by default
+  voiceId: string = VOICE_IDS.FEMALE_RACHEL, // Using Rachel voice by default (most natural standard female)
   voiceSettings?: Partial<ElevenLabsVoiceSettings>
 ): Promise<string> {
   try {
@@ -151,10 +147,10 @@ export async function generateSpeech(
 
 /**
  * Get the appropriate voice ID based on gender preference
- * Returns the most premium, natural-sounding voice for each gender
+ * Returns the most natural-sounding standard voice for each gender
  */
 export function getVoiceId(gender: 'male' | 'female' = 'female'): string {
-  return gender === 'male' ? VOICE_IDS.MALE_THOMAS : VOICE_IDS.FEMALE_GRACE;
+  return gender === 'male' ? VOICE_IDS.MALE_JOSH : VOICE_IDS.FEMALE_RACHEL;
 }
 
 /**
