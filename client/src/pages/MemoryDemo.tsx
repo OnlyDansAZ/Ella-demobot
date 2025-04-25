@@ -274,8 +274,9 @@ export default function MemoryDemo() {
                   {personas.map((persona, index) => (
                     <motion.div 
                       key={persona.id}
-                      className={`p-3 border rounded-lg cursor-pointer transition-colors
-                        ${selectedPersona === persona.id ? 'border-primary bg-primary/5' : 'hover:bg-accent'}`}
+                      className={`p-3 border rounded-lg cursor-pointer transition-all relative
+                        ${selectedPersona === persona.id ? 'border-primary bg-primary/5' : ''}
+                        ${selectedPersona !== persona.id ? 'hover:bg-accent/50' : ''}`}
                       onClick={() => handlePersonaChange(persona.id)}
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
@@ -286,9 +287,9 @@ export default function MemoryDemo() {
                         stiffness: 260,
                         damping: 20
                       }}
-                      whileHover={{ 
-                        scale: 1.02, 
-                        boxShadow: "0 4px 8px rgba(0,0,0,0.1)" 
+                      whileHover={{
+                        scale: 1.02,
+                        y: -3
                       }}
                       whileTap={{ scale: 0.98 }}
                     >
