@@ -259,10 +259,10 @@ export default function AICaller() {
       };
       
       setTestAudio(audio);
-      audio.play().catch(err => {
+      audio.play().catch((err: any) => {
         toast({
           title: "Audio playback failed",
-          description: err.message || "Failed to play audio. Check your browser settings.",
+          description: err && err.message ? err.message : "Failed to play audio. Check your browser settings.",
           variant: "destructive",
         });
       });

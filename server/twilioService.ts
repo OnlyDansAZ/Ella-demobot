@@ -131,6 +131,16 @@ export function initTwilioClient(): void {
  */
 export async function makeOutboundCall(request: PhoneCallRequest): Promise<CallRecord | null> {
   try {
+    // Validate the phone number format
+    if (!request.to.match(/^\+?[1-9]\d{1,14}$/)) {
+      throw new Error('Invalid phone number format. Please use international format (e.g., +15551234567)');
+    }
+    
+    // Validate the script length
+    if (!request.script || request.script.trim().length < 20) {
+      throw new Error('Script is too short. Please provide a more detailed message for the call');
+    }
+    
     // Initialize client if not already done
     if (!twilioClient) {
       initTwilioClient();
@@ -138,31 +148,55 @@ export async function makeOutboundCall(request: PhoneCallRequest): Promise<CallR
     
     // Check if Twilio is properly initialized
     if (!twilioClient) {
-      throw new Error('Twilio client not initialized. Check credentials.');
+      throw new Error('Twilio client not initialized. Please check your Twilio credentials.');
     }
     
     const fromNumber = process.env.TWILIO_PHONE_NUMBER;
     if (!fromNumber) {
-      throw new Error('Missing Twilio phone number in environment variables');
+      throw new Error('Missing Twilio phone number. Please set the TWILIO_PHONE_NUMBER environment variable.');
     }
     
-    // Create TwiML for the call
-    const twiml = new twilio.twiml.VoiceResponse();
-    twiml.say(
-      { voice: request.voice === 'male' ? 'man' : 'woman' },
-      request.script
-    );
-    
-    // If we have a callback URL, add a recording
-    if (request.callbackUrl) {
-      twiml.record({
-        action: request.callbackUrl,
-        transcribe: true,
-      });
+    // Create TwiML for the call with error handling
+    let twiml: any;
+    try {
+      twiml = new twilio.twiml.VoiceResponse();
+      twiml.say(
+        { voice: request.voice === 'male' ? 'man' : 'woman' },
+        request.script
+      );
+      
+      // If we have a callback URL, add a recording
+      if (request.callbackUrl) {
+        twiml.record({
+          action: request.callbackUrl,
+          transcribe: true,
+        });
+      }
+    } catch (twimlError) {
+      console.error('Error creating TwiML:', twimlError);
+      throw new Error('Failed to create call script. Please try again with simpler text.');
     }
     
-    // Create the call
-    const call = await twilioClient.calls.create({
+    // Create a placeholder call record for queued state
+    const tempCallId = `temp_${Date.now()}`;
+    const tempCallRecord: CallRecord = {
+      id: tempCallId,
+      to: request.to,
+      from: fromNumber,
+      status: 'queued',
+      script: request.script,
+      persona: request.persona,
+      voice: request.voice,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      scheduledTime: request.scheduledTime,
+    };
+    
+    // Save the temporary record so UI shows something immediately
+    const savedTempRecord = callRecordStorage.saveCall(tempCallRecord);
+    
+    // Create the call with a timeout for network issues
+    const callPromise = twilioClient.calls.create({
       to: request.to,
       from: fromNumber,
       twiml: twiml.toString(),
@@ -171,7 +205,16 @@ export async function makeOutboundCall(request: PhoneCallRequest): Promise<CallR
       statusCallbackMethod: 'POST',
     });
     
-    // Store the call record
+    // Wait for the call to be created
+    const call = await callPromise;
+    
+    // Remove the temporary record by updating its ID to the actual one
+    callRecordStorage.updateCallStatus(tempCallId, call.status, {
+      id: call.sid,
+      updatedAt: new Date(),
+    });
+    
+    // Store the actual call record
     const callRecord: CallRecord = {
       id: call.sid,
       to: request.to,
@@ -186,9 +229,36 @@ export async function makeOutboundCall(request: PhoneCallRequest): Promise<CallR
     };
     
     return callRecordStorage.saveCall(callRecord);
-  } catch (error) {
+  } catch (err: any) {
+    const error = err as Error & { code?: string, message?: string };
     console.error('Error making outbound call:', error);
-    return null;
+    
+    // Create a failed call record for better UI feedback
+    if (error && typeof error === 'object' && 'code' in error) {
+      // This is likely a Twilio API error with more details
+      const errorMessage = `${error.message || 'Unknown error'} (Code: ${error.code})`;
+      const failedCall: CallRecord = {
+        id: `failed_${Date.now()}`,
+        to: request.to,
+        from: process.env.TWILIO_PHONE_NUMBER || 'unknown',
+        status: 'failed',
+        script: request.script,
+        persona: request.persona,
+        voice: request.voice,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        scheduledTime: request.scheduledTime,
+      };
+      
+      // Save the failed call record so it appears in the history
+      return callRecordStorage.saveCall(failedCall);
+    }
+    
+    // Rethrow the error with a friendly message for the client
+    const errorMessage = error && typeof error === 'object' && 'message' in error ? 
+      error.message : 
+      'Failed to initiate the call. Please check your connection and try again.';
+    throw new Error(errorMessage);
   }
 }
 
@@ -196,17 +266,62 @@ export async function makeOutboundCall(request: PhoneCallRequest): Promise<CallR
  * Update a call status from a webhook callback
  */
 export function handleStatusCallback(callSid: string, status: string, duration?: string, recordingUrl?: string): CallRecord | undefined {
-  const updates: Partial<CallRecord> = {};
-  
-  if (duration) {
-    updates.duration = parseInt(duration, 10);
+  try {
+    // Validate inputs
+    if (!callSid) {
+      console.error('Missing call SID in status callback');
+      return undefined;
+    }
+    
+    if (!status) {
+      console.error('Missing status in status callback');
+      return undefined;
+    }
+    
+    const updates: Partial<CallRecord> = {};
+    
+    // Safely parse duration if provided
+    if (duration) {
+      try {
+        updates.duration = parseInt(duration, 10);
+        // If parsing resulted in NaN, set a default
+        if (isNaN(updates.duration)) {
+          updates.duration = 0;
+          console.warn(`Invalid duration value provided: ${duration}, defaulting to 0`);
+        }
+      } catch (e) {
+        console.error('Error parsing call duration:', e);
+        updates.duration = 0;
+      }
+    }
+    
+    if (recordingUrl) {
+      updates.recordingUrl = recordingUrl;
+    }
+    
+    // Additional call metadata that might be useful
+    updates.updatedAt = new Date();
+    
+    // Add more detailed status if possible
+    let detailedStatus = status;
+    
+    // Map some common Twilio status codes to more user-friendly terms
+    if (status === 'failed') {
+      detailedStatus = 'failed';
+    } else if (status === 'no-answer') {
+      detailedStatus = 'no-answer';
+    } else if (status === 'busy') {
+      detailedStatus = 'busy';
+    } else if (status === 'canceled') {
+      detailedStatus = 'canceled';
+    }
+    
+    console.log(`Updating call ${callSid} status to ${detailedStatus}`);
+    return callRecordStorage.updateCallStatus(callSid, detailedStatus, updates);
+  } catch (err: any) {
+    console.error('Error processing status callback:', err);
+    return undefined;
   }
-  
-  if (recordingUrl) {
-    updates.recordingUrl = recordingUrl;
-  }
-  
-  return callRecordStorage.updateCallStatus(callSid, status, updates);
 }
 
 /**
