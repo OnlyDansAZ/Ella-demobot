@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { apiRequest } from '../lib/queryClient';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface ChatMessage {
   id: string;
@@ -270,69 +271,130 @@ export default function MemoryDemo() {
                 <div className="text-center py-4 text-muted-foreground">Loading personas...</div>
               ) : (
                 <div className="space-y-4">
-                  {personas.map(persona => (
-                    <div 
+                  {personas.map((persona, index) => (
+                    <motion.div 
                       key={persona.id}
                       className={`p-3 border rounded-lg cursor-pointer transition-colors
                         ${selectedPersona === persona.id ? 'border-primary bg-primary/5' : 'hover:bg-accent'}`}
                       onClick={() => handlePersonaChange(persona.id)}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ 
+                        delay: index * 0.05, 
+                        duration: 0.3,
+                        type: "spring",
+                        stiffness: 260,
+                        damping: 20
+                      }}
+                      whileHover={{ 
+                        scale: 1.02, 
+                        boxShadow: "0 4px 8px rgba(0,0,0,0.1)" 
+                      }}
+                      whileTap={{ scale: 0.98 }}
                     >
                       <div className="font-medium">{persona.name}</div>
                       <div className="text-sm text-muted-foreground">{persona.description}</div>
                       <div className="mt-1">
                         {/* Memory mode badge */}
-                        <span className={`text-xs px-2 py-1 rounded-full ${
-                          // Show override memory mode if applicable
-                          (memoryOverride && memoryOverride.personaId === persona.id)
-                            ? (memoryOverride.overrideMode === 'stateless' 
-                                ? 'bg-orange-100 text-orange-800' 
-                                : 'bg-green-100 text-green-800')
-                            : (persona.memoryMode === 'stateless' 
-                                ? 'bg-orange-100 text-orange-800' 
-                                : 'bg-green-100 text-green-800')
-                        }`}>
+                        <motion.span 
+                          className={`text-xs px-2 py-1 rounded-full inline-block ${
+                            // Show override memory mode if applicable
+                            (memoryOverride && memoryOverride.personaId === persona.id)
+                              ? (memoryOverride.overrideMode === 'stateless' 
+                                  ? 'bg-orange-100 text-orange-800' 
+                                  : 'bg-green-100 text-green-800')
+                              : (persona.memoryMode === 'stateless' 
+                                  ? 'bg-orange-100 text-orange-800' 
+                                  : 'bg-green-100 text-green-800')
+                          }`}
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          transition={{ delay: index * 0.05 + 0.2, duration: 0.2 }}
+                        >
                           {/* Show override memory mode if applicable */}
                           {memoryOverride && memoryOverride.personaId === persona.id 
                             ? `${memoryOverride.overrideMode.toUpperCase()} MEMORY (DEMO)`
                             : `${persona.memoryMode.toUpperCase()} MEMORY`
                           }
-                        </span>
+                        </motion.span>
                       </div>
-                    </div>
+                    </motion.div>
                   ))}
                 </div>
               )}
             </CardContent>
             <CardFooter className="flex flex-col gap-2">
-              <Button 
-                onClick={handleResetMemory} 
-                variant="outline" 
-                className="w-full"
-                disabled={loading}
+              <motion.div
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
               >
-                Reset Memory
-              </Button>
+                <Button 
+                  onClick={handleResetMemory} 
+                  variant="outline" 
+                  className="w-full group relative overflow-hidden"
+                  disabled={loading}
+                >
+                  <motion.span 
+                    className="absolute inset-0 bg-red-100/40"
+                    initial={{ y: "100%" }}
+                    whileHover={{ y: 0 }}
+                    transition={{ duration: 0.2 }}
+                  />
+                  <motion.span className="relative z-10 flex items-center justify-center">
+                    <motion.span 
+                      className="mr-2"
+                      whileHover={{ rotate: -180 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      🗑️
+                    </motion.span>
+                    Reset Memory
+                  </motion.span>
+                </Button>
+              </motion.div>
               
               {/* Toggle Memory Mode Button - For Demo Purposes */}
               {selectedPersona && (
-                <Button
-                  onClick={toggleMemoryMode}
-                  variant={memoryOverride && memoryOverride.personaId === selectedPersona ? "default" : "secondary"}
-                  className="w-full"
-                  disabled={loading}
-                  size="sm"
+                <motion.div
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.97 }}
                 >
-                  <span className="mr-2">🔄</span>
-                  {memoryOverride && memoryOverride.personaId === selectedPersona
-                    ? "Revert Memory Mode"
-                    : "Toggle Memory Mode (Demo)"
-                  }
-                </Button>
+                  <Button
+                    onClick={toggleMemoryMode}
+                    variant={memoryOverride && memoryOverride.personaId === selectedPersona ? "default" : "secondary"}
+                    className="w-full relative overflow-hidden"
+                    disabled={loading}
+                    size="sm"
+                  >
+                    <motion.span 
+                      className="mr-2 inline-block"
+                      animate={{ rotate: memoryOverride && memoryOverride.personaId === selectedPersona ? 360 : 0 }}
+                      transition={{ duration: 0.5, type: "spring" }}
+                    >
+                      🔄
+                    </motion.span>
+                    {memoryOverride && memoryOverride.personaId === selectedPersona
+                      ? "Revert Memory Mode"
+                      : "Toggle Memory Mode (Demo)"
+                    }
+                    <motion.span 
+                      className="absolute bottom-0 left-0 h-0.5 bg-primary" 
+                      initial={{ width: "0%" }}
+                      animate={{ width: memoryOverride && memoryOverride.personaId === selectedPersona ? "100%" : "0%" }}
+                      transition={{ duration: 0.3 }}
+                    />
+                  </Button>
+                </motion.div>
               )}
               {selectedPersona && (
-                <div className="text-xs text-center text-muted-foreground mt-1">
+                <motion.div 
+                  className="text-xs text-center text-muted-foreground mt-1"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.5 }}
+                >
                   <p>Demo feature: Switch between memory modes with the same persona</p>
-                </div>
+                </motion.div>
               )}
             </CardFooter>
           </Card>
@@ -342,26 +404,41 @@ export default function MemoryDemo() {
         <div className="md:col-span-2">
           <Card className="h-full flex flex-col">
             <CardHeader>
-              <CardTitle className="flex items-center">
-                {selectedPersona && personas.find(p => p.id === selectedPersona)?.name || 'Chat'}
-                {selectedPersona && (
-                  <span className={`ml-2 text-sm font-normal px-2 py-1 rounded-full ${
-                    // Color the memory mode tag appropriately
-                    memoryOverride && memoryOverride.personaId === selectedPersona
-                      ? (memoryOverride.overrideMode === 'stateless' 
-                          ? 'bg-orange-100 text-orange-800' 
-                          : 'bg-green-100 text-green-800')
-                      : (personas.find(p => p.id === selectedPersona)?.memoryMode === 'stateless'
-                          ? 'bg-orange-100 text-orange-800' 
-                          : 'bg-green-100 text-green-800')
-                  }`}>
-                    {memoryOverride && memoryOverride.personaId === selectedPersona
-                      ? `${memoryOverride.overrideMode.toUpperCase()} MEMORY (DEMO)` 
-                      : `${personas.find(p => p.id === selectedPersona)?.memoryMode.toUpperCase()} MEMORY`
-                    }
-                  </span>
-                )}
-              </CardTitle>
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={selectedPersona || 'empty'}
+                  initial={{ opacity: 0, y: -20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 20 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <CardTitle className="flex items-center">
+                    {selectedPersona && personas.find(p => p.id === selectedPersona)?.name || 'Chat'}
+                    {selectedPersona && (
+                      <motion.span 
+                        className={`ml-2 text-sm font-normal px-2 py-1 rounded-full ${
+                          // Color the memory mode tag appropriately
+                          memoryOverride && memoryOverride.personaId === selectedPersona
+                            ? (memoryOverride.overrideMode === 'stateless' 
+                                ? 'bg-orange-100 text-orange-800' 
+                                : 'bg-green-100 text-green-800')
+                            : (personas.find(p => p.id === selectedPersona)?.memoryMode === 'stateless'
+                                ? 'bg-orange-100 text-orange-800' 
+                                : 'bg-green-100 text-green-800')
+                        }`}
+                        initial={{ scale: 0.8, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        transition={{ delay: 0.2, duration: 0.2 }}
+                      >
+                        {memoryOverride && memoryOverride.personaId === selectedPersona
+                          ? `${memoryOverride.overrideMode.toUpperCase()} MEMORY (DEMO)` 
+                          : `${personas.find(p => p.id === selectedPersona)?.memoryMode.toUpperCase()} MEMORY`
+                        }
+                      </motion.span>
+                    )}
+                  </CardTitle>
+                </motion.div>
+              </AnimatePresence>
               <CardDescription>Session ID: {sessionId}</CardDescription>
             </CardHeader>
             <CardContent className="flex-grow overflow-auto">
@@ -372,59 +449,116 @@ export default function MemoryDemo() {
                       No messages yet. Start a conversation!
                     </div>
                     
-                    <div className="text-sm text-muted-foreground mb-3">Try these conversation starters:</div>
+                    <motion.div 
+                      className="text-sm text-muted-foreground mb-3"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 0.3 }}
+                    >
+                      Try these conversation starters:
+                    </motion.div>
                     <div className="flex flex-wrap gap-2 justify-center max-w-md">
-                      <Button 
-                        size="sm" 
-                        variant="outline" 
-                        onClick={() => {
-                          setMessage("Hello! What's your name?");
-                          setTimeout(() => handleSendMessage(), 100);
-                        }}
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: 0.4, duration: 0.3 }}
                       >
-                        What's your name?
-                      </Button>
-                      <Button 
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          setMessage("Can you remember what we talked about earlier?");
-                          setTimeout(() => handleSendMessage(), 100);
-                        }}
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          onClick={() => {
+                            setMessage("Hello! What's your name?");
+                            setTimeout(() => handleSendMessage(), 100);
+                          }}
+                          className="relative overflow-hidden group"
+                        >
+                          <span className="relative z-10">What's your name?</span>
+                          <motion.span 
+                            className="absolute inset-0 bg-primary/10 rounded" 
+                            initial={{ x: '-100%' }}
+                            whileHover={{ x: 0 }}
+                            transition={{ duration: 0.3 }}
+                          />
+                        </Button>
+                      </motion.div>
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: 0.5, duration: 0.3 }}
                       >
-                        Remember our conversation?
-                      </Button>
-                      <Button 
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          setMessage("Schedule a demo for me next week");
-                          setTimeout(() => handleSendMessage(), 100);
-                        }}
+                        <Button 
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setMessage("Can you remember what we talked about earlier?");
+                            setTimeout(() => handleSendMessage(), 100);
+                          }}
+                          className="relative overflow-hidden group"
+                        >
+                          <span className="relative z-10">Remember our conversation?</span>
+                          <motion.span 
+                            className="absolute inset-0 bg-primary/10 rounded" 
+                            initial={{ x: '-100%' }}
+                            whileHover={{ x: 0 }}
+                            transition={{ duration: 0.3 }}
+                          />
+                        </Button>
+                      </motion.div>
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: 0.6, duration: 0.3 }}
                       >
-                        Schedule a demo
-                      </Button>
+                        <Button 
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setMessage("Schedule a demo for me next week");
+                            setTimeout(() => handleSendMessage(), 100);
+                          }}
+                          className="relative overflow-hidden group"
+                        >
+                          <span className="relative z-10">Schedule a demo</span>
+                          <motion.span 
+                            className="absolute inset-0 bg-primary/10 rounded" 
+                            initial={{ x: '-100%' }}
+                            whileHover={{ x: 0 }}
+                            transition={{ duration: 0.3 }}
+                          />
+                        </Button>
+                      </motion.div>
                     </div>
                   </div>
                 ) : (
-                  messages.map(msg => (
-                    <div 
+                  messages.map((msg, index) => (
+                    <motion.div 
                       key={msg.id} 
                       className={`flex ${msg.isUser ? 'justify-end' : 'justify-start'}`}
+                      initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      transition={{ 
+                        delay: index * 0.1,
+                        duration: 0.3, 
+                        type: "spring",
+                        stiffness: 500,
+                        damping: 25
+                      }}
                     >
-                      <div 
+                      <motion.div 
                         className={`max-w-[80%] rounded-lg px-4 py-2 ${
                           msg.isUser 
                             ? 'bg-primary text-primary-foreground' 
                             : 'bg-muted'
                         }`}
+                        whileHover={{ scale: 1.02 }}
+                        transition={{ duration: 0.2 }}
                       >
                         <div className="text-sm">{msg.content}</div>
                         <div className="text-xs mt-1 opacity-70">
                           {new Date(msg.timestamp).toLocaleTimeString()}
                         </div>
-                      </div>
-                    </div>
+                      </motion.div>
+                    </motion.div>
                   ))
                 )}
               </div>
@@ -443,12 +577,37 @@ export default function MemoryDemo() {
                   }}
                   disabled={loading}
                 />
-                <Button 
-                  onClick={handleSendMessage}
-                  disabled={!message.trim() || loading}
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
                 >
-                  Send
-                </Button>
+                  <Button 
+                    onClick={handleSendMessage}
+                    disabled={!message.trim() || loading}
+                    className="relative overflow-hidden group"
+                  >
+                    <span className="relative z-10 flex items-center">
+                      Send
+                      <motion.span 
+                        className="ml-1 inline-block"
+                        initial={{ x: -5, opacity: 0 }}
+                        animate={{ 
+                          x: message.trim() ? 0 : -5, 
+                          opacity: message.trim() ? 1 : 0 
+                        }}
+                        transition={{ duration: 0.2 }}
+                      >
+                        →
+                      </motion.span>
+                    </span>
+                    <motion.span 
+                      className="absolute bottom-0 left-0 h-1 bg-primary/20" 
+                      initial={{ width: "0%" }}
+                      whileHover={{ width: "100%" }}
+                      transition={{ duration: 0.2 }}
+                    />
+                  </Button>
+                </motion.div>
               </div>
             </CardFooter>
           </Card>

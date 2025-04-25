@@ -249,6 +249,30 @@
         "createdAt": "2025-04-25T23:10:46.236Z",
         "updatedAt": "2025-04-25T23:10:46.236Z"
       }
+    ],
+    [
+      "memory_demo_1745622996494",
+      {
+        "id": 1745623252420,
+        "sessionId": "memory_demo_1745622996494",
+        "userId": null,
+        "messages": [
+          {
+            "id": "msg_1745623252420_b8rupsmwo",
+            "content": "Can you remember what we talked about earlier?",
+            "isUser": true,
+            "timestamp": "2025-04-25T23:20:52.420Z"
+          },
+          {
+            "id": "msg_1745623252431_vb39yuqy2",
+            "content": "I apologize, but I'm experiencing a technical issue. Please try again in a moment.",
+            "isUser": false,
+            "timestamp": "2025-04-25T23:20:52.431Z"
+          }
+        ],
+        "createdAt": "2025-04-25T23:20:52.420Z",
+        "updatedAt": "2025-04-25T23:20:52.431Z"
+      }
     ]
   ]
 }
