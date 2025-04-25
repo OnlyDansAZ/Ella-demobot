@@ -303,6 +303,20 @@ Prioritize clarity in your explanations while maintaining technical precision.`,
           
           // Add personas from file, potentially overwriting defaults
           for (const persona of parsed.personas) {
+            // Add default memory mode if missing
+            if (!persona.memoryMode) {
+              // For sales personas, use stateless mode, for all others use persistent
+              if (persona.id === 'sales' || 
+                  persona.name?.toLowerCase().includes('sales') || 
+                  persona.description?.toLowerCase().includes('sales')) {
+                persona.memoryMode = 'stateless';
+                console.log(`Adding stateless memory mode to persona: ${persona.name || persona.id}`);
+              } else {
+                persona.memoryMode = 'persistent';
+                console.log(`Adding persistent memory mode to persona: ${persona.name || persona.id}`);
+              }
+            }
+            
             this.personas.set(persona.id, persona);
           }
           
