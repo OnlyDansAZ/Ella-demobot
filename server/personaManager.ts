@@ -20,6 +20,13 @@ export interface BehaviorModifiers {
   preferredResponseFormat?: string; // Optional preferred response format instruction
 }
 
+/**
+ * Defines the memory mode for a persona
+ * - 'stateless': No persistent memory, resets after each session (ideal for sales calls)
+ * - 'persistent': Maintains memory across sessions (ideal for personal assistants)
+ */
+export type MemoryMode = 'stateless' | 'persistent';
+
 export interface Persona {
   id: string;
   name: string;
@@ -27,7 +34,10 @@ export interface Persona {
   systemPrompt: string;
   isDefault?: boolean;
   
-  // New fields for persona-specific voice and behavior
+  // Memory settings
+  memoryMode: MemoryMode;
+  
+  // Voice and behavior customization
   voiceSettings?: VoiceSettings;
   behaviorModifiers?: BehaviorModifiers;
 }
@@ -78,6 +88,8 @@ and general conversation.
 Consider the user's context and questions carefully before responding. Tailor your responses to be 
 helpful and relevant to their specific needs. Maintain a balanced, friendly tone throughout.`,
         isDefault: true,
+        // Assistant memory mode - remembers context across sessions
+        memoryMode: 'persistent',
         // Standard balanced voice settings
         voiceSettings: {
           stability: 0.5,
@@ -108,6 +120,8 @@ You maintain a professional tone at all times and prioritize the user's time abo
 Never use emojis or casual language. Keep your responses concise but complete.
 Organize information clearly with headers and bullet points when appropriate.
 Always provide direct, actionable conclusions at the end of your responses.`,
+        // Assistant memory mode - remembers context across sessions
+        memoryMode: 'persistent',
         // More stable, less stylized voice for clarity and authority
         voiceSettings: {
           stability: 0.8,          // Higher stability for consistent, authoritative tone
@@ -145,6 +159,8 @@ Feel free to use:
 Your goal is to make users feel comfortable and enjoy the conversation while still being helpful.
 Keep responses fairly brief but friendly, and always ask follow-up questions to keep the
 conversation flowing naturally.`,
+        // Assistant memory mode - remembers context across sessions
+        memoryMode: 'persistent',
         // More expressive, varied voice settings
         voiceSettings: {
           stability: 0.3,          // Lower stability for more natural variation
