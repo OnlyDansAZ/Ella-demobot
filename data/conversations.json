@@ -203,6 +203,41 @@
         "createdAt": "2025-04-24T02:47:31.953Z",
         "updatedAt": "2025-04-24T04:21:58.398Z"
       }
+    ],
+    [
+      "test_stateless_1745607872663",
+      {
+        "id": 1745607872688,
+        "sessionId": "test_stateless_1745607872663",
+        "userId": null,
+        "messages": [],
+        "createdAt": "2025-04-25T19:04:32.688Z",
+        "updatedAt": "2025-04-25T19:04:32.695Z"
+      }
+    ],
+    [
+      "test_persistent_1745607872663",
+      {
+        "id": 1745607872691,
+        "sessionId": "test_persistent_1745607872663",
+        "userId": null,
+        "messages": [
+          {
+            "id": "msg1_1745607872687",
+            "content": "Hello, this is a test message",
+            "isUser": true,
+            "timestamp": "2025-04-25T19:04:32.687Z"
+          },
+          {
+            "id": "msg2_1745607872688",
+            "content": "This is a response from the AI",
+            "isUser": false,
+            "timestamp": "2025-04-25T19:04:32.688Z"
+          }
+        ],
+        "createdAt": "2025-04-25T19:04:32.691Z",
+        "updatedAt": "2025-04-25T19:04:32.693Z"
+      }
     ]
   ]
 }
