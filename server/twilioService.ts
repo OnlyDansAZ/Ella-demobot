@@ -2,9 +2,62 @@ import twilio from 'twilio';
 import { log } from './vite';
 import * as fs from 'fs';
 import * as path from 'path';
+// @ts-ignore
+import ElevenLabs from 'elevenlabs-node';
+import { promisify } from 'util';
 
 // Initialize Twilio client with environment variables
 let twilioClient: twilio.Twilio | null = null;
+
+// Initialize ElevenLabs for better voice quality
+const elevenLabs = new ElevenLabs({
+  apiKey: process.env.ELEVENLABS_API_KEY || '',
+});
+
+// Define voice IDs for ElevenLabs
+const ELEVEN_LABS_VOICES = {
+  female: 'KgleQSAupUuS391XuXpI', // Nicole voice
+  male: 'hwGWgfvewDQQTsRdR3sR'    // Matthew voice
+};
+
+// Make temp directory for audio files
+export const TEMP_DIR = path.join(process.cwd(), 'temp');
+if (!fs.existsSync(TEMP_DIR)) {
+  fs.mkdirSync(TEMP_DIR, { recursive: true });
+}
+
+// Helper function for ElevenLabs voice generation
+const generateSpeech = async (text: string, voiceId: string, options: any): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    try {
+      const outputFile = options.outputFileName || path.join(TEMP_DIR, `speech_${Date.now()}.mp3`);
+      
+      // Direct call to ElevenLabs API - workaround for TypeScript issues
+      // @ts-ignore - Ignoring TypeScript for third-party library
+      elevenLabs.generate({
+        text: text,
+        voiceId: voiceId,
+        fileName: outputFile,
+        stability: options.stability || 0.5,
+        similarityBoost: options.similarityBoost || 0.75,
+        style: options.style || 0.5,
+        speakerBoost: options.speakerBoost || true
+      }, (error: any, response: any) => {
+        if (error) {
+          console.error('ElevenLabs speech generation error:', error);
+          reject(error);
+        } else {
+          console.log('ElevenLabs response:', response);
+          // The response should contain a fileName property
+          resolve(response && response.fileName ? response.fileName : outputFile);
+        }
+      });
+    } catch (error) {
+      console.error('ElevenLabs exception:', error);
+      reject(error);
+    }
+  });
+};
 
 // Types for phone call requests
 export interface PhoneCallRequest {
@@ -156,20 +209,125 @@ export async function makeOutboundCall(request: PhoneCallRequest): Promise<CallR
       throw new Error('Missing Twilio phone number. Please set the TWILIO_PHONE_NUMBER environment variable.');
     }
     
-    // Create TwiML for the call with error handling
+    // Create TwiML for the call with enhanced voice quality
     let twiml: any;
     try {
+      // Generate a temporary directory for the call audio
+      const tempDir = path.join(process.cwd(), 'temp');
+      if (!fs.existsSync(tempDir)) {
+        fs.mkdirSync(tempDir, { recursive: true });
+      }
+      
+      // Create enhanced script with pauses and closing message
+      const enhancedScript = `${request.script}
+      
+      [Pause for 1 second]
+      
+      Is there anything you'd like me to help you with today?
+      
+      [Pause for 3 seconds]
+      
+      If you need to reach us later, please don't hesitate to call back or visit our website. Thank you for your time and have a great day!`;
+      
+      // Determine which ElevenLabs voice to use
+      const voiceId = request.voice === 'male' ? 
+        ELEVEN_LABS_VOICES.male : 
+        ELEVEN_LABS_VOICES.female;
+      
+      // Create a unique filename for this call
+      const audioFilename = `call_${Date.now()}.mp3`;
+      const audioFilePath = path.join(tempDir, audioFilename);
+      
+      console.log(`Generating voice audio with ElevenLabs for call...`);
+      
+      // Try generating high-quality audio with ElevenLabs
+      let elevenLabsSuccess = false;
+      try {
+        // Generate speech with ElevenLabs (much better quality)
+        await generateSpeech(enhancedScript, voiceId, {
+          stability: 0.5,
+          similarityBoost: 0.75,
+          style: 0.5,
+          speakerBoost: true,
+          outputFileName: audioFilePath
+        });
+        
+        console.log(`Successfully generated ElevenLabs audio for call: ${audioFilePath}`);
+        elevenLabsSuccess = true;
+      } catch (elevenLabsError) {
+        console.error('Error generating ElevenLabs audio:', elevenLabsError);
+        console.log('Falling back to Twilio TTS voice...');
+        elevenLabsSuccess = false;
+      }
+      
+      // Create the TwiML response
       twiml = new twilio.twiml.VoiceResponse();
-      twiml.say(
-        { voice: request.voice === 'male' ? 'man' : 'woman' },
-        request.script
-      );
+      
+      // Add initial pause to prevent immediate hang-up
+      twiml.pause({ length: 1 });
+      
+      if (elevenLabsSuccess) {
+        // If we successfully generated ElevenLabs audio, play it
+        // Convert the local file path to a publicly accessible URL
+        // For Replit, we need to serve this file via Express
+        const tempFilename = path.basename(audioFilePath);
+        const publicTempUrl = `/temp/${tempFilename}`;
+        
+        // Play the audio file (higher quality)
+        twiml.play({ loop: 1 }, publicTempUrl);
+        
+        // Add extra pause after the audio file
+        twiml.pause({ length: 10 });
+        
+        // Let the user know we're going to record if they respond
+        twiml.say({
+          voice: request.voice === 'male' ? 'man' : 'woman',
+          language: 'en-US'
+        }, "I'm listening if you'd like to respond.");
+      } else {
+        // Fallback to Twilio voice if ElevenLabs fails
+        // Add a pause at the beginning to prevent immediate hang-up
+        twiml.pause({ length: 1 });
+        
+        // Improve speech quality with SSML
+        const voiceType = request.voice === 'male' ? 'man' : 'woman';
+        const ssmlScript = `
+          <speak>
+            <prosody rate="medium" pitch="medium">
+              ${request.script}
+            </prosody>
+            
+            <break time="1s"/>
+            
+            <prosody rate="medium" pitch="medium">
+              Is there anything you'd like me to help you with today?
+            </prosody>
+            
+            <break time="5s"/>
+            
+            <prosody rate="medium" pitch="medium">
+              Thank you for your time. If you need to reach us later, please don't hesitate to call back or visit our website. Have a great day!
+            </prosody>
+          </speak>
+        `;
+        
+        // Use SSML for better voice quality with Twilio's TTS
+        twiml.say({
+          voice: voiceType,
+          language: 'en-US'
+        }, ssmlScript);
+      }
+      
+      // Add extra pause for the user to respond
+      twiml.pause({ length: 15 });
       
       // If we have a callback URL, add a recording
       if (request.callbackUrl) {
         twiml.record({
           action: request.callbackUrl,
           transcribe: true,
+          maxLength: 60,
+          timeout: 5
         });
       }
     } catch (twimlError) {

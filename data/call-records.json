@@ -1,0 +1,57 @@
+[
+  {
+    "id": "CA6550708a9518f78aa561a54b0bf01739",
+    "to": "+17013718391",
+    "from": "+14804482956",
+    "status": "queued",
+    "script": "Hello, this is Daniel from YoBot. I'm calling to follow up about our recent conversation.",
+    "persona": "default",
+    "voice": "male",
+    "createdAt": "2025-04-25T00:18:04.716Z",
+    "updatedAt": "2025-04-25T00:18:04.716Z"
+  },
+  {
+    "id": "temp_1745540735234",
+    "to": "+7013718391",
+    "from": "+14804482956",
+    "status": "queued",
+    "script": "Hello, this is Ella from YoBot. I'm calling to follow up about our recent conversation.",
+    "persona": "default",
+    "voice": "female",
+    "createdAt": "2025-04-25T00:25:35.234Z",
+    "updatedAt": "2025-04-25T00:25:35.234Z"
+  },
+  {
+    "id": "failed_1745540735467",
+    "to": "+7013718391",
+    "from": "+14804482956",
+    "status": "failed",
+    "script": "Hello, this is Ella from YoBot. I'm calling to follow up about our recent conversation.",
+    "persona": "default",
+    "voice": "female",
+    "createdAt": "2025-04-25T00:25:35.467Z",
+    "updatedAt": "2025-04-25T00:25:35.467Z"
+  },
+  {
+    "id": "CA61577ea4cbc292561f9df254369062a4",
+    "to": "+17013718391",
+    "from": "+14804482956",
+    "status": "queued",
+    "script": "Hello, this is Ella from YoBot. I'm calling to follow up about our recent conversation.",
+    "persona": "default",
+    "voice": "female",
+    "createdAt": "2025-04-25T00:26:10.287Z",
+    "updatedAt": "2025-04-25T00:26:10.444Z"
+  },
+  {
+    "id": "CA61577ea4cbc292561f9df254369062a4",
+    "to": "+17013718391",
+    "from": "+14804482956",
+    "status": "queued",
+    "script": "Hello, this is Ella from YoBot. I'm calling to follow up about our recent conversation.",
+    "persona": "default",
+    "voice": "female",
+    "createdAt": "2025-04-25T00:26:10.444Z",
+    "updatedAt": "2025-04-25T00:26:10.444Z"
+  }
+]

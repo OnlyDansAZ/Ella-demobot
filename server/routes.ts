@@ -14,6 +14,7 @@ import conversationRoutes from './routes/conversationRoutes';
 import personaRoutes from './routes/personaRoutes';
 import twilioRoutes from './routes/twilioRoutes';
 import { personaManager } from './personaManager';
+import { TEMP_DIR } from './twilioService';
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // API Routes
@@ -39,6 +40,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Twilio phone call routes
   // Phone call routes with Twilio
   app.use("/api", twilioRoutes);
+  
+  // Serve temporary audio files for Twilio calls
+  app.get("/temp/:filename", (req, res) => {
+    try {
+      const { filename } = req.params;
+      
+      // Validate filename (prevent path traversal)
+      if (!filename || filename.includes('..') || filename.includes('/')) {
+        return res.status(400).json({ success: false, error: "Invalid filename" });
+      }
+      
+      // Build path to the requested file
+      const filePath = path.join(TEMP_DIR, filename);
+      
+      // Check if file exists
+      if (!fs.existsSync(filePath)) {
+        console.error(`Audio file not found: ${filePath}`);
+        return res.status(404).json({ success: false, error: "Audio file not found" });
+      }
+      
+      // Determine MIME type based on file extension
+      const extension = path.extname(filePath).toLowerCase();
+      let contentType = 'application/octet-stream'; // Default
+      
+      if (extension === '.mp3') {
+        contentType = 'audio/mpeg';
+      } else if (extension === '.wav') {
+        contentType = 'audio/wav';
+      }
+      
+      // Set appropriate headers
+      res.setHeader('Content-Type', contentType);
+      res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
+      
+      // Stream the file to the response
+      const fileStream = fs.createReadStream(filePath);
+      fileStream.pipe(res);
+      
+      console.log(`Serving temporary audio file: ${filename}`);
+    } catch (error) {
+      console.error('Error serving audio file:', error);
+      res.status(500).json({ success: false, error: "Failed to serve audio file" });
+    }
+  });
 
   // Contact form submission endpoint
   app.post("/api/contact", (req, res) => {
