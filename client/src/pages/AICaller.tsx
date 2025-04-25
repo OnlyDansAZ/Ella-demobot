@@ -97,6 +97,9 @@ interface CallRecord {
   voice: string;
   duration?: number;
   recordingUrl?: string;
+  errorDetails?: string;     // For storing detailed error information
+  errorCode?: string;        // For error codes or types
+  retryCount?: number;       // For tracking retry attempts
   createdAt: string | Date;
   updatedAt: string | Date;
   scheduledTime?: string | Date;
@@ -308,24 +311,91 @@ export default function AICaller() {
     testSpeechMutation.mutate(script);
   };
   
-  // Get status badge styling
-  const getStatusBadge = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'completed':
-        return <Badge className="bg-green-600"><CheckCircle className="h-3 w-3 mr-1" /> {status}</Badge>;
-      case 'failed':
-      case 'busy':
-      case 'no-answer':
-        return <Badge variant="destructive"><XCircle className="h-3 w-3 mr-1" /> {status}</Badge>;
-      case 'in-progress':
-      case 'ringing':
-        return <Badge className="bg-blue-600"><Phone className="h-3 w-3 mr-1 animate-pulse" /> {status}</Badge>;
-      case 'queued':
-      case 'scheduled':
-        return <Badge variant="outline" className="border-amber-500 text-amber-500"><Clock className="h-3 w-3 mr-1" /> {status}</Badge>;
-      default:
-        return <Badge variant="secondary">{status}</Badge>;
+  // Get status badge styling with enhanced error messages and tooltips
+  const getStatusBadge = (status: string, errorDetails?: string) => {
+    // Process the status to handle complex error cases
+    let displayStatus = status.toLowerCase();
+    let tooltip = '';
+    
+    // Extract error information if present in the status string
+    if (displayStatus.includes('failed')) {
+      if (displayStatus.includes('audio')) {
+        displayStatus = 'audio-failed';
+        tooltip = 'Audio generation failed. The system will automatically retry.';
+      } else if (displayStatus.includes('network')) {
+        displayStatus = 'network-error';
+        tooltip = 'Network connection issue. Please check your internet connection.';
+      } else if (displayStatus.includes('permission')) {
+        displayStatus = 'permission-denied';
+        tooltip = 'Permission denied. Please check phone number format and service authorization.';
+      } else if (displayStatus.includes('timeout')) {
+        displayStatus = 'timeout';
+        tooltip = 'Request timed out. The system will automatically retry.';
+      } else {
+        tooltip = 'Call failed to complete. See logs for details.';
+      }
+    } else if (displayStatus === 'busy') {
+      tooltip = 'Recipient was busy. Try again later.';
+    } else if (displayStatus === 'no-answer') {
+      tooltip = 'Call was not answered. Try again later.';
+    } else if (displayStatus === 'completed') {
+      tooltip = 'Call completed successfully.';
+    } else if (displayStatus === 'in-progress' || displayStatus === 'ringing') {
+      tooltip = 'Call is currently active.';
+    } else if (displayStatus === 'queued' || displayStatus === 'scheduled') {
+      tooltip = 'Call is waiting to be processed.';
     }
+    
+    // Use error details if provided (overrides default tooltip)
+    if (errorDetails) {
+      tooltip = errorDetails;
+    }
+    
+    // Render badge with appropriate styling and tooltip
+    const badge = (() => {
+      switch (displayStatus) {
+        case 'completed':
+          return <Badge className="bg-green-600"><CheckCircle className="h-3 w-3 mr-1" /> Completed</Badge>;
+        
+        // Error states with specific styling
+        case 'failed':
+          return <Badge variant="destructive"><XCircle className="h-3 w-3 mr-1" /> Failed</Badge>;
+        case 'audio-failed':
+          return <Badge variant="destructive"><XCircle className="h-3 w-3 mr-1" /> Audio Failed</Badge>;
+        case 'network-error':
+          return <Badge variant="destructive"><XCircle className="h-3 w-3 mr-1" /> Network Error</Badge>;
+        case 'permission-denied':
+          return <Badge variant="destructive"><XCircle className="h-3 w-3 mr-1" /> Permission Denied</Badge>;
+        case 'timeout':
+          return <Badge variant="destructive"><XCircle className="h-3 w-3 mr-1" /> Timeout</Badge>;
+        
+        // Call states
+        case 'busy':
+          return <Badge variant="destructive"><Phone className="h-3 w-3 mr-1" /> Busy</Badge>;
+        case 'no-answer':
+          return <Badge variant="destructive"><Phone className="h-3 w-3 mr-1" /> No Answer</Badge>;
+        case 'in-progress':
+        case 'ringing':
+          return <Badge className="bg-blue-600"><Phone className="h-3 w-3 mr-1 animate-pulse" /> {displayStatus === 'in-progress' ? 'In Progress' : 'Ringing'}</Badge>;
+        case 'queued':
+        case 'scheduled':
+          return <Badge variant="outline" className="border-amber-500 text-amber-500"><Clock className="h-3 w-3 mr-1" /> {displayStatus === 'queued' ? 'Queued' : 'Scheduled'}</Badge>;
+        
+        // Default/unknown status
+        default:
+          return <Badge variant="secondary">{status}</Badge>;
+      }
+    })();
+    
+    // Add tooltip if we have one
+    return tooltip ? (
+      <div className="relative group">
+        {badge}
+        <div className="absolute z-10 invisible group-hover:visible bg-black text-white text-xs rounded p-2 -mt-2 min-w-[200px] max-w-xs text-center">
+          {tooltip}
+        </div>
+      </div>
+    ) : badge;
   };
   
   // Format time for display
@@ -618,7 +688,7 @@ export default function AICaller() {
                         {callHistory.map((call: CallRecord) => (
                           <TableRow key={call.id}>
                             <TableCell>{formatPhoneNumber(call.to)}</TableCell>
-                            <TableCell>{getStatusBadge(call.status)}</TableCell>
+                            <TableCell>{getStatusBadge(call.status, call.errorDetails)}</TableCell>
                             <TableCell>{call.persona}</TableCell>
                             <TableCell>
                               {call.duration ? `${Math.round(call.duration)}s` : '-'}
