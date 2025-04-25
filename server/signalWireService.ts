@@ -169,14 +169,15 @@ export async function makeOutboundCall(request: PhoneCallRequest): Promise<CallR
     const lamlUrl = `${baseUrl}/api/signalwire-laml/${tempCallId}`;
     console.log('Using URL to serve LAML:', lamlUrl);
     
-    // Make the actual call using URL approach instead of inline LAML
+    // Try direct LAML instead of URL approach
+    console.log('Switching to direct LAML approach instead of URL...');
     const call = await client.calls.create({
       to: cleanToNumber,
       from: cleanFromNumber,
-      url: lamlUrl,        // Use URL instead of inline LAML
-      method: 'GET',       // Method to retrieve the LAML
+      twiml: laml,         // Use inline LAML directly
       statusCallback,
-      statusCallbackMethod: 'POST'
+      statusCallbackMethod: 'POST',
+      machineDetection: 'Enable'
     });
     
     // Update record with actual call ID
