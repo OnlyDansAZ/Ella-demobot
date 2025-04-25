@@ -110,6 +110,7 @@ interface CallRecord {
 export default function AICaller() {
   const [testAudio, setTestAudio] = useState<HTMLAudioElement | null>(null);
   const [selectedCall, setSelectedCall] = useState<CallRecord | null>(null);
+  const [mobileMenu, setMobileMenu] = useState<boolean>(false);
   const queryClient = useQueryClient();
   
   // Fetch call history
@@ -481,23 +482,66 @@ export default function AICaller() {
     <div>
       {/* Navigation Header */}
       <div className="bg-gradient-to-r from-[#0D82DA] to-blue-700 text-white py-3 px-4">
-        <div className="container mx-auto flex justify-between items-center">
-          <Link href="/" className="text-white hover:text-blue-200 transition flex items-center">
-            <div className="mr-2 flex items-center">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
-              </svg>
+        <div className="container mx-auto">
+          <div className="flex justify-between items-center">
+            <Link href="/" className="text-white hover:text-blue-200 transition flex items-center">
+              <div className="mr-2 flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
+                </svg>
+              </div>
+              <span>Home</span>
+            </Link>
+            
+            {/* Desktop Navigation */}
+            <div className="hidden md:flex items-center">
+              <Link href="/chat" className="text-white hover:text-blue-200 transition mr-4">
+                Chat with Ella
+              </Link>
+              <Link href="/admin" className="text-white hover:text-blue-200 transition">
+                Admin
+              </Link>
             </div>
-            Home
-          </Link>
-          <div className="flex items-center">
-            <Link href="/chat" className="text-white hover:text-blue-200 transition mr-4">
-              Chat with Ella
-            </Link>
-            <Link href="/admin" className="text-white hover:text-blue-200 transition">
-              Admin
-            </Link>
+            
+            {/* Mobile Navigation Toggle Button */}
+            <div className="md:hidden">
+              <button 
+                onClick={() => setMobileMenu(!mobileMenu)} 
+                className="text-white focus:outline-none"
+                aria-label="Toggle Menu"
+              >
+                {!mobileMenu ? (
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                  </svg>
+                ) : (
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                )}
+              </button>
+            </div>
           </div>
+          
+          {/* Mobile Navigation Menu */}
+          {mobileMenu && (
+            <div className="md:hidden pt-4 border-t border-blue-400 mt-3">
+              <nav>
+                <ul className="flex flex-col space-y-2">
+                  <li>
+                    <Link href="/chat" className="text-white hover:text-blue-200 transition block py-2" onClick={() => setMobileMenu(false)}>
+                      Chat with Ella
+                    </Link>
+                  </li>
+                  <li>
+                    <Link href="/admin" className="text-white hover:text-blue-200 transition block py-2" onClick={() => setMobileMenu(false)}>
+                      Admin
+                    </Link>
+                  </li>
+                </ul>
+              </nav>
+            </div>
+          )}
         </div>
       </div>
       
