@@ -124,26 +124,11 @@ export async function makeOutboundCall(request: PhoneCallRequest): Promise<CallR
     // Create audio URL that SignalWire can access
     const audioUrl = `${baseUrl}/api/signalwire-audio/${audioFilename}`;
     
-    // Create simpler LAML that doesn't rely on streaming audio files
-    // Using only SignalWire's built-in Text-to-Speech for reliability
+    // Create ULTRA simple LAML for maximum compatibility
+    // This is a bare-bones approach to ensure the call connects and speaks
     const laml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <!-- Initial greeting with clear introduction -->
-  <Pause length="1"/>
-  <Say voice="${voiceGender === 'male' ? 'man' : 'woman'}">Hello, this is an important call from YoBot.</Say>
-  <Pause length="1"/>
-  
-  <!-- Deliver the message using SignalWire's text-to-speech (no external audio file) -->
-  <Say voice="${voiceGender === 'male' ? 'man' : 'woman'}">${script}</Say>
-  <Pause length="2"/>
-  
-  <!-- Interactive response gathering with clear instructions -->
-  <Gather input="speech dtmf" timeout="8" action="${baseUrl}/api/phone-call/response" method="POST" hints="yes,no,maybe,tell me more">
-    <Say voice="${voiceGender === 'male' ? 'man' : 'woman'}">I'll wait a moment if you'd like to respond. You can speak now, or press any key on your phone.</Say>
-  </Gather>
-  
-  <!-- Friendly closing message -->
-  <Say voice="${voiceGender === 'male' ? 'man' : 'woman'}">Thank you for your time. You can call this number back at any time to speak with us. Have a wonderful day!</Say>
+  <Say>Hello, this is YoBot calling with an important message. ${script}</Say>
 </Response>`;
     
     // Update call record status

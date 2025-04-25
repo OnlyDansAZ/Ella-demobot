@@ -230,16 +230,21 @@ router.get('/signalwire-laml/:id', (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     
+    console.log(`=================== INCOMING LAML REQUEST ===================`);
+    console.log(`SignalWire is requesting LAML for call ID: ${id}`);
+    console.log(`Request headers:`, req.headers);
+    console.log(`Request query params:`, req.query);
+    
     // Get the LAML from temporary storage
     const laml = getTempLaml(id);
     
     if (!laml) {
-      console.error(`LAML not found for call ID: ${id}`);
+      console.error(`❌ LAML not found for call ID: ${id}`);
       
-      // Return a basic error LAML
+      // Return a basic error LAML - this is super-simplified for maximum reliability
       const errorLaml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Say voice="woman">Sorry, there was an error retrieving call instructions. Please try again later.</Say>
+  <Say voice="woman">I'm sorry, but there was an error with this call. Please try again later.</Say>
 </Response>`;
       
       res.setHeader('Content-Type', 'text/xml');
@@ -247,18 +252,20 @@ router.get('/signalwire-laml/:id', (req: Request, res: Response) => {
     }
     
     // Log that we're serving LAML
-    console.log(`Serving LAML for call ID: ${id}`);
+    console.log(`✅ Successfully serving LAML for call ID: ${id}`);
     
     // Set appropriate content type and send the LAML
     res.setHeader('Content-Type', 'text/xml');
     res.send(laml);
-  } catch (error) {
-    console.error('Error serving LAML:', error);
     
-    // Return a basic error LAML
+    console.log(`LAML response sent successfully for call ID: ${id}`);
+  } catch (error) {
+    console.error('❌ Error serving LAML:', error);
+    
+    // Return a basic error LAML - extremely simple for maximum compatibility
     const errorLaml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Say voice="woman">Sorry, there was an error retrieving call instructions. Please try again later.</Say>
+  <Say>Sorry, there was an error with this call. Please try again later.</Say>
 </Response>`;
     
     res.setHeader('Content-Type', 'text/xml');
