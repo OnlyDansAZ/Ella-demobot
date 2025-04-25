@@ -128,18 +128,29 @@
     "script": "Hello, this is Ella from YoBot. I'm calling to follow up about our recent conversation.",
     "persona": "default",
     "voice": "female",
-    "createdAt": "2025-04-25T02:21:11.312Z",
-    "updatedAt": "2025-04-25T02:21:11.545Z"
+    "createdAt": "2025-04-25T02:21:11.546Z",
+    "updatedAt": "2025-04-25T02:21:11.546Z"
   },
   {
-    "id": "CA3436a5a26e692c64427032083b0db8d3",
+    "id": "CA3f395b624336ec9d702bea2730b8f82c",
     "to": "+16027850165",
     "from": "+14804482956",
     "status": "queued",
     "script": "Hello, this is Ella from YoBot. I'm calling to follow up about our recent conversation.",
     "persona": "default",
     "voice": "female",
-    "createdAt": "2025-04-25T02:21:11.546Z",
-    "updatedAt": "2025-04-25T02:21:11.546Z"
+    "createdAt": "2025-04-25T02:54:24.724Z",
+    "updatedAt": "2025-04-25T02:54:25.016Z"
+  },
+  {
+    "id": "CA3f395b624336ec9d702bea2730b8f82c",
+    "to": "+16027850165",
+    "from": "+14804482956",
+    "status": "queued",
+    "script": "Hello, this is Ella from YoBot. I'm calling to follow up about our recent conversation.",
+    "persona": "default",
+    "voice": "female",
+    "createdAt": "2025-04-25T02:54:25.017Z",
+    "updatedAt": "2025-04-25T02:54:25.017Z"
   }
 ]

@@ -185,23 +185,26 @@ export async function makeOutboundCall(request: PhoneCallRequest): Promise<CallR
     // Use Twilio's built-in TTS for maximum compatibility
     console.log("Using Twilio's built-in TTS for reliable voice delivery");
       
-    // Improve speech quality with SSML
-    const voiceType = request.voice === 'male' ? 'man' : 'woman';
+    // Improve speech quality with enhanced SSML
+    // Use Google voices which sound more natural than the default Twilio voices
+    const voiceType = request.voice === 'male' ? 'Google.en-US-Standard-D' : 'Google.en-US-Standard-F';
+    
+    // Create enhanced SSML with better prosody and more natural speech patterns
     const ssmlScript = `
       <speak>
-        <prosody rate="medium" pitch="medium">
+        <prosody rate="1.1" pitch="+0.5st" volume="loud">
           ${processedScript}
         </prosody>
         
-        <break time="1s"/>
+        <break time="1.2s"/>
         
-        <prosody rate="medium" pitch="medium">
+        <prosody rate="1" pitch="medium">
           Is there anything you'd like me to help you with today?
         </prosody>
         
-        <break time="5s"/>
+        <break time="2s"/>
         
-        <prosody rate="medium" pitch="medium">
+        <prosody rate="0.9" pitch="+0.25st">
           Thank you for your time. If you need to reach us later, please don't hesitate to call back or visit our website. Have a great day!
         </prosody>
       </speak>
