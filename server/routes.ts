@@ -119,6 +119,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
       message: "Thank you for contacting us! We will get back to you soon." 
     });
   });
+  
+  // Voice testing endpoint - allows testing voice directly in browser
+  app.post("/api/test-voice", async (req, res) => {
+    try {
+      const { text, voiceGender, stabilityLevel } = req.body;
+      
+      if (!text) {
+        return res.status(400).json({
+          success: false,
+          message: "Please provide text to speak"
+        });
+      }
+      
+      const { generateSpeech, getVoiceId } = await import('./elevenLabsService');
+      
+      // Use custom parameters if provided
+      const voiceSettings = {
+        stability: stabilityLevel ? parseFloat(stabilityLevel) : 0.30,
+        similarityBoost: 0.80,
+        style: 0.65,
+        useSpeakerBoost: true
+      };
+      
+      // Get appropriate voice ID based on gender preference
+      const voiceId = getVoiceId(voiceGender || 'female');
+      
+      console.log(`Generating test voice sample with ${voiceGender || 'female'} voice and ${voiceSettings.stability} stability`);
+      
+      // Generate speech file
+      const audioFilename = await generateSpeech(text, voiceId, voiceSettings);
+      
+      // Return path to the generated audio
+      return res.json({
+        success: true,
+        audioUrl: `/temp/${audioFilename}`,
+        message: "Voice generated successfully"
+      });
+    } catch (error) {
+      console.error('Error generating test voice:', error);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to generate voice sample",
+        error: error.message
+      });
+    }
+  });
 
   // OpenAI-powered chat API
   app.post("/api/chat", async (req, res) => {
