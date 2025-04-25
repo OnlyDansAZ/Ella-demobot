@@ -189,45 +189,45 @@ export default function LaunchPage() {
                 </div>
               </div>
             </div>
-            <div className="md:w-1/2 flex justify-center">
-              <div className="relative h-[400px] w-[320px] bg-white rounded-lg shadow-xl overflow-hidden transform transition-transform hover:scale-[1.02]">
-                <div className="bg-[#0D82DA] p-4 text-white flex items-center">
-                  <img src={yobotLogo} alt="YoBot Logo" className="h-8 w-8 mr-2 animate-pulse" />
+            <div className="md:w-1/2 flex justify-center mt-8 md:mt-0">
+              <div className="relative w-[300px] sm:w-[320px] h-[380px] sm:h-[400px] bg-white rounded-lg shadow-xl overflow-hidden transform transition-transform hover:scale-[1.02]">
+                <div className="bg-[#0D82DA] p-3 sm:p-4 text-white flex items-center">
+                  <img src={yobotLogo} alt="YoBot Logo" className="h-7 sm:h-8 w-7 sm:w-8 mr-2 animate-pulse" />
                   <div>
                     <p className="font-medium">Ella</p>
                     <p className="text-xs opacity-80">Online now</p>
                   </div>
                 </div>
-                <div className="h-[320px] p-4 bg-gray-50 flex flex-col relative">
+                <div className="h-[300px] sm:h-[320px] p-3 sm:p-4 bg-gray-50 flex flex-col relative">
                   {/* Subtle YoBot face in the background */}
                   <div className="absolute right-0 bottom-0 opacity-5 pointer-events-none">
-                    <img src={yobotLogo} alt="" className="w-32 h-32" />
+                    <img src={yobotLogo} alt="" className="w-24 sm:w-32 h-24 sm:h-32" />
                   </div>
-                  <div className="flex flex-col space-y-3 flex-grow">
-                    <div className="bg-blue-100 text-blue-900 rounded-lg p-3 max-w-[80%] ml-auto transform transition-all hover:scale-[1.03]">
+                  <div className="flex flex-col space-y-2 sm:space-y-3 flex-grow overflow-y-auto scrollbar-thin">
+                    <div className="bg-blue-100 text-blue-900 rounded-lg p-2 sm:p-3 max-w-[80%] text-sm ml-auto transform transition-all hover:scale-[1.03]">
                       Hi there! How can I assist you today?
                     </div>
-                    <div className="bg-blue-100 text-blue-900 rounded-lg p-3 max-w-[80%] ml-auto transform transition-all hover:scale-[1.03]">
+                    <div className="bg-blue-100 text-blue-900 rounded-lg p-2 sm:p-3 max-w-[80%] text-sm ml-auto transform transition-all hover:scale-[1.03]">
                       I can help schedule meetings, answer questions about your business, generate content, and more!
                     </div>
-                    <div className="bg-[#0D82DA] text-white rounded-lg p-3 max-w-[80%] transform transition-all hover:scale-[1.03]">
+                    <div className="bg-[#0D82DA] text-white rounded-lg p-2 sm:p-3 max-w-[80%] text-sm transform transition-all hover:scale-[1.03]">
                       Can you tell me about the Enterprise plan?
                     </div>
-                    <div className="bg-blue-100 text-blue-900 rounded-lg p-3 max-w-[80%] ml-auto transform transition-all hover:scale-[1.03]">
+                    <div className="bg-blue-100 text-blue-900 rounded-lg p-2 sm:p-3 max-w-[80%] text-sm ml-auto transform transition-all hover:scale-[1.03]">
                       Our Enterprise plan includes dedicated deployment, unlimited personas, SSO integration, and a dedicated account manager. Would you like me to schedule a demo with our team?
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 mt-4">
-                    <Link href="/book-demo">
-                      <Button variant="outline" size="sm" className="flex-grow border-[#0D82DA] hover:bg-[#0D82DA] hover:text-white transition-all">
-                        <Calendar className="h-4 w-4 mr-2 text-[#0D82DA] group-hover:text-white" />
-                        Schedule Demo
+                  <div className="flex items-center gap-2 mt-3 sm:mt-4">
+                    <Link href="/book-demo" className="flex-1">
+                      <Button variant="outline" size="sm" className="w-full text-xs sm:text-sm border-[#0D82DA] hover:bg-[#0D82DA] hover:text-white transition-all">
+                        <Calendar className="h-3 sm:h-4 w-3 sm:w-4 mr-1 sm:mr-2 text-[#0D82DA] group-hover:text-white" />
+                        <span className="whitespace-nowrap">Schedule Demo</span>
                       </Button>
                     </Link>
-                    <Link href="/chat">
-                      <Button size="sm" className="flex-grow bg-[#0D82DA] hover:bg-blue-700 transition-all">
-                        <MessageSquare className="h-4 w-4 mr-2" />
-                        Chat with Ella
+                    <Link href="/chat" className="flex-1">
+                      <Button size="sm" className="w-full text-xs sm:text-sm bg-[#0D82DA] hover:bg-blue-700 transition-all">
+                        <MessageSquare className="h-3 sm:h-4 w-3 sm:w-4 mr-1 sm:mr-2" />
+                        <span className="whitespace-nowrap">Chat with Ella</span>
                       </Button>
                     </Link>
                   </div>
@@ -239,16 +239,16 @@ export default function LaunchPage() {
       </section>
 
       {/* Features Section */}
-      <section className="py-20 bg-white">
+      <section className="py-12 sm:py-16 md:py-20 bg-white">
         <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold mb-4">Why Choose <span className="text-[#0D82DA]">Ella</span>?</h2>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+          <div className="text-center mb-10 sm:mb-16">
+            <h2 className="text-2xl sm:text-3xl font-bold mb-3 sm:mb-4">Why Choose <span className="text-[#0D82DA]">Ella</span>?</h2>
+            <p className="text-base sm:text-lg text-gray-600 max-w-2xl mx-auto">
               Ella transforms how your business interacts with clients and manages tasks, delivering measurable ROI through enhanced efficiency and customer satisfaction.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
             <Card className="transition-all hover:shadow-lg hover:-translate-y-1 border-t-4 border-t-[#0D82DA]">
               <CardHeader>
                 <div className="h-14 w-14 rounded-full bg-[#0D82DA]/10 flex items-center justify-center mb-4 transform transition-transform hover:rotate-12">
@@ -349,24 +349,24 @@ export default function LaunchPage() {
       </section>
       
       {/* Testimonial Section */}
-      <section className="py-16 bg-[#0D82DA]/5">
+      <section className="py-10 sm:py-16 bg-[#0D82DA]/5">
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto bg-white rounded-xl shadow-md overflow-hidden">
-            <div className="p-8">
-              <div className="flex items-center mb-6">
-                <div className="h-16 w-16 rounded-full bg-gray-200 mr-4"></div>
-                <div>
-                  <h3 className="text-xl font-bold">Amanda Reynolds</h3>
-                  <p className="text-gray-600">CEO, TechInnovate Solutions</p>
+            <div className="p-4 sm:p-8">
+              <div className="flex flex-col sm:flex-row sm:items-center mb-4 sm:mb-6">
+                <div className="h-14 w-14 sm:h-16 sm:w-16 rounded-full bg-gray-200 mb-3 sm:mb-0 sm:mr-4 mx-auto sm:mx-0"></div>
+                <div className="text-center sm:text-left">
+                  <h3 className="text-lg sm:text-xl font-bold">Amanda Reynolds</h3>
+                  <p className="text-gray-600 text-sm sm:text-base">CEO, TechInnovate Solutions</p>
                 </div>
               </div>
-              <blockquote className="text-xl italic text-gray-800 mb-4">
+              <blockquote className="text-base sm:text-lg md:text-xl italic text-gray-800 mb-4 text-center sm:text-left">
                 "Ella booked my last 9 meetings and never sleeps. Our team's productivity has increased by 30% since we started using her for scheduling and client communications."
               </blockquote>
-              <div className="flex mt-4">
+              <div className="flex mt-4 justify-center sm:justify-start">
                 <div className="flex">
                   {[...Array(5)].map((_, i) => (
-                    <svg key={i} className="h-5 w-5 text-yellow-400 fill-current" viewBox="0 0 24 24">
+                    <svg key={i} className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-400 fill-current" viewBox="0 0 24 24">
                       <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
                     </svg>
                   ))}
@@ -429,7 +429,7 @@ export default function LaunchPage() {
       </section>
 
       {/* CTA Section */}
-      <section className="relative py-20 bg-gradient-to-r from-[#0D82DA] to-indigo-800 text-white overflow-hidden">
+      <section className="relative py-12 sm:py-16 md:py-20 bg-gradient-to-r from-[#0D82DA] to-indigo-800 text-white overflow-hidden">
         {/* Background subtle pattern */}
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-0 left-0 w-full h-full" style={{ 
@@ -439,46 +439,46 @@ export default function LaunchPage() {
         </div>
         
         <div className="container mx-auto px-4 text-center relative z-10">
-          <h2 className="text-3xl md:text-4xl font-bold mb-6 drop-shadow-sm">Ready to transform your business with <span className="bg-white text-[#0D82DA] px-2 py-1 rounded">Ella</span>?</h2>
-          <p className="text-xl max-w-3xl mx-auto mb-8 text-blue-100">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4 sm:mb-6 drop-shadow-sm">Ready to transform your business with <span className="bg-white text-[#0D82DA] px-2 py-1 rounded">Ella</span>?</h2>
+          <p className="text-base sm:text-lg md:text-xl max-w-3xl mx-auto mb-6 sm:mb-8 text-blue-100">
             Book a live tour with Ella and see how our AI assistant can revolutionize your customer interactions and business operations.
           </p>
           <Button 
             size="lg" 
-            className="bg-white text-[#0D82DA] hover:bg-blue-50 transition-transform hover:scale-105 shadow-lg"
+            className="w-full sm:w-auto bg-white text-[#0D82DA] hover:bg-blue-50 transition-transform hover:scale-105 shadow-lg"
             asChild
           >
-            <Link href="/book-demo" className="flex items-center">
+            <Link href="/book-demo" className="flex items-center justify-center">
               <Calendar className="mr-2 h-5 w-5" />
               Book a Live Tour with Ella
             </Link>
           </Button>
-          <div className="mt-10 text-sm text-blue-200 max-w-lg mx-auto">
+          <div className="mt-8 sm:mt-10 text-xs sm:text-sm text-blue-200 max-w-lg mx-auto">
             <p>Your live tour includes a personalized demonstration focused on your specific business needs and a Q&A session with our team.</p>
           </div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="py-10 bg-indigo-950 text-white">
+      <footer className="py-8 sm:py-10 bg-indigo-950 text-white">
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row justify-between items-center mb-6">
             <div className="mb-6 md:mb-0">
-              <img src={yobotFullLogo} alt="YoBot Logo" className="h-32 md:h-24 drop-shadow-md" />
+              <img src={yobotFullLogo} alt="YoBot Logo" className="h-24 sm:h-28 md:h-24 drop-shadow-md" />
             </div>
-            <div className="flex gap-6">
+            <div className="flex flex-wrap justify-center gap-4 sm:gap-6">
               <Link href="/about" className="text-indigo-300 hover:text-white transition-colors">About</Link>
               <Link href="/privacy" className="text-indigo-300 hover:text-white transition-colors">Privacy</Link>
               <Link href="/terms" className="text-indigo-300 hover:text-white transition-colors">Terms</Link>
               <Link href="/contact" className="text-indigo-300 hover:text-white transition-colors">Contact</Link>
             </div>
           </div>
-          <Separator className="my-6 bg-indigo-800" />
+          <Separator className="my-4 sm:my-6 bg-indigo-800" />
           <div className="text-center">
-            <div className="mb-3 font-medium text-blue-400">
+            <div className="mb-2 sm:mb-3 font-medium text-blue-400 text-sm sm:text-base">
               Powered by YoBot® | <span className="italic">Engage Smarter, Not Harder™</span>
             </div>
-            <div className="text-indigo-400 text-sm">
+            <div className="text-indigo-400 text-xs sm:text-sm">
               &copy; {new Date().getFullYear()} YoBot AI, Inc. All rights reserved.
             </div>
           </div>
