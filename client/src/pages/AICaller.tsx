@@ -484,21 +484,34 @@ export default function AICaller() {
       <div className="bg-gradient-to-r from-[#0D82DA] to-blue-700 text-white py-3 px-4">
         <div className="container mx-auto">
           <div className="flex justify-between items-center">
-            <Link href="/" className="text-white hover:text-blue-200 transition flex items-center">
+            <Link href="/" className="text-white hover:text-blue-200 transition flex items-center py-2 px-2">
               <div className="mr-2 flex items-center">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                   <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
                 </svg>
               </div>
-              <span>Home</span>
+              <span className="text-base">Home</span>
             </Link>
+
+            {/* Mobile Navigation Buttons */}
+            <div className="flex md:hidden items-center">
+              <Link 
+                href="/chat" 
+                className="text-white bg-blue-600/50 hover:bg-blue-600 transition px-3 py-2 rounded-md text-sm mr-2 flex items-center"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                </svg>
+                Chat
+              </Link>
+            </div>
             
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center">
-              <Link href="/chat" className="text-white hover:text-blue-200 transition mr-4">
+              <Link href="/chat" className="text-white hover:text-blue-200 transition mr-4 py-2 px-1">
                 Chat with Ella
               </Link>
-              <Link href="/admin" className="text-white hover:text-blue-200 transition">
+              <Link href="/admin" className="text-white hover:text-blue-200 transition py-2 px-1">
                 Admin
               </Link>
             </div>
@@ -527,14 +540,30 @@ export default function AICaller() {
           {mobileMenu && (
             <div className="md:hidden pt-4 border-t border-blue-400 mt-3">
               <nav>
-                <ul className="flex flex-col space-y-2">
+                <ul className="flex flex-col space-y-3">
                   <li>
-                    <Link href="/chat" className="text-white hover:text-blue-200 transition block py-2" onClick={() => setMobileMenu(false)}>
+                    <Link href="/" className="text-white hover:text-blue-200 transition flex items-center py-2.5 px-2 rounded-md bg-blue-800/30" onClick={() => setMobileMenu(false)}>
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
+                      </svg>
+                      Home
+                    </Link>
+                  </li>
+                  <li>
+                    <Link href="/chat" className="text-white hover:text-blue-200 transition flex items-center py-2.5 px-2 rounded-md bg-blue-800/30" onClick={() => setMobileMenu(false)}>
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                      </svg>
                       Chat with Ella
                     </Link>
                   </li>
                   <li>
-                    <Link href="/admin" className="text-white hover:text-blue-200 transition block py-2" onClick={() => setMobileMenu(false)}>
+                    <Link href="/admin" className="text-white hover:text-blue-200 transition flex items-center py-2.5 px-2 rounded-md bg-blue-800/30" onClick={() => setMobileMenu(false)}>
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                        <line x1="3" y1="9" x2="21" y2="9"></line>
+                        <line x1="9" y1="21" x2="9" y2="9"></line>
+                      </svg>
                       Admin
                     </Link>
                   </li>
@@ -556,9 +585,9 @@ export default function AICaller() {
         </div>
       
       <Tabs defaultValue="make-call" className="w-full">
-        <TabsList className="mb-4">
-          <TabsTrigger value="make-call">Make a Call</TabsTrigger>
-          <TabsTrigger value="call-history">Call History</TabsTrigger>
+        <TabsList className="mb-4 w-full">
+          <TabsTrigger className="text-base py-2.5 flex-1" value="make-call">Make a Call</TabsTrigger>
+          <TabsTrigger className="text-base py-2.5 flex-1" value="call-history">Call History</TabsTrigger>
         </TabsList>
         
         <TabsContent value="make-call">
