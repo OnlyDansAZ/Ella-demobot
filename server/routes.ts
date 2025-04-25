@@ -1,11 +1,10 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-// @ts-ignore
-import ElevenLabs from "elevenlabs-node";
 import fs from 'fs-extra';
 import path from 'path';
 import os from 'os';
+import fetch from 'node-fetch';
 import { generateResponse, getFallbackResponse, generateImage } from './openai';
 import documentRoutes from './routes/documentRoutes';
 import calendlyRouter from './routes/calendlyRoutes';
@@ -351,18 +350,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const voiceId = speechOptions.voiceId || "KgleQSAupUuS391XuXpI";
       
       try {
-        console.log(`Generating speech with ElevenLabs for persona: ${personaName}`);
+        console.log(`Generating speech with ElevenLabs direct API for persona: ${personaName}`);
         
         // Check if ElevenLabs API key is available
         if (!ELEVENLABS_API_KEY) {
           throw new Error("ElevenLabs API key is not configured or missing");
         }
-        
-        // Initialize ElevenLabs with the API key from environment
-        const elevenLabs = new ElevenLabs({
-          apiKey: ELEVENLABS_API_KEY,
-          voiceId: voiceId
-        });
         
         // Configure speech parameters with either persona-specific, user-provided, or defaults
         const stability = speechOptions.stability !== undefined ? speechOptions.stability : 0.5;
@@ -374,49 +367,84 @@ export async function registerRoutes(app: Express): Promise<Server> {
           stability, similarityBoost, style, useSpeakerBoost 
         });
         
-        // Generate audio from ElevenLabs with persona-specific options
-        let result;
+        // Process text to improve speech readability
+        const processedText = text
+          .replace(/•\s*/g, "")      // Remove bullet points completely
+          .replace(/\*/g, "")        // Remove asterisks completely
+          .replace(/-\s+/g, "")      // Remove hyphens followed by whitespace
+          .replace(/^\s*-\s*/gm, "") // Remove hyphens at the beginning of each line
+          .replace(/\n\s*-\s*/g, "\n") // Replace newline-hyphen patterns with just newlines
+          .replace(/\n+/g, ". ");    // Replace multiple newlines with periods to improve speech flow
+        
+        // Make a direct API call to ElevenLabs
         try {
-          result = await elevenLabs.textToSpeech({
-            textInput: text,
-            fileName: tempFile,
-            stability,
-            similarityBoost,
-            style,
-            speakerBoost: useSpeakerBoost,
-            // Use modelId for the newest model if available
-            modelId: "eleven_turbo_v2"
+          const url = `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`;
+          
+          const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+              'Accept': 'audio/mpeg',
+              'Content-Type': 'application/json',
+              'xi-api-key': ELEVENLABS_API_KEY
+            },
+            body: JSON.stringify({
+              text: processedText,
+              model_id: "eleven_multilingual_v2", // Use latest model
+              voice_settings: {
+                stability: stability,
+                similarity_boost: similarityBoost,
+                style: style,
+                use_speaker_boost: useSpeakerBoost
+              }
+            })
           });
           
-          console.log("ElevenLabs response:", result);
+          // Handle API response errors
+          if (!response.ok) {
+            let errorText = '';
+            try {
+              const errorData = await response.json();
+              errorText = JSON.stringify(errorData);
+            } catch (e) {
+              errorText = await response.text();
+            }
+            
+            throw new Error(`ElevenLabs API error (${response.status}): ${errorText}`);
+          }
+          
+          // Get audio as buffer
+          const audioData = await response.arrayBuffer();
+          
+          // Check if we got a valid audio response
+          if (!audioData || audioData.byteLength === 0) {
+            throw new Error('Received empty audio response from ElevenLabs');
+          }
+          
+          console.log(`Received audio response: ${audioData.byteLength} bytes`);
+          
+          // Save the audio to a temporary file
+          await fs.writeFile(tempFile, Buffer.from(audioData));
+          
+          // Read back the audio file for response
+          const responseData = await fs.readFile(tempFile);
+          
+          if (!responseData || responseData.length === 0) {
+            throw new Error("Generated audio file is empty or invalid");
+          }
+          
+          // Set appropriate headers for audio streaming
+          res.setHeader('Content-Type', 'audio/mpeg');
+          res.setHeader('Cache-Control', 'no-cache');
+          
+          // Send the audio data
+          res.send(responseData);
+          
+          // Clean up the temp file after sending
+          await fs.remove(tempFile).catch((err: any) => console.error('Error removing temp file:', err));
         } catch (speechError) {
           console.error("Failed to generate speech with ElevenLabs:", speechError);
           throw new Error(`ElevenLabs API error: ${speechError instanceof Error ? speechError.message : String(speechError)}`);
         }
-        
-        // Read the audio file
-        let audioData;
-        try {
-          audioData = await fs.readFile(tempFile);
-        } catch (fileError) {
-          console.error("Failed to read generated audio file:", fileError);
-          throw new Error(`Could not read generated audio file: ${fileError instanceof Error ? fileError.message : String(fileError)}`);
-        }
-        
-        // Verify we have audio data
-        if (!audioData || audioData.length === 0) {
-          throw new Error("Generated audio file is empty or invalid");
-        }
-        
-        // Set appropriate headers for audio streaming
-        res.setHeader('Content-Type', 'audio/mpeg');
-        res.setHeader('Cache-Control', 'no-cache');
-        
-        // Send the audio data
-        res.send(audioData);
-        
-        // Clean up the temp file after sending
-        await fs.remove(tempFile).catch((err: any) => console.error('Error removing temp file:', err));
       } catch (error) {
         console.error("ElevenLabs API error:", error);
         res.status(500).json({ 
