@@ -12,14 +12,20 @@ import appointmentRoutes from './routes/appointmentRoutes';
 import conversationRoutes from './routes/conversationRoutes';
 import personaRoutes from './routes/personaRoutes';
 import { personaManager } from './personaManager';
-// Import the advanced Twilio service with ElevenLabs integration
-import twilioAdvancedRoutes from './routes/twilioAdvancedRoutes';
+// Import the SignalWire service with ElevenLabs integration
+import signalWireRoutes from './routes/signalWireRoutes';
 import { ELEVENLABS_AUDIO_DIR, cleanupOldAudioFiles } from './elevenLabsService';
-import { initTwilioClient } from './twilioAdvanced';
+import { getClient } from './signalWireClient';
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Initialize Twilio client for phone calls and SMS
-  initTwilioClient();
+  // Initialize SignalWire client for phone calls and SMS
+  try {
+    await getClient();
+    console.log('SignalWire client initialized');
+  } catch (error) {
+    console.error('Warning: SignalWire client initialization failed:', error);
+    console.log('Will use mock client for development if needed');
+  }
   
   // Clean up old audio files on startup
   cleanupOldAudioFiles();
@@ -44,9 +50,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Persona management routes
   app.use("/api/personas", personaRoutes);
   
-  // Twilio phone call routes
-  // Use the advanced Twilio implementation with ElevenLabs
-  app.use("/api", twilioAdvancedRoutes);
+  // SignalWire phone call routes
+  // Use the SignalWire implementation with ElevenLabs
+  app.use("/api", signalWireRoutes);
   
   // Serve temporary audio files for Twilio calls
   app.get("/temp/:filename", (req, res) => {
