@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Card,
@@ -8,6 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import LiveTranscript from '@/components/LiveTranscript';
 import {
   Form,
   FormControl,
@@ -107,6 +108,7 @@ interface CallRecord {
 
 export default function AICaller() {
   const [testAudio, setTestAudio] = useState<HTMLAudioElement | null>(null);
+  const [selectedCall, setSelectedCall] = useState<CallRecord | null>(null);
   const queryClient = useQueryClient();
   
   // Fetch call history
