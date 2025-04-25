@@ -399,15 +399,56 @@ export async function makeOutboundCall(request: PhoneCallRequest): Promise<CallR
   } catch (error) {
     console.error('Error making outbound call with SignalWire:', error);
     
-    // Create a failed call record for tracking
+    // Determine error type and extract details
+    let errorType = 'unknown-error';
+    let errorMessage = 'An unknown error occurred';
+    let errorCode = '';
+    
+    if (error instanceof Error) {
+      errorMessage = error.message;
+      
+      // Categorize the error for better user feedback
+      if (error.message.includes('ElevenLabs')) {
+        errorType = 'audio-generation-failed';
+      } else if (error.message.includes('network') || error.message.includes('timeout')) {
+        errorType = 'network-error';
+      } else if (error.message.includes('auth') || error.message.includes('token') || 
+                error.message.includes('key') || error.message.includes('permission')) {
+        errorType = 'permission-denied';
+      } else if (error.message.includes('not found') || error.message.includes('404')) {
+        errorType = 'resource-not-found';
+      } else if (error.message.includes('rate limit') || error.message.includes('429')) {
+        errorType = 'rate-limited';
+      }
+      
+      // Extract error code if available
+      const codeMatch = error.message.match(/\((\d+)\)/);
+      if (codeMatch && codeMatch[1]) {
+        errorCode = codeMatch[1];
+      }
+    }
+    
+    // Calculate time elapsed since start
+    const elapsedMs = Date.now() - startTime;
+    const elapsedSec = Math.round(elapsedMs / 1000);
+    
+    // Create detailed error message with troubleshooting info
+    const detailedError = `${errorMessage}. Error occurred after ${elapsedSec}s. SessionID: ${sessionId}`;
+    
+    // Log the detailed error for debugging
+    console.error(`[${new Date().toISOString()}] [SESSION:${sessionId}] [ERROR] Call failed: ${detailedError}`);
+    
+    // Create a failed call record with enhanced error information
     const failedCall: CallRecord = {
       id: `failed_${Date.now()}`,
       to: request.to,
       from: process.env.SIGNALWIRE_PHONE_NUMBER || 'unknown',
-      status: 'failed',
+      status: `failed-${errorType}`,
       script: request.script,
       persona: request.persona || 'default',
       voice: request.voice || 'female',
+      errorDetails: detailedError,
+      errorCode: errorCode,
       createdAt: new Date(),
       updatedAt: new Date(),
       scheduledTime: request.scheduledTime
@@ -424,8 +465,20 @@ export async function makeOutboundCall(request: PhoneCallRequest): Promise<CallR
 /**
  * Handle SignalWire call status callback
  * This is very similar to the Twilio callback handler
+ * Enhanced with better error handling and detail tracking
  */
-export function handleStatusCallback(callSid: string, status: string, duration?: string, recordingUrl?: string): CallRecord | undefined {
+export function handleStatusCallback(
+  callSid: string, 
+  status: string, 
+  duration?: string, 
+  recordingUrl?: string,
+  errorType?: string,
+  errorCode?: string,
+  errorMessage?: string
+): CallRecord | undefined {
+  const sessionId = `callback_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+  console.log(`[${new Date().toISOString()}] [SESSION:${sessionId}] Processing status callback: SID ${callSid}, status ${status}`);
+  
   try {
     // Create updates object with provided data
     const updates: Partial<CallRecord> = { updatedAt: new Date() };
@@ -436,17 +489,67 @@ export function handleStatusCallback(callSid: string, status: string, duration?:
       if (!isNaN(durationNum)) {
         updates.duration = durationNum;
       }
+      console.log(`[${new Date().toISOString()}] [SESSION:${sessionId}] Call duration: ${durationNum}s`);
     }
     
     // Add recording URL if provided
     if (recordingUrl) {
       updates.recordingUrl = recordingUrl;
+      console.log(`[${new Date().toISOString()}] [SESSION:${sessionId}] Recording URL available: ${recordingUrl}`);
+    }
+    
+    // Handle error information if status indicates failure
+    if (status.toLowerCase().includes('failed') || 
+        status.toLowerCase() === 'busy' || 
+        status.toLowerCase() === 'no-answer') {
+      
+      // Create error details string
+      let errorDetails = '';
+      
+      if (errorMessage) {
+        errorDetails = errorMessage;
+      } else {
+        // Create a default error message based on status
+        switch (status.toLowerCase()) {
+          case 'busy':
+            errorDetails = 'The recipient was busy. Try again later.';
+            break;
+          case 'no-answer':
+            errorDetails = 'The call was not answered. Try again later.';
+            break;
+          case 'failed':
+            errorDetails = 'The call failed to connect. Please check the phone number and try again.';
+            break;
+          default:
+            if (status.toLowerCase().includes('failed')) {
+              errorDetails = `Call failed with status: ${status}`;
+            }
+        }
+      }
+      
+      // Add error information to the updates
+      if (errorDetails) {
+        updates.errorDetails = errorDetails;
+        console.log(`[${new Date().toISOString()}] [SESSION:${sessionId}] Error details: ${errorDetails}`);
+      }
+      
+      if (errorCode) {
+        updates.errorCode = errorCode;
+        console.log(`[${new Date().toISOString()}] [SESSION:${sessionId}] Error code: ${errorCode}`);
+      }
+      
+      // Add error type for better categorization in UI
+      if (errorType) {
+        updates.errorCode = errorType;
+      }
     }
     
     // Update the call record
+    console.log(`[${new Date().toISOString()}] [SESSION:${sessionId}] Updating call status to: ${status}`);
     return callRecordStorage.updateCallStatus(callSid, status, updates);
   } catch (error) {
-    console.error('Error handling status callback:', error);
+    console.error(`[${new Date().toISOString()}] [SESSION:${sessionId}] [ERROR] Error handling status callback:`, 
+      error instanceof Error ? error.message : 'Unknown error');
     return undefined;
   }
 }

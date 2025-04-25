@@ -36,10 +36,13 @@ export interface CallRecord {
   voice: string;
   duration?: number;
   recordingUrl?: string;
+  errorDetails?: string;     // For detailed error messages
+  errorCode?: string;        // For error codes or status codes
+  retryCount?: number;       // For tracking automatic retry attempts
   createdAt: Date;
   updatedAt: Date;
   scheduledTime?: Date;
-  notes?: string[]; // Array of notes about the call
+  notes?: string[];          // Array of notes about the call
 }
 
 // File-backed call records storage

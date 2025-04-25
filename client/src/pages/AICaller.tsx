@@ -711,7 +711,7 @@ export default function AICaller() {
                               <p className="text-sm text-gray-500">{call.persona}</p>
                             </div>
                             <div className="text-right">
-                              {getStatusBadge(call.status)}
+                              {getStatusBadge(call.status, call.errorDetails)}
                             </div>
                           </div>
                           <div className="flex justify-between text-sm mt-2 pt-2 border-t border-gray-100">
