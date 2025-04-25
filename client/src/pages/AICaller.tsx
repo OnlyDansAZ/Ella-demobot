@@ -737,7 +737,11 @@ export default function AICaller() {
                       </TableHeader>
                       <TableBody>
                         {callHistory.map((call: CallRecord) => (
-                          <TableRow key={call.id}>
+                          <TableRow 
+                            key={call.id} 
+                            className={`cursor-pointer hover:bg-gray-50 ${selectedCall?.id === call.id ? 'bg-blue-50' : ''}`}
+                            onClick={() => setSelectedCall(call)}
+                          >
                             <TableCell>{formatPhoneNumber(call.to)}</TableCell>
                             <TableCell>{getStatusBadge(call.status, call.errorDetails, call.errorCode)}</TableCell>
                             <TableCell>{call.persona}</TableCell>
@@ -754,7 +758,11 @@ export default function AICaller() {
                   {/* Mobile card view */}
                   <div className="md:hidden space-y-4">
                     {callHistory.map((call: CallRecord) => (
-                      <Card key={call.id} className="mb-4">
+                      <Card 
+                        key={call.id} 
+                        className={`mb-4 cursor-pointer ${selectedCall?.id === call.id ? 'border-blue-400' : ''}`}
+                        onClick={() => setSelectedCall(call)}
+                      >
                         <CardContent className="pt-4">
                           <div className="flex justify-between items-start mb-2">
                             <div>
@@ -780,6 +788,78 @@ export default function AICaller() {
                 </div>
               )}
             </CardContent>
+
+            {/* Show transcript for selected call */}
+            {selectedCall && (
+              <div className="mt-4 p-4">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-lg font-semibold">
+                    Call Details: {formatPhoneNumber(selectedCall.to)}
+                  </h3>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => setSelectedCall(null)}
+                  >
+                    Close
+                  </Button>
+                </div>
+                
+                <div className="grid md:grid-cols-2 gap-4">
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-lg">Call Information</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-2 text-sm">
+                      <div className="grid grid-cols-2 gap-1">
+                        <div className="font-medium">Status:</div>
+                        <div>{getStatusBadge(selectedCall.status, selectedCall.errorDetails, selectedCall.errorCode)}</div>
+                        
+                        <div className="font-medium">To:</div>
+                        <div>{formatPhoneNumber(selectedCall.to)}</div>
+                        
+                        <div className="font-medium">From:</div>
+                        <div>{formatPhoneNumber(selectedCall.from)}</div>
+                        
+                        <div className="font-medium">Persona:</div>
+                        <div>{selectedCall.persona}</div>
+                        
+                        <div className="font-medium">Voice:</div>
+                        <div>{selectedCall.voice === 'female' ? 'Female' : 'Male'}</div>
+                        
+                        <div className="font-medium">Created:</div>
+                        <div>{new Date(selectedCall.createdAt).toLocaleString()}</div>
+                        
+                        <div className="font-medium">Duration:</div>
+                        <div>{selectedCall.duration ? `${Math.round(selectedCall.duration)} seconds` : 'Not completed'}</div>
+                        
+                        {selectedCall.errorDetails && (
+                          <>
+                            <div className="font-medium">Error:</div>
+                            <div className="text-red-600">{selectedCall.errorDetails}</div>
+                          </>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                  
+                  <div>
+                    <LiveTranscript 
+                      callId={selectedCall.id} 
+                      callStatus={selectedCall.status} 
+                      highlightKeywords={['appointment', 'schedule', 'interested', 'declined', 'price', 'pricing', 'yes', 'no']}
+                    />
+                  </div>
+                </div>
+                
+                <div className="mt-4">
+                  <h4 className="font-medium mb-2">Call Script</h4>
+                  <div className="bg-gray-50 p-3 rounded border text-sm whitespace-pre-wrap">
+                    {selectedCall.script}
+                  </div>
+                </div>
+              </div>
+            )}
           </Card>
         </TabsContent>
       </Tabs>
