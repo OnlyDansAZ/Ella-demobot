@@ -16,6 +16,7 @@ import { personaManager } from './personaManager';
 import signalWireRoutes from './routes/signalWireRoutes';
 import { ELEVENLABS_AUDIO_DIR, cleanupOldAudioFiles } from './elevenLabsService';
 import { getClient } from './signalWireClient';
+import { WebSocketServer, WebSocket } from 'ws';
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Initialize SignalWire client for phone calls and SMS
@@ -591,6 +592,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   const httpServer = createServer(app);
-
+  
+  // Create WebSocket server for real-time updates
+  const wss = new WebSocketServer({ server: httpServer, path: '/ws' });
+  
+  // Store active connections in a set
+  const activeConnections = new Set<WebSocket>();
+  
+  // WebSocket connection handler
+  wss.on('connection', (ws) => {
+    console.log('WebSocket client connected');
+    
+    // Add to active connections
+    activeConnections.add(ws);
+    
+    // Send initial message
+    ws.send(JSON.stringify({
+      type: 'connected',
+      message: 'Connected to YoBot real-time updates'
+    }));
+    
+    // Handle messages from client
+    ws.on('message', (message) => {
+      try {
+        const data = JSON.parse(message.toString());
+        console.log('Received WebSocket message:', data);
+        
+        // Handle subscription to call updates
+        if (data.type === 'subscribe' && data.callId) {
+          console.log(`Client subscribed to call updates for call ID: ${data.callId}`);
+          
+          // Store callId in the WebSocket object for future reference
+          (ws as any).subscribedCallId = data.callId;
+          
+          // Send confirmation
+          ws.send(JSON.stringify({
+            type: 'subscribed',
+            callId: data.callId
+          }));
+        }
+      } catch (error) {
+        console.error('Error handling WebSocket message:', error);
+      }
+    });
+    
+    // Handle client disconnect
+    ws.on('close', () => {
+      console.log('WebSocket client disconnected');
+      activeConnections.delete(ws);
+    });
+  });
+  
+  // Export the active connections set so other parts of the app can send updates
+  (global as any).websocketConnections = activeConnections;
+  
   return httpServer;
 }

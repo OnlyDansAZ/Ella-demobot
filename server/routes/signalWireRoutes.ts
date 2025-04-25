@@ -1,7 +1,8 @@
 import express, { Request, Response } from 'express';
 import fs from 'fs';
 import path from 'path';
-import { CallRecord, callRecordStorage } from '../twilioAdvanced';
+import { WebSocket } from 'ws';
+import { CallRecord, callRecordStorage, TranscriptEntry } from '../twilioAdvanced';
 import { 
   getCallHistory, 
   getCallRecord,
@@ -9,6 +10,10 @@ import {
 } from '../twilioAdvanced';  // We'll keep using the same call history storage
 import { generateSpeech, getVoiceId, ELEVENLABS_AUDIO_DIR } from '../elevenLabsService';
 import { makeOutboundCall, handleStatusCallback, PhoneCallRequest, getTempLaml } from '../signalWireService';
+
+// In-memory store of active call transcripts for WebSocket updates
+// Maps call SID to array of transcript entries
+const activeCallTranscripts = new Map<string, TranscriptEntry[]>();
 
 const router = express.Router();
 
@@ -500,6 +505,130 @@ router.get('/signalwire-audio/:filename', (req: Request, res: Response) => {
   } catch (error) {
     console.error('Error serving SignalWire audio file:', error);
     res.status(500).json({ error: 'Failed to serve audio file' });
+  }
+});
+
+/**
+ * Handle transcription callback from SignalWire
+ * This endpoint receives real-time transcription data during calls
+ * POST /api/phone-call/transcription
+ */
+router.post('/phone-call/transcription', (req: Request, res: Response) => {
+  try {
+    console.log('🔊 TRANSCRIPTION DATA RECEIVED:', req.body);
+    
+    const { 
+      CallSid,
+      TranscriptionText,
+      TranscriptionStatus,
+      TranscriptionConfidence,
+      TranscriptionSid,
+      RecordingSid,
+    } = req.body;
+    
+    if (!CallSid || !TranscriptionText) {
+      console.warn('Missing required transcription data', req.body);
+      return res.status(400).json({ error: 'Invalid transcription data' });
+    }
+    
+    // Format confidence value
+    let confidence = 0.7;  // Default confidence if not provided
+    if (TranscriptionConfidence) {
+      try {
+        confidence = parseFloat(TranscriptionConfidence);
+        // Ensure it's in the range 0-1
+        confidence = Math.max(0, Math.min(1, confidence));
+      } catch (e) {
+        console.warn('Failed to parse transcription confidence:', TranscriptionConfidence);
+      }
+    }
+    
+    // Create a transcript entry
+    const transcriptEntry: TranscriptEntry = {
+      timestamp: new Date().toISOString(),
+      speaker: 'user',  // Assume it's the user speaking (we know system prompts)
+      text: TranscriptionText,
+      confidence: confidence
+    };
+    
+    console.log(`Call ${CallSid} transcript: "${TranscriptionText}" (confidence: ${confidence})`);
+    
+    // Get the current call record
+    const callRecord = callRecordStorage.getCall(CallSid);
+    
+    if (!callRecord) {
+      console.warn(`Call record not found for SID ${CallSid}`);
+      return res.status(404).json({ error: 'Call record not found' });
+    }
+    
+    // Initialize or update the transcript array for this call
+    const transcript = callRecord.transcript || [];
+    transcript.push(transcriptEntry);
+    
+    // Update the call record
+    callRecordStorage.updateCallStatus(CallSid, callRecord.status, {
+      transcript,
+      updatedAt: new Date()
+    });
+    
+    // Store in the active call transcripts map for real-time updates
+    const activeTranscript = activeCallTranscripts.get(CallSid) || [];
+    activeTranscript.push(transcriptEntry);
+    activeCallTranscripts.set(CallSid, activeTranscript);
+    
+    // Send real-time update via WebSocket if available
+    try {
+      const activeConnections = (global as any).websocketConnections;
+      if (activeConnections) {
+        // Broadcast to all clients who have subscribed to this call
+        activeConnections.forEach((client: WebSocket) => {
+          if ((client as any).subscribedCallId === CallSid && client.readyState === WebSocket.OPEN) {
+            client.send(JSON.stringify({
+              type: 'transcript',
+              callId: CallSid,
+              entry: transcriptEntry
+            }));
+          }
+        });
+      }
+    } catch (wsError) {
+      console.error('Error sending WebSocket update:', wsError);
+    }
+    
+    // Respond with a simple success message
+    res.json({ 
+      success: true,
+      transcriptEntry
+    });
+  } catch (error) {
+    console.error('Error processing transcription callback:', error);
+    return res.status(500).json({ 
+      error: error instanceof Error ? error.message : 'Unknown error occurred'
+    });
+  }
+});
+
+/**
+ * Get the transcript for a specific call
+ * GET /api/phone-call/:id/transcript
+ */
+router.get('/phone-call/:id/transcript', (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const call = getCallRecord(id);
+    
+    if (!call) {
+      return res.status(404).json({ error: 'Call record not found' });
+    }
+    
+    return res.json({
+      success: true,
+      callId: id,
+      transcript: call.transcript || []
+    });
+  } catch (error) {
+    console.error('Error getting call transcript:', error);
+    return res.status(500).json({ error: 'Internal server error' });
   }
 });
 
