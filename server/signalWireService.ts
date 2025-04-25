@@ -72,6 +72,19 @@ export async function makeOutboundCall(request: PhoneCallRequest): Promise<CallR
       }
     }
     
+    // Log the callback URL we're using
+    console.log(`Using callback base URL: ${baseUrl} for audio files and status callbacks`);
+    
+    // Verify that the URL has a valid format
+    try {
+      new URL(baseUrl);
+    } catch (urlError) {
+      console.error(`Invalid base URL format: ${baseUrl}`);
+      // Attempt to use a fallback URL if the current one is invalid
+      baseUrl = 'https://workspace.replit.app';
+      console.log(`Using fallback URL: ${baseUrl}`);
+    }
+    
     console.log(`Using base URL for callbacks and audio: ${baseUrl}`);
     
     // Generate the audio file with ElevenLabs

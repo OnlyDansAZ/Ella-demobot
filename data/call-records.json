@@ -260,17 +260,6 @@
     "script": "Hello, this is Ella from YoBot. I'm calling to follow up about our recent conversation.",
     "persona": "default",
     "voice": "female",
-    "createdAt": "2025-04-25T08:46:13.931Z",
-    "updatedAt": "2025-04-25T08:46:14.408Z"
-  },
-  {
-    "id": "mock_call_1745570774408",
-    "to": "+16027850165",
-    "from": "+1 (602) 731-2050",
-    "status": "queued",
-    "script": "Hello, this is Ella from YoBot. I'm calling to follow up about our recent conversation.",
-    "persona": "default",
-    "voice": "female",
     "createdAt": "2025-04-25T08:46:14.408Z",
     "updatedAt": "2025-04-25T08:46:14.408Z"
   },
@@ -282,18 +271,51 @@
     "script": "Hello, this is Ella from YoBot. I'm calling to follow up about our recent conversation.",
     "persona": "default",
     "voice": "female",
-    "createdAt": "2025-04-25T08:46:45.176Z",
-    "updatedAt": "2025-04-25T08:46:45.605Z"
+    "createdAt": "2025-04-25T08:46:45.607Z",
+    "updatedAt": "2025-04-25T08:46:45.607Z"
   },
   {
-    "id": "mock_call_1745570805605",
+    "id": "temp_1745571046568",
     "to": "+16027850165",
     "from": "+1 (602) 731-2050",
-    "status": "queued",
+    "status": "initiating",
     "script": "Hello, this is Ella from YoBot. I'm calling to follow up about our recent conversation.",
     "persona": "default",
     "voice": "female",
-    "createdAt": "2025-04-25T08:46:45.607Z",
-    "updatedAt": "2025-04-25T08:46:45.607Z"
+    "createdAt": "2025-04-25T08:50:46.568Z",
+    "updatedAt": "2025-04-25T08:50:47.111Z"
+  },
+  {
+    "id": "failed_1745571047299",
+    "to": "+16027850165",
+    "from": "+1 (602) 731-2050",
+    "status": "failed",
+    "script": "Hello, this is Ella from YoBot. I'm calling to follow up about our recent conversation.",
+    "persona": "default",
+    "voice": "female",
+    "createdAt": "2025-04-25T08:50:47.299Z",
+    "updatedAt": "2025-04-25T08:50:47.299Z"
+  },
+  {
+    "id": "temp_1745571082002",
+    "to": "+16027850165",
+    "from": "+1 (602) 731-2050",
+    "status": "initiating",
+    "script": "Hello, this is Ella from YoBot. I'm calling to follow up about our recent conversation.",
+    "persona": "default",
+    "voice": "female",
+    "createdAt": "2025-04-25T08:51:22.002Z",
+    "updatedAt": "2025-04-25T08:51:22.455Z"
+  },
+  {
+    "id": "failed_1745571082520",
+    "to": "+16027850165",
+    "from": "+1 (602) 731-2050",
+    "status": "failed",
+    "script": "Hello, this is Ella from YoBot. I'm calling to follow up about our recent conversation.",
+    "persona": "default",
+    "voice": "female",
+    "createdAt": "2025-04-25T08:51:22.520Z",
+    "updatedAt": "2025-04-25T08:51:22.520Z"
   }
 ]

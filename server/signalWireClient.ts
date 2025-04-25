@@ -64,22 +64,39 @@ export async function createClient(): Promise<SignalWireClient> {
           
           try {
             // Create auth string for Basic Authentication
-            const auth = Buffer.from(
-              `${process.env.SIGNALWIRE_PROJECT_ID}:${process.env.SIGNALWIRE_TOKEN}`
-            ).toString('base64');
+            // Print credentials for debugging (masked for security)
+            const projectId = process.env.SIGNALWIRE_PROJECT_ID || '';
+            const token = process.env.SIGNALWIRE_TOKEN || '';
+            const spaceUrl = process.env.SIGNALWIRE_SPACE_URL || '';
+            
+            console.log('Using SignalWire credentials:');
+            console.log('- Project ID:', projectId.substring(0, 4) + '********');
+            console.log('- Token:', token.substring(0, 4) + '********');
+            console.log('- Space URL:', spaceUrl);
+            
+            const auth = Buffer.from(`${projectId}:${token}`).toString('base64');
+            
+            // Generate the API URL
+            // SignalWire space URLs should be formatted as "{space}.signalwire.com"
+            const formattedSpaceUrl = spaceUrl.includes('.signalwire.com') 
+              ? spaceUrl 
+              : `${spaceUrl}.signalwire.com`;
+            
+            const apiUrl = `https://${formattedSpaceUrl}/api/laml/2010-04-01/Accounts/${projectId}/Calls.json`;
+            console.log('Making API call to:', apiUrl);
             
             // Make the API call
-            const response = await fetch(
-              `https://${process.env.SIGNALWIRE_SPACE_URL}/api/laml/2010-04-01/Accounts/${process.env.SIGNALWIRE_PROJECT_ID}/Calls.json`,
-              {
-                method: 'POST',
-                headers: {
-                  'Authorization': `Basic ${auth}`,
-                  'Content-Type': 'application/x-www-form-urlencoded',
-                },
-                body: new URLSearchParams(requestBody as any).toString()
-              }
-            );
+            const formData = new URLSearchParams(requestBody as any).toString();
+            console.log('Request body (form data):', formData);
+            
+            const response = await fetch(apiUrl, {
+              method: 'POST',
+              headers: {
+                'Authorization': `Basic ${auth}`,
+                'Content-Type': 'application/x-www-form-urlencoded',
+              },
+              body: formData
+            });
             
             if (!response.ok) {
               const errorText = await response.text();
@@ -107,29 +124,46 @@ export async function createClient(): Promise<SignalWireClient> {
           
           try {
             // Create auth string for Basic Authentication
-            const auth = Buffer.from(
-              `${process.env.SIGNALWIRE_PROJECT_ID}:${process.env.SIGNALWIRE_TOKEN}`
-            ).toString('base64');
+            // Print credentials for debugging (masked for security)
+            const projectId = process.env.SIGNALWIRE_PROJECT_ID || '';
+            const token = process.env.SIGNALWIRE_TOKEN || '';
+            const spaceUrl = process.env.SIGNALWIRE_SPACE_URL || '';
+            
+            console.log('Using SignalWire credentials for SMS:');
+            console.log('- Project ID:', projectId.substring(0, 4) + '********');
+            console.log('- Token:', token.substring(0, 4) + '********');
+            console.log('- Space URL:', spaceUrl);
+            
+            const auth = Buffer.from(`${projectId}:${token}`).toString('base64');
             
             // Format the request body
-            const requestBody = {
+            const requestBody: Record<string, any> = {
               To: params.to,
               From: params.from,
               Body: params.body
             };
             
+            // Generate the API URL
+            // SignalWire space URLs should be formatted as "{space}.signalwire.com"
+            const formattedSpaceUrl = spaceUrl.includes('.signalwire.com') 
+              ? spaceUrl 
+              : `${spaceUrl}.signalwire.com`;
+            
+            const apiUrl = `https://${formattedSpaceUrl}/api/laml/2010-04-01/Accounts/${projectId}/Messages.json`;
+            console.log('Making SMS API call to:', apiUrl);
+            
             // Make the API call
-            const response = await fetch(
-              `https://${process.env.SIGNALWIRE_SPACE_URL}/api/laml/2010-04-01/Accounts/${process.env.SIGNALWIRE_PROJECT_ID}/Messages.json`,
-              {
-                method: 'POST',
-                headers: {
-                  'Authorization': `Basic ${auth}`,
-                  'Content-Type': 'application/x-www-form-urlencoded',
-                },
-                body: new URLSearchParams(requestBody).toString()
-              }
-            );
+            const formData = new URLSearchParams(requestBody).toString();
+            console.log('Request body (form data):', formData);
+            
+            const response = await fetch(apiUrl, {
+              method: 'POST',
+              headers: {
+                'Authorization': `Basic ${auth}`,
+                'Content-Type': 'application/x-www-form-urlencoded',
+              },
+              body: formData
+            });
             
             if (!response.ok) {
               const errorText = await response.text();
