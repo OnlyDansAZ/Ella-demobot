@@ -169,40 +169,91 @@ export async function makeOutboundCall(request: PhoneCallRequest): Promise<CallR
     const lamlUrl = `${baseUrl}/api/signalwire-laml/${tempCallId}`;
     console.log('Using URL to serve LAML:', lamlUrl);
     
-    // Try direct LAML instead of URL approach with the correct parameter name
-    console.log('Switching to direct LAML approach instead of URL...');
+    // *** DIRECT HTTP APPROACH ***
+    // Completely different approach - direct HTTP request instead of SDK
+    console.log('Making direct HTTP request to SignalWire API...');
     console.log('LAML content:', laml);
-    const call = await client.calls.create({
-      to: cleanToNumber,
-      from: cleanFromNumber,
-      Laml: laml,        // Use correct parameter name (capital 'L')
-      statusCallback,
-      statusCallbackMethod: 'POST',
-      machineDetection: 'Enable'
-    });
     
-    // Update record with actual call ID
-    const callStatus = call.status || 'queued';
-    callRecordStorage.updateCallStatus(tempCallId, callStatus, {
-      id: call.sid,
-      updatedAt: new Date()
-    });
+    // Prepare the API endpoint 
+    const projectId = process.env.SIGNALWIRE_PROJECT_ID;
+    const spaceUrl = process.env.SIGNALWIRE_SPACE_URL;
+    const apiEndpoint = `https://${spaceUrl}.signalwire.com/api/laml/2010-04-01/Accounts/${projectId}/Calls.json`;
     
-    // Create final call record with actual data
-    const callRecord: CallRecord = {
-      id: call.sid,
-      to,
-      from: process.env.SIGNALWIRE_PHONE_NUMBER || 'unknown',
-      status: callStatus,
-      script,
-      persona,
-      voice,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      scheduledTime
-    };
+    // Prepare form data for the API call
+    const formData = new URLSearchParams();
+    formData.append('To', cleanToNumber);
+    formData.append('From', cleanFromNumber);
+    formData.append('Twiml', laml);
+    formData.append('StatusCallback', statusCallback);
+    formData.append('StatusCallbackMethod', 'POST');
+    formData.append('Timeout', '60');  // 60 seconds before we give up ringing
+    formData.append('MachineDetection', 'Enable');
+    formData.append('IfMachine', 'Continue');
+    formData.append('Record', 'false');
     
-    return callRecordStorage.saveCall(callRecord);
+    console.log('Making API call to:', apiEndpoint);
+    console.log('Request body (form data):', formData.toString());
+    
+    // Log credentials (partially masked)
+    console.log('Using SignalWire credentials:');
+    console.log('- Project ID:', projectId ? `${projectId.substring(0, 5)}********` : 'undefined');
+    console.log('- Token:', process.env.SIGNALWIRE_TOKEN ? `${process.env.SIGNALWIRE_TOKEN.substring(0, 5)}********` : 'undefined');
+    console.log('- Space URL:', spaceUrl);
+    
+    try {
+      // Make the API call
+      const auth = Buffer.from(`${projectId}:${process.env.SIGNALWIRE_TOKEN}`).toString('base64');
+      
+      const response = await fetch(apiEndpoint, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Basic ${auth}`,
+          'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: formData.toString()
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Error making direct SignalWire API call:', errorText);
+        throw new Error(`SignalWire API error (${response.status}): ${errorText}`);
+      }
+      
+      const callData = await response.json();
+      console.log('SignalWire call created successfully:', callData.sid);
+      
+      // Create a call object that matches the expected format
+      const call = {
+        sid: callData.sid,
+        status: callData.status
+      };
+      
+      // Update record with actual call ID
+      const callStatus = call.status || 'queued';
+      callRecordStorage.updateCallStatus(tempCallId, callStatus, {
+        id: call.sid,
+        updatedAt: new Date()
+      });
+      
+      // Create final call record with actual data
+      const callRecord: CallRecord = {
+        id: call.sid,
+        to,
+        from: process.env.SIGNALWIRE_PHONE_NUMBER || 'unknown',
+        status: callStatus,
+        script,
+        persona,
+        voice,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        scheduledTime
+      };
+      
+      return callRecordStorage.saveCall(callRecord);
+    } catch (error: any) {
+      console.error('Error in direct API call to SignalWire:', error);
+      throw new Error(`Failed to create call: ${error.message || 'Unknown error'}`);
+    }
   } catch (error) {
     console.error('Error making outbound call with SignalWire:', error);
     
@@ -218,8 +269,6 @@ export async function makeOutboundCall(request: PhoneCallRequest): Promise<CallR
       createdAt: new Date(),
       updatedAt: new Date(),
       scheduledTime: request.scheduledTime
-      // Note: We can't add an error property as it's not in the CallRecord type
-      // We'll log the error separately
     };
     
     // Log the error separately for debugging
