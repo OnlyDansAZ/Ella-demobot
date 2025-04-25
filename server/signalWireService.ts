@@ -134,9 +134,19 @@ export async function makeOutboundCall(request: PhoneCallRequest): Promise<CallR
     const statusCallback = callbackUrl ? `${baseUrl}${callbackUrl}` : `${baseUrl}/api/phone-call/status-callback`;
     
     // Ensure phone numbers are in the correct format
-    // SignalWire is very picky about the formatting
+    // SignalWire is very picky about the formatting - must be E.164 format
     const cleanToNumber = to.replace(/[\s()]/g, '');
-    const cleanFromNumber = (process.env.SIGNALWIRE_PHONE_NUMBER || '').replace(/[\s()]/g, '');
+    
+    // Get the from number and make sure it's in E.164 format
+    let cleanFromNumber = (process.env.SIGNALWIRE_PHONE_NUMBER || '').replace(/[\s()]/g, '');
+    
+    // Make sure it starts with '+' for E.164 format
+    if (!cleanFromNumber.startsWith('+')) {
+      cleanFromNumber = '+' + cleanFromNumber;
+    }
+    
+    // Remove any dashes or other non-digit characters except the leading +
+    cleanFromNumber = '+' + cleanFromNumber.replace(/[^\d]/g, '');
     
     console.log('Making outbound call with phone numbers:');
     console.log('- To:', cleanToNumber);
@@ -242,15 +252,35 @@ export async function sendSMS(to: string, body: string, from?: string): Promise<
     });
     
     // Set from number to configured SignalWire number if not provided
-    const fromNumber = from || process.env.SIGNALWIRE_PHONE_NUMBER;
+    let fromNumber = from || process.env.SIGNALWIRE_PHONE_NUMBER;
     
     if (!fromNumber) {
       throw new Error('No from number provided and SIGNALWIRE_PHONE_NUMBER not set');
     }
     
-    // Send the message
+    // Format for E.164 compliance
+    fromNumber = fromNumber.replace(/[\s()]/g, '');
+    if (!fromNumber.startsWith('+')) {
+      fromNumber = '+' + fromNumber;
+    }
+    // Remove any dashes or other non-digit characters except the leading +
+    fromNumber = '+' + fromNumber.replace(/[^\d]/g, '');
+    
+    // Format the destination number
+    let toNumber = to.replace(/[\s()]/g, '');
+    if (!toNumber.startsWith('+')) {
+      toNumber = '+' + toNumber;
+    }
+    // Remove any dashes or other non-digit characters except the leading +
+    toNumber = '+' + toNumber.replace(/[^\d]/g, '');
+    
+    console.log('Sending SMS with phone numbers:');
+    console.log('- To:', toNumber);
+    console.log('- From:', fromNumber);
+    
+    // Send the message using the properly formatted numbers
     const message = await client.messages.create({
-      to,
+      to: toNumber,
       from: fromNumber,
       body
     });
