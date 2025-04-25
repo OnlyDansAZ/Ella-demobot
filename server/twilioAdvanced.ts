@@ -190,45 +190,17 @@ export async function makeOutboundCall(request: PhoneCallRequest): Promise<CallR
     // Save the temporary record so UI shows something immediately
     callRecordStorage.saveCall(tempCallRecord);
     
-    // Generate audio file with ElevenLabs
-    log('Generating audio with ElevenLabs for phone call...');
+    // For reliability in the current environment, we're going to use
+    // Twilio's built-in TTS capabilities instead of trying to stream ElevenLabs audio
+    log('Using Twilio TTS for outbound call');
     
     // Determine voice gender based on request
     const voiceGender = request.voice === 'male' ? 'male' : 'female';
-    const elevenlabsVoiceId = getVoiceId(voiceGender);
     
-    // Generate the speech audio file
-    const audioFileName = await generateSpeech(
-      request.script,
-      elevenlabsVoiceId,
-      {
-        stability: 0.35,           // Lower for more natural speech pattern variation
-        similarityBoost: 0.75,     // Higher for more consistent voice
-        style: 0.6,                // Moderate style injection
-        useSpeakerBoost: true      // Enhance speaker clarity
-      }
-    );
-    
-    // Update call record to show audio generated
-    callRecordStorage.updateCallStatus(tempCallId, 'audio-ready', {
+    // Update call record to show we're ready to make the call
+    callRecordStorage.updateCallStatus(tempCallId, 'ready', {
       updatedAt: new Date()
     });
-    
-    // Create full URL to the audio file that Twilio can access
-    // For production, this needs to be a publicly accessible URL
-    // For development, you might need to use a service like ngrok to expose localhost
-    let baseUrl = process.env.PUBLIC_URL;
-    
-    // If no PUBLIC_URL is set, try to use the server's hostname
-    if (!baseUrl) {
-      baseUrl = `https://${process.env.REPL_SLUG}.replit.app`;
-      log(`No PUBLIC_URL defined, using Replit URL: ${baseUrl}`);
-    }
-    
-    // Use our special Twilio audio endpoint which is optimized for serving audio files to Twilio
-    const audioUrl = `${baseUrl}/api/twilio-audio/${audioFileName}`;
-    
-    log(`Using audio URL: ${audioUrl}`);
     
     // Create a simplified TwiML response to just play the audio
     // This removes complexity that might be causing issues
@@ -322,10 +294,15 @@ export async function makeOutboundCall(request: PhoneCallRequest): Promise<CallR
     }
     
     // Rethrow the error with a friendly message for the client
-    const errorDetails = 
-      (error && typeof error === 'object' && 'message' in error && typeof error.message === 'string') 
-        ? error.message 
-        : 'Failed to initiate the call. Please check your connection and try again.';
+    let errorDetails = 'Failed to initiate the call. Please check your connection and try again.';
+    
+    // Type guard to safely extract error message
+    if (error && typeof error === 'object') {
+      if ('message' in error && typeof (error as {message: unknown}).message === 'string') {
+        errorDetails = (error as {message: string}).message;
+      }
+    }
+    
     throw new Error(errorDetails);
   }
 }
