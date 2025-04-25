@@ -154,20 +154,38 @@ export default function AICaller() {
   
   // Mutation to make a phone call
   const makeCallMutation = useMutation({
-    mutationFn: (values: PhoneCallFormValues) => apiRequest('/api/phone-call', 'POST', values),
-    onSuccess: () => {
+    mutationFn: (values: PhoneCallFormValues) => {
+      // Simple validation before making the API call
+      const phoneNumber = values.to.trim();
+      if (!phoneNumber.match(/^\+?[1-9]\d{1,14}$/)) {
+        throw new Error("Please enter a valid international phone number");
+      }
+      
+      if (values.script.trim().length < 20) {
+        throw new Error("Please enter a longer script message (at least 20 characters)");
+      }
+      
+      return apiRequest('/api/phone-call', 'POST', values);
+    },
+    onSuccess: (data) => {
       toast({
         title: "Call initiated",
-        description: "Your call is being processed",
+        description: "Your call is being processed. Check the Call History tab for status updates.",
       });
       queryClient.invalidateQueries({ queryKey: ['/api/phone-call/history'] });
       // Don't reset the form so the user can make multiple calls with the same script
       form.setValue('to', '');
+      
+      // Set a timeout to refresh the call history again after a few seconds
+      // This helps show updated call statuses without manual refresh
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ['/api/phone-call/history'] });
+      }, 5000);
     },
     onError: (error) => {
       toast({
         title: "Call failed",
-        description: error instanceof Error ? error.message : "An error occurred",
+        description: error instanceof Error ? error.message : "An error occurred with your request. Please check your connection and try again.",
         variant: "destructive",
       });
     },
@@ -179,30 +197,44 @@ export default function AICaller() {
       const voice = form.getValues('voice');
       const persona = form.getValues('persona');
       
-      const response = await fetch('/api/speech', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          text,
-          personaId: persona,
-          options: {
-            stability: 0.5,
-            similarityBoost: 0.8,
-            style: 0.5,
-            useSpeakerBoost: true,
+      try {
+        const response = await fetch('/api/speech', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
           },
-        }),
-      });
-      
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to generate speech');
+          body: JSON.stringify({
+            text,
+            personaId: persona,
+            options: {
+              stability: 0.5,
+              similarityBoost: 0.8,
+              style: 0.5,
+              useSpeakerBoost: true,
+            },
+          }),
+          // Adding a timeout to prevent hanging indefinitely
+          signal: AbortSignal.timeout(15000),
+        });
+        
+        if (!response.ok) {
+          try {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to generate speech');
+          } catch (e) {
+            // If can't parse as JSON, use status text
+            throw new Error(`Speech generation failed: ${response.statusText || response.status}`);
+          }
+        }
+        
+        const blob = await response.blob();
+        return URL.createObjectURL(blob);
+      } catch (err) {
+        if (err.name === 'AbortError') {
+          throw new Error('Speech generation timed out. Please try again.');
+        }
+        throw err;
       }
-      
-      const blob = await response.blob();
-      return URL.createObjectURL(blob);
     },
     onSuccess: (audioUrl) => {
       if (testAudio) {
@@ -210,14 +242,37 @@ export default function AICaller() {
         testAudio.src = '';
       }
       
+      toast({
+        title: "Script ready",
+        description: "Playing the preview of how this will sound on a call",
+      });
+      
       const audio = new Audio(audioUrl);
+      
+      // Add error handling for audio playback
+      audio.onerror = (e) => {
+        toast({
+          title: "Audio playback failed",
+          description: "Could not play the audio. Please try again.",
+          variant: "destructive",
+        });
+      };
+      
       setTestAudio(audio);
-      audio.play();
+      audio.play().catch(err => {
+        toast({
+          title: "Audio playback failed",
+          description: err.message || "Failed to play audio. Check your browser settings.",
+          variant: "destructive",
+        });
+      });
     },
     onError: (error) => {
       toast({
         title: "Speech generation failed",
-        description: error instanceof Error ? error.message : "An error occurred",
+        description: error instanceof Error 
+          ? error.message 
+          : "Failed to generate speech. This could be due to a network issue or service unavailability.",
         variant: "destructive",
       });
     },
@@ -301,11 +356,11 @@ export default function AICaller() {
   };
   
   return (
-    <div className="container mx-auto py-10 px-4">
-      <div className="flex flex-col md:flex-row justify-between items-center mb-8">
+    <div className="container mx-auto py-6 sm:py-10 px-4">
+      <div className="flex flex-col md:flex-row justify-between items-center mb-6 sm:mb-8">
         <div>
-          <h1 className="text-3xl font-bold mb-2">AI Phone Calls</h1>
-          <p className="text-gray-600 max-w-2xl">
+          <h1 className="text-2xl sm:text-3xl font-bold mb-2">AI Phone Calls</h1>
+          <p className="text-gray-600 max-w-2xl text-sm sm:text-base">
             Let Ella make outbound calls to follow up with leads, confirm appointments, or deliver personalized messages.
           </p>
         </div>
@@ -545,31 +600,63 @@ export default function AICaller() {
                   <p>Switch to the "Make a Call" tab to place your first AI call.</p>
                 </div>
               ) : (
-                <Table>
-                  <TableCaption>List of recent outbound calls</TableCaption>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Recipient</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Persona</TableHead>
-                      <TableHead>Duration</TableHead>
-                      <TableHead>Time</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
+                <div>
+                  {/* Desktop table view */}
+                  <div className="hidden md:block">
+                    <Table>
+                      <TableCaption>List of recent outbound calls</TableCaption>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Recipient</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Persona</TableHead>
+                          <TableHead>Duration</TableHead>
+                          <TableHead>Time</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {callHistory.map((call: CallRecord) => (
+                          <TableRow key={call.id}>
+                            <TableCell>{formatPhoneNumber(call.to)}</TableCell>
+                            <TableCell>{getStatusBadge(call.status)}</TableCell>
+                            <TableCell>{call.persona}</TableCell>
+                            <TableCell>
+                              {call.duration ? `${Math.round(call.duration)}s` : '-'}
+                            </TableCell>
+                            <TableCell>{formatTimeAgo(call.createdAt)}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                  
+                  {/* Mobile card view */}
+                  <div className="md:hidden space-y-4">
                     {callHistory.map((call: CallRecord) => (
-                      <TableRow key={call.id}>
-                        <TableCell>{formatPhoneNumber(call.to)}</TableCell>
-                        <TableCell>{getStatusBadge(call.status)}</TableCell>
-                        <TableCell>{call.persona}</TableCell>
-                        <TableCell>
-                          {call.duration ? `${Math.round(call.duration)}s` : '-'}
-                        </TableCell>
-                        <TableCell>{formatTimeAgo(call.createdAt)}</TableCell>
-                      </TableRow>
+                      <Card key={call.id} className="mb-4">
+                        <CardContent className="pt-4">
+                          <div className="flex justify-between items-start mb-2">
+                            <div>
+                              <p className="font-medium">{formatPhoneNumber(call.to)}</p>
+                              <p className="text-sm text-gray-500">{call.persona}</p>
+                            </div>
+                            <div className="text-right">
+                              {getStatusBadge(call.status)}
+                            </div>
+                          </div>
+                          <div className="flex justify-between text-sm mt-2 pt-2 border-t border-gray-100">
+                            <div>
+                              {call.duration ? `${Math.round(call.duration)}s` : 'No duration'}
+                            </div>
+                            <div className="text-gray-500">
+                              {formatTimeAgo(call.createdAt)}
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
                     ))}
-                  </TableBody>
-                </Table>
+                  </div>
+                </div>
               )}
             </CardContent>
           </Card>
