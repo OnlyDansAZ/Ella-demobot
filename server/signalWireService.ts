@@ -383,6 +383,24 @@ export async function makeOutboundCall(
         updatedAt: new Date()
       });
       
+      // Initialize the conversation session with the appropriate persona
+      // Note: We use the call SID as the session ID for memory management
+      try {
+        // Import modules here to avoid circular dependencies
+        const { personaManager } = require('./personaManager');
+        const { conversationStorage } = require('./conversationStorage');
+        
+        // Set the persona for this call session
+        personaManager.setSessionPersona(call.sid, persona);
+        
+        // Create an initial conversation session
+        await conversationStorage.getOrCreateSession(call.sid);
+        
+        console.log(`[${new Date().toISOString()}] [SESSION:${sessionId}] Initialized conversation with persona "${persona}" and memory mode "${personaManager.getSessionPersona(call.sid).memoryMode}"`);
+      } catch (memoryError) {
+        console.error(`[${new Date().toISOString()}] [SESSION:${sessionId}] [ERROR] Failed to initialize conversation memory:`, memoryError);
+      }
+      
       // Create final call record with actual data
       const callRecord: CallRecord = {
         id: call.sid,
