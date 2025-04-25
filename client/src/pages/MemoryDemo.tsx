@@ -23,6 +23,12 @@ interface Persona {
   memoryMode: 'persistent' | 'stateless';
 }
 
+// For simulating opposite memory mode in the demo
+interface MemoryModeOverride {
+  personaId: string;
+  overrideMode: 'persistent' | 'stateless';
+}
+
 export default function MemoryDemo() {
   const { toast } = useToast();
   const [message, setMessage] = useState('');
@@ -31,6 +37,7 @@ export default function MemoryDemo() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [selectedPersona, setSelectedPersona] = useState<string>('');
   const [sessionId, setSessionId] = useState('');
+  const [memoryOverride, setMemoryOverride] = useState<MemoryModeOverride | null>(null);
 
   // Generate a unique session ID on component mount
   useEffect(() => {
@@ -127,10 +134,18 @@ export default function MemoryDemo() {
       setMessages(prev => [...prev, userMessage]);
       setMessage('');
       
-      // Send the message to the API
-      const response = await apiRequest('POST', `/api/session/${sessionId}/messages`, {
+      // Prepare request payload
+      const requestPayload: any = {
         content: userMessage.content,
-      });
+      };
+      
+      // If we have a memory mode override for the current persona, add it to the request
+      if (memoryOverride && memoryOverride.personaId === selectedPersona) {
+        requestPayload.memoryModeOverride = memoryOverride.overrideMode;
+      }
+      
+      // Send the message to the API with optional memory mode override
+      const response = await apiRequest('POST', `/api/session/${sessionId}/messages`, requestPayload);
       
       if (!response.ok) {
         throw new Error(`Failed to send message: ${response.status}`);
@@ -175,6 +190,39 @@ export default function MemoryDemo() {
       setLoading(false);
     }
   };
+  
+  // Toggle memory mode for demo purposes
+  const toggleMemoryMode = () => {
+    if (!selectedPersona) return;
+    
+    const currentPersona = personas.find(p => p.id === selectedPersona);
+    if (!currentPersona) return;
+    
+    // If we already have an override, remove it
+    if (memoryOverride && memoryOverride.personaId === selectedPersona) {
+      setMemoryOverride(null);
+      toast({
+        title: "Memory Mode Reset",
+        description: `Reverted to original ${currentPersona.memoryMode} memory mode.`,
+      });
+      return;
+    }
+    
+    // Create an override with the opposite memory mode
+    const oppositeMode = currentPersona.memoryMode === 'persistent' ? 'stateless' : 'persistent';
+    setMemoryOverride({
+      personaId: selectedPersona,
+      overrideMode: oppositeMode
+    });
+    
+    // Clear messages when switching to demonstrate the effect
+    setMessages([]);
+    
+    toast({
+      title: "Memory Mode Changed",
+      description: `Switched from ${currentPersona.memoryMode} to ${oppositeMode} memory mode for demo purposes.`,
+    });
+  };
 
   return (
     <div className="container py-8 max-w-4xl mx-auto">
@@ -217,11 +265,20 @@ export default function MemoryDemo() {
                       <div className="text-sm text-muted-foreground">{persona.description}</div>
                       <div className="mt-1">
                         <span className={`text-xs px-2 py-1 rounded-full ${
-                          persona.memoryMode === 'stateless' 
-                            ? 'bg-orange-100 text-orange-800' 
-                            : 'bg-green-100 text-green-800'
+                          // Show override memory mode if applicable
+                          (memoryOverride && memoryOverride.personaId === persona.id)
+                            ? (memoryOverride.overrideMode === 'stateless' 
+                                ? 'bg-orange-100 text-orange-800' 
+                                : 'bg-green-100 text-green-800')
+                            : (persona.memoryMode === 'stateless' 
+                                ? 'bg-orange-100 text-orange-800' 
+                                : 'bg-green-100 text-green-800')
                         }`}>
-                          {persona.memoryMode.toUpperCase()} MEMORY
+                          {/* Show override memory mode if applicable */}
+                          {memoryOverride && memoryOverride.personaId === persona.id 
+                            ? `${memoryOverride.overrideMode.toUpperCase()} MEMORY (DEMO)`
+                            : `${persona.memoryMode.toUpperCase()} MEMORY`
+                          }
                         </span>
                       </div>
                     </div>
@@ -229,7 +286,7 @@ export default function MemoryDemo() {
                 </div>
               )}
             </CardContent>
-            <CardFooter>
+            <CardFooter className="flex flex-col gap-2">
               <Button 
                 onClick={handleResetMemory} 
                 variant="outline" 
@@ -238,6 +295,28 @@ export default function MemoryDemo() {
               >
                 Reset Memory
               </Button>
+              
+              {/* Toggle Memory Mode Button - For Demo Purposes */}
+              {selectedPersona && (
+                <Button
+                  onClick={toggleMemoryMode}
+                  variant={memoryOverride && memoryOverride.personaId === selectedPersona ? "default" : "secondary"}
+                  className="w-full"
+                  disabled={loading}
+                  size="sm"
+                >
+                  <span className="mr-2">🔄</span>
+                  {memoryOverride && memoryOverride.personaId === selectedPersona
+                    ? "Revert Memory Mode"
+                    : "Toggle Memory Mode (Demo)"
+                  }
+                </Button>
+              )}
+              {selectedPersona && (
+                <div className="text-xs text-center text-muted-foreground mt-1">
+                  <p>Demo feature: Switch between memory modes with the same persona</p>
+                </div>
+              )}
             </CardFooter>
           </Card>
         </div>
@@ -250,7 +329,10 @@ export default function MemoryDemo() {
                 {selectedPersona && personas.find(p => p.id === selectedPersona)?.name || 'Chat'}
                 {selectedPersona && (
                   <span className="ml-2 text-sm font-normal">
-                    ({personas.find(p => p.id === selectedPersona)?.memoryMode} memory)
+                    ({memoryOverride && memoryOverride.personaId === selectedPersona
+                      ? `${memoryOverride.overrideMode} memory (demo)` 
+                      : `${personas.find(p => p.id === selectedPersona)?.memoryMode} memory`
+                    })
                   </span>
                 )}
               </CardTitle>
@@ -259,8 +341,44 @@ export default function MemoryDemo() {
             <CardContent className="flex-grow overflow-auto">
               <div className="space-y-4 mb-4 min-h-[300px]">
                 {messages.length === 0 ? (
-                  <div className="text-center py-12 text-muted-foreground">
-                    No messages yet. Start a conversation!
+                  <div className="flex flex-col items-center py-8">
+                    <div className="text-muted-foreground mb-6">
+                      No messages yet. Start a conversation!
+                    </div>
+                    
+                    <div className="text-sm text-muted-foreground mb-3">Try these conversation starters:</div>
+                    <div className="flex flex-wrap gap-2 justify-center max-w-md">
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        onClick={() => {
+                          setMessage("Hello! What's your name?");
+                          setTimeout(() => handleSendMessage(), 100);
+                        }}
+                      >
+                        What's your name?
+                      </Button>
+                      <Button 
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setMessage("Can you remember what we talked about earlier?");
+                          setTimeout(() => handleSendMessage(), 100);
+                        }}
+                      >
+                        Remember our conversation?
+                      </Button>
+                      <Button 
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setMessage("Schedule a demo for me next week");
+                          setTimeout(() => handleSendMessage(), 100);
+                        }}
+                      >
+                        Schedule a demo
+                      </Button>
+                    </div>
                   </div>
                 ) : (
                   messages.map(msg => (
