@@ -13,6 +13,7 @@ import {
   BarChart3,
   Landmark,
   Shield,
+  Phone,
 } from 'lucide-react';
 import {
   Dialog,
@@ -163,8 +164,8 @@ export default function LaunchPage() {
                 <div className="flex gap-4 w-full mt-4">
                   <Link href="/chat?voice=true" className="flex-1">
                     <Button variant="outline" className="w-full bg-transparent border-white text-white hover:bg-white hover:text-[#0D82DA] transition-all hover:scale-105">
-                      <Mic className="mr-2 h-4 w-4" />
-                      Speak to Ella
+                      <Phone className="mr-2 h-4 w-4" />
+                      Make a Call
                     </Button>
                   </Link>
                   <Link href="/chat" className="flex-1">
@@ -207,8 +208,8 @@ export default function LaunchPage() {
                   <div className="flex items-center gap-2 mt-4">
                     <Link href="/chat?voice=true">
                       <Button variant="outline" size="sm" className="flex-grow border-[#0D82DA] hover:bg-[#0D82DA] hover:text-white transition-all">
-                        <Mic className="h-4 w-4 mr-2 text-[#0D82DA] group-hover:text-white" />
-                        Speak to Ella
+                        <Phone className="h-4 w-4 mr-2 text-[#0D82DA] group-hover:text-white" />
+                        Make a Call
                       </Button>
                     </Link>
                     <Link href="/chat">
