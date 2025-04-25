@@ -53,6 +53,14 @@ const Header: React.FC = () => {
             </li>
             <li>
               <Link
+                href="/ai-caller"
+                className="text-white hover:text-blue-200 transition py-2 inline-block mr-3"
+              >
+                Make a Call
+              </Link>
+            </li>
+            <li>
+              <Link
                 href="/chat"
                 className="bg-white text-[#0D82DA] px-4 py-2 rounded-md font-medium hover:bg-blue-100 transition"
               >

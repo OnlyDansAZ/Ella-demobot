@@ -119,6 +119,24 @@ export default function LaunchPage() {
 
   return (
     <div className="flex flex-col min-h-screen">
+      {/* Navigation */}
+      <nav className="absolute top-0 left-0 right-0 z-50 py-4 px-6">
+        <div className="container mx-auto flex justify-between items-center">
+          <div className="flex items-center">
+            <img src={yobotLogo} alt="YoBot Logo" className="h-12 w-12" />
+            <span className="ml-2 text-white font-bold text-xl">YoBot</span>
+          </div>
+          <div className="flex space-x-6">
+            <Link href="/chat" className="text-white hover:text-blue-200 transition-colors">
+              Chat with Ella
+            </Link>
+            <Link href="/ai-caller" className="bg-white text-[#0D82DA] px-4 py-2 rounded-md font-medium hover:bg-blue-100 transition">
+              Make a Call
+            </Link>
+          </div>
+        </div>
+      </nav>
+      
       {/* Hero Section */}
       <section className="relative bg-gradient-to-b from-[#0956a3] via-[#0D82DA] to-[#134b73] text-white overflow-hidden">
         {/* Faint logo watermark in background */}
@@ -126,7 +144,7 @@ export default function LaunchPage() {
           <img src={yobotLogo} alt="YoBot Logo Watermark" className="w-[70%] max-w-[800px]" />
         </div>
         
-        <div className="container mx-auto py-20 px-4 relative z-10">
+        <div className="container mx-auto pt-32 pb-20 px-4 relative z-10">
           <div className="flex flex-col md:flex-row items-center">
             <div className="md:w-1/2 mb-10 md:mb-0">
               <h1 className="text-4xl md:text-6xl font-bold mb-4 group">
