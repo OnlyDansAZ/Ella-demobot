@@ -7,7 +7,7 @@ import {
   getCallRecord 
 } from '../twilioAdvanced';  // We'll keep using the same call history storage
 import { generateSpeech, getVoiceId, ELEVENLABS_AUDIO_DIR } from '../elevenLabsService';
-import { makeOutboundCall, handleStatusCallback, PhoneCallRequest } from '../signalWireService';
+import { makeOutboundCall, handleStatusCallback, PhoneCallRequest, getTempLaml } from '../signalWireService';
 
 const router = express.Router();
 

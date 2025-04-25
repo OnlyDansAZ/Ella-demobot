@@ -4,8 +4,18 @@
  */
 
 import { CallRecord, callRecordStorage } from './twilioAdvanced';
-import { generateSpeech, getVoiceId } from './elevenLabsService';
+import { generateSpeech, getVoiceId, ELEVENLABS_AUDIO_DIR } from './elevenLabsService';
 import { getClient, createMockClient } from './signalWireClient';
+import * as path from 'path';
+import * as fs from 'fs';
+
+// Temporary storage for LAML documents
+// Maps temporary call IDs to LAML XML documents
+// This allows us to serve LAML from a URL endpoint instead of inline
+const tempCallLaml = new Map<string, string>();
+
+// Export for use in routes
+export const getTempLaml = (id: string): string | undefined => tempCallLaml.get(id);
 
 /**
  * Phone call request interface
@@ -167,11 +177,23 @@ export async function makeOutboundCall(request: PhoneCallRequest): Promise<CallR
     console.log('- To:', cleanToNumber);
     console.log('- From:', cleanFromNumber);
     
-    // Make the actual call
+    // Let's try a different approach - use a URL instead of inline LAML
+    // This might improve the call reliability
+    
+    // First, save the LAML to a temporary endpoint that SignalWire can access
+    // This is stored in memory, not in a file
+    tempCallLaml.set(tempCallId, laml);
+    
+    // Create a URL that will serve this LAML when SignalWire requests it
+    const lamlUrl = `${baseUrl}/api/signalwire-laml/${tempCallId}`;
+    console.log('Using URL to serve LAML:', lamlUrl);
+    
+    // Make the actual call using URL approach instead of inline LAML
     const call = await client.calls.create({
       to: cleanToNumber,
       from: cleanFromNumber,
-      laml,
+      url: lamlUrl,        // Use URL instead of inline LAML
+      method: 'GET',       // Method to retrieve the LAML
       statusCallback,
       statusCallbackMethod: 'POST'
     });

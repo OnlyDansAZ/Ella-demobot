@@ -68,8 +68,7 @@ export async function createClient(): Promise<SignalWireClient> {
             MachineDetection: 'Enable', // Detect answering machines/voicemail
             IfMachine: 'Continue',      // Continue call even if answered by machine
             
-            // Attempt to make the call appear more legitimate to carriers
-            SendDigits: '',             // No digits to send after connect
+            // Avoid recording - privacy
             Record: 'false'             // Don't record the call
           };
           

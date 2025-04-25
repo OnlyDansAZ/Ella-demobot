@@ -12,10 +12,22 @@
             "content": "Hello! I'm Ella, your AI assistant. How can I help you today?",
             "isUser": false,
             "timestamp": "2025-04-25T09:15:58.881Z"
+          },
+          {
+            "id": "5f1adfa9-82fa-495a-87e0-644d79127c2e",
+            "content": "number",
+            "isUser": true,
+            "timestamp": "2025-04-25T09:37:33.679Z"
+          },
+          {
+            "id": "aa6df727-4c32-4e07-94b3-f14fc10f6ddc",
+            "content": "It looks like you mentioned \"number,\" but I'm not quite sure what you need help with. Could you provide a bit more detail or context? Whether it's a math problem, a phone number, or something else, I'm here to help!",
+            "isUser": false,
+            "timestamp": "2025-04-25T09:37:40.328Z"
           }
         ],
         "createdAt": "2025-04-23T01:01:18.628Z",
-        "updatedAt": "2025-04-25T09:15:58.881Z"
+        "updatedAt": "2025-04-25T09:37:40.328Z"
       }
     ],
     [
