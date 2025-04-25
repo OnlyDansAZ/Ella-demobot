@@ -18,6 +18,63 @@ const tempCallLaml = new Map<string, string>();
 export const getTempLaml = (id: string): string | undefined => tempCallLaml.get(id);
 
 /**
+ * Utility for masking phone numbers in logs
+ * Converts +15551234567 to +1555***4567
+ */
+function maskPhone(phoneNumber: string): string {
+  if (!phoneNumber) return 'unknown';
+  
+  // Clean the phone number
+  const cleaned = phoneNumber.replace(/\D/g, '');
+  
+  // If it's too short, just return it masked
+  if (cleaned.length < 7) return '***' + cleaned.slice(-2);
+  
+  // For normal numbers, mask the middle
+  const start = cleaned.slice(0, cleaned.length - 7);
+  const middle = '***';
+  const end = cleaned.slice(cleaned.length - 4);
+  
+  return '+' + start + middle + end;
+}
+
+/**
+ * Exponential backoff retry function
+ * @param fn The async function to retry
+ * @param retries Maximum number of retries
+ * @param delay Initial delay in ms
+ * @param backoff Backoff factor
+ */
+async function retry<T>(
+  fn: () => Promise<T>,
+  retries: number = 3,
+  delay: number = 300,
+  backoff: number = 2
+): Promise<T> {
+  try {
+    return await fn();
+  } catch (error: any) {
+    // If we have no retries left, throw the error
+    if (retries <= 0) throw error;
+    
+    // For certain errors, don't retry
+    if (error.status === 400 || error.status === 401 || error.status === 403) {
+      console.error(`Error ${error.status}, not retrying:`, error.message);
+      throw error;
+    }
+    
+    // Log the retry attempt
+    console.log(`Retrying after error: ${error.message}. Attempts left: ${retries}`);
+    
+    // Wait for the specified delay
+    await new Promise(resolve => setTimeout(resolve, delay));
+    
+    // Retry with backoff
+    return retry(fn, retries - 1, delay * backoff, backoff);
+  }
+}
+
+/**
  * Phone call request interface
  */
 export interface PhoneCallRequest {
@@ -34,8 +91,19 @@ export interface PhoneCallRequest {
  * This uses a higher quality approach than the Twilio implementation:
  * 1. Generate the audio file with ElevenLabs (ultra-realistic voice)
  * 2. Use SignalWire to call and play the generated audio with better call quality
+ * 
+ * Enhanced with:
+ * - Comprehensive error handling
+ * - Fallback mechanisms when audio fails
+ * - Detailed logging for debugging
+ * - Retry logic for transient errors
  */
 export async function makeOutboundCall(request: PhoneCallRequest): Promise<CallRecord | null> {
+  const startTime = Date.now();
+  const sessionId = `call_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+  
+  console.log(`[${new Date().toISOString()}] [SESSION:${sessionId}] Starting outbound call to ${maskPhone(request.to)}`);
+  
   try {
     const { to, script, persona = 'default', voice = 'female', scheduledTime, callbackUrl } = request;
     
@@ -98,37 +166,84 @@ export async function makeOutboundCall(request: PhoneCallRequest): Promise<CallR
     console.log(`Using base URL for callbacks and audio: ${baseUrl}`);
     
     // Generate the audio file with ElevenLabs
-    console.log('Generating ElevenLabs audio for call...');
+    console.log(`[${new Date().toISOString()}] [SESSION:${sessionId}] Generating ElevenLabs audio for call...`);
     
     // Determine voice ID based on gender preference
     const voiceGender = voice === 'male' ? 'male' : 'female';
     const voiceId = getVoiceId(voiceGender);
     
-    // Generate the speech with optimized settings for call quality
-    const audioFilename = await generateSpeech(
-      script,
-      voiceId,
-      {
-        stability: 0.30,           // Lower stability for more natural expression/emotion
-        similarityBoost: 0.80,     // Higher similarity for consistent voice character
-        style: 0.65,               // Slightly higher style for more personality
-        useSpeakerBoost: true      // Enhanced clarity for phone calls
-      }
-    );
+    // Variables to track audio generation success
+    let audioFilename: string | null = null;
+    let useElevenLabsAudio = false;
     
-    // Update call record to show audio is ready
-    callRecordStorage.updateCallStatus(tempCallId, 'audio-ready', {
-      updatedAt: new Date()
-    });
+    try {
+      // Generate the speech with optimized settings for call quality
+      // Wrap this in a retry to handle transient ElevenLabs API issues
+      audioFilename = await retry(async () => {
+        return await generateSpeech(
+          script,
+          voiceId,
+          {
+            stability: 0.30,           // Lower stability for more natural expression/emotion
+            similarityBoost: 0.80,     // Higher similarity for consistent voice character
+            style: 0.65,               // Slightly higher style for more personality
+            useSpeakerBoost: true      // Enhanced clarity for phone calls
+          }
+        );
+      }, 2, 1000, 2); // 2 retries, 1s initial delay, doubling
+      
+      // If we get here, we have a valid audio file
+      useElevenLabsAudio = true;
+      console.log(`[${new Date().toISOString()}] [SESSION:${sessionId}] Successfully generated ElevenLabs audio: ${audioFilename}`);
+      
+      // Update call record to show audio is ready
+      callRecordStorage.updateCallStatus(tempCallId, 'audio-ready', {
+        updatedAt: new Date()
+      });
+    } catch (audioError) {
+      // Log the error but continue - we'll use the fallback TTS instead
+      console.error(`[${new Date().toISOString()}] [SESSION:${sessionId}] [ERROR] Failed to generate ElevenLabs audio:`, 
+        audioError instanceof Error ? audioError.message : 'Unknown error');
+      console.log(`[${new Date().toISOString()}] [SESSION:${sessionId}] Falling back to SignalWire TTS`);
+      
+      // Update call record to show we're using fallback
+      callRecordStorage.updateCallStatus(tempCallId, 'using-fallback-tts', {
+        updatedAt: new Date()
+      });
+    }
     
-    // Create audio URL that SignalWire can access
-    const audioUrl = `${baseUrl}/api/signalwire-audio/${audioFilename}`;
+    // Create audio URL if we have an audio file
+    const audioUrl = audioFilename ? `${baseUrl}/api/signalwire-audio/${audioFilename}` : null;
     
-    // Simplified approach using best-practices from the user's suggestions
-    // We're not using <Play> until we have a proper CDN solution for audio files
-    // Instead, we're optimizing the Say verb options and adding interactivity
-    const laml = `<?xml version="1.0" encoding="UTF-8"?>
+    // Create LAML with either Play (for ElevenLabs) or Say (fallback)
+    // The LAML structure is the same, but we use different tags based on audio availability
+    let laml: string;
+    
+    if (useElevenLabsAudio && audioUrl) {
+      // Use Play tag for ElevenLabs high-quality voice (for production with CDN)
+      console.log(`[${new Date().toISOString()}] [SESSION:${sessionId}] Using ElevenLabs audio URL: ${audioUrl}`);
+      
+      laml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
+  <!-- Using high-quality ElevenLabs voice -->
+  <Play>${audioUrl}</Play>
+  <Pause length="1"/>
+  <Gather input="speech dtmf" timeout="10" action="${baseUrl}/api/phone-call/response" method="POST">
+    <Say voice="woman" language="en-US">
+      Would you like to learn more about YoBot and what we offer? 
+      Say yes or press 1 for pricing information.
+      Say no or press 2 to end this call.
+    </Say>
+  </Gather>
+  <Say voice="woman" language="en-US">We didn't receive your response. Thank you for your time. Goodbye.</Say>
+</Response>`;
+    } else {
+      // Fallback to Say tag with SignalWire's built-in TTS
+      console.log(`[${new Date().toISOString()}] [SESSION:${sessionId}] Using fallback SignalWire TTS`);
+      
+      laml = `<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+  <!-- Using fallback TTS (ElevenLabs generation failed) -->
   <Say voice="woman" language="en-US">${script}</Say>
   <Pause length="1"/>
   <Gather input="speech dtmf" timeout="10" action="${baseUrl}/api/phone-call/response" method="POST">
@@ -140,6 +255,7 @@ export async function makeOutboundCall(request: PhoneCallRequest): Promise<CallR
   </Gather>
   <Say voice="woman" language="en-US">We didn't receive your response. Thank you for your time. Goodbye.</Say>
 </Response>`;
+    }
     
     // TODO: For production, we need to implement the full solution:
     // 1. Host audio files on a public CDN (S3, Cloudflare R2, etc.)
@@ -216,25 +332,36 @@ export async function makeOutboundCall(request: PhoneCallRequest): Promise<CallR
     console.log('- Space URL:', spaceUrl);
     
     try {
-      // Make the API call
+      // Make the API call with retry logic
       const auth = Buffer.from(`${projectId}:${process.env.SIGNALWIRE_TOKEN}`).toString('base64');
       
-      const response = await fetch(apiEndpoint, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Basic ${auth}`,
-          'Content-Type': 'application/x-www-form-urlencoded'
-        },
-        body: formData.toString()
-      });
+      // Use our retry function to handle transient network issues
+      const callData = await retry(async () => {
+        console.log(`[${new Date().toISOString()}] [SESSION:${sessionId}] Making API request to SignalWire`);
+        
+        const response = await fetch(apiEndpoint, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Basic ${auth}`,
+            'Content-Type': 'application/x-www-form-urlencoded'
+          },
+          body: formData.toString()
+        });
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error(`[${new Date().toISOString()}] [SESSION:${sessionId}] [ERROR] SignalWire API error: ${response.status}`, errorText);
+          
+          // Create error object with status for retry logic
+          const error: any = new Error(`SignalWire API error (${response.status}): ${errorText}`);
+          error.status = response.status;
+          throw error;
+        }
+        
+        return await response.json();
+      }, 3, 500, 2); // 3 retries, starting at 500ms delay, doubling each time
       
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Error making direct SignalWire API call:', errorText);
-        throw new Error(`SignalWire API error (${response.status}): ${errorText}`);
-      }
-      
-      const callData = await response.json();
+      console.log(`[${new Date().toISOString()}] [SESSION:${sessionId}] SignalWire call created successfully:`, callData.sid);
       console.log('SignalWire call created successfully:', callData.sid);
       
       // Create a call object that matches the expected format
@@ -328,18 +455,28 @@ export function handleStatusCallback(callSid: string, status: string, duration?:
  * Send SMS using SignalWire
  */
 export async function sendSMS(to: string, body: string, from?: string): Promise<string> {
+  const sessionId = `sms_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+  console.log(`[${new Date().toISOString()}] [SESSION:${sessionId}] Starting SMS to ${maskPhone(to)}`);
+  
   try {
-    // Get the client
-    const client = await getClient().catch(err => {
-      console.error('Failed to get SignalWire client, using mock client for SMS:', err);
-      return createMockClient();
-    });
+    // Get the client with retry logic
+    const client = await retry(async () => {
+      try {
+        return await getClient();
+      } catch (err) {
+        console.error(`[${new Date().toISOString()}] [SESSION:${sessionId}] [ERROR] Failed to get SignalWire client:`, err);
+        console.log(`[${new Date().toISOString()}] [SESSION:${sessionId}] Using mock client for SMS as fallback`);
+        return createMockClient();
+      }
+    }, 2, 1000, 2);
     
     // Set from number to configured SignalWire number if not provided
     let fromNumber = from || process.env.SIGNALWIRE_PHONE_NUMBER;
     
     if (!fromNumber) {
-      throw new Error('No from number provided and SIGNALWIRE_PHONE_NUMBER not set');
+      const errorMsg = 'No from number provided and SIGNALWIRE_PHONE_NUMBER not set';
+      console.error(`[${new Date().toISOString()}] [SESSION:${sessionId}] [ERROR] ${errorMsg}`);
+      throw new Error(errorMsg);
     }
     
     // Format for E.164 compliance
@@ -358,20 +495,35 @@ export async function sendSMS(to: string, body: string, from?: string): Promise<
     // Remove any dashes or other non-digit characters except the leading +
     toNumber = '+' + toNumber.replace(/[^\d]/g, '');
     
-    console.log('Sending SMS with phone numbers:');
-    console.log('- To:', toNumber);
-    console.log('- From:', fromNumber);
+    console.log(`[${new Date().toISOString()}] [SESSION:${sessionId}] Sending SMS:`);
+    console.log(`[${new Date().toISOString()}] [SESSION:${sessionId}] - To: ${maskPhone(toNumber)}`);
+    console.log(`[${new Date().toISOString()}] [SESSION:${sessionId}] - From: ${maskPhone(fromNumber)}`);
+    console.log(`[${new Date().toISOString()}] [SESSION:${sessionId}] - Message length: ${body.length} characters`);
     
-    // Send the message using the properly formatted numbers
-    const message = await client.messages.create({
-      to: toNumber,
-      from: fromNumber,
-      body
-    });
+    // Send the message using the properly formatted numbers with retry logic
+    const message = await retry(async () => {
+      try {
+        return await client.messages.create({
+          to: toNumber,
+          from: fromNumber,
+          body
+        });
+      } catch (err: any) {
+        console.error(`[${new Date().toISOString()}] [SESSION:${sessionId}] [ERROR] SignalWire SMS send failed:`, 
+          err?.message || 'Unknown error');
+        
+        // Create error with status for retry logic
+        const error: any = new Error(`SMS send failed: ${err?.message || 'Unknown error'}`);
+        error.status = err?.status || 500;
+        throw error;
+      }
+    }, 3, 500, 2);
     
+    console.log(`[${new Date().toISOString()}] [SESSION:${sessionId}] SMS sent successfully, SID: ${message.sid}`);
     return message.sid;
   } catch (error) {
-    console.error('Error sending SMS with SignalWire:', error);
-    throw error;
+    console.error(`[${new Date().toISOString()}] [SESSION:${sessionId}] [ERROR] Fatal error sending SMS:`, 
+      error instanceof Error ? error.message : 'Unknown error');
+    throw new Error(`Failed to send SMS: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
