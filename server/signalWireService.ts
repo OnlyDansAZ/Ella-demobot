@@ -124,11 +124,13 @@ export async function makeOutboundCall(request: PhoneCallRequest): Promise<CallR
     // Create audio URL that SignalWire can access
     const audioUrl = `${baseUrl}/api/signalwire-audio/${audioFilename}`;
     
-    // Create ULTRA simple LAML for maximum compatibility
-    // This is a bare-bones approach to ensure the call connects and speaks
+    // Create LAML that plays our high-quality ElevenLabs audio file
+    // This will use the <Play> verb instead of <Say> for better voice quality
     const laml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Say>Hello, this is YoBot calling with an important message. ${script}</Say>
+  <Play>${audioUrl}</Play>
+  <Pause length="1"/>
+  <Say>Thank you for your time. Goodbye.</Say>
 </Response>`;
     
     // Update call record status

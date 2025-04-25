@@ -592,5 +592,27 @@
     "voice": "male",
     "createdAt": "2025-04-25T11:35:23.440Z",
     "updatedAt": "2025-04-25T11:35:23.440Z"
+  },
+  {
+    "id": "d79de325-95dd-4bda-9756-5f5e16940cee",
+    "to": "+16027850165",
+    "from": "+1 (602) 731-2050",
+    "status": "queued",
+    "script": "Hello, this is Ella from YoBot. I'm calling to follow up about our recent conversation.",
+    "persona": "default",
+    "voice": "female",
+    "createdAt": "2025-04-25T11:43:19.805Z",
+    "updatedAt": "2025-04-25T11:43:20.654Z"
+  },
+  {
+    "id": "d79de325-95dd-4bda-9756-5f5e16940cee",
+    "to": "+16027850165",
+    "from": "+1 (602) 731-2050",
+    "status": "queued",
+    "script": "Hello, this is Ella from YoBot. I'm calling to follow up about our recent conversation.",
+    "persona": "default",
+    "voice": "female",
+    "createdAt": "2025-04-25T11:43:20.655Z",
+    "updatedAt": "2025-04-25T11:43:20.655Z"
   }
 ]
