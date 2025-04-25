@@ -14,6 +14,7 @@ import LaunchPage from "@/pages/LaunchPage";
 import BookDemo from "@/pages/BookDemo";
 import AICaller from "@/pages/AICaller";
 import VoiceTest from "@/pages/VoiceTest";
+import MemoryDemo from "@/pages/MemoryDemo";
 
 function Router() {
   return (
@@ -29,6 +30,7 @@ function Router() {
       <Route path="/book-demo" component={BookDemo} />
       <Route path="/ai-caller" component={AICaller} />
       <Route path="/voice-test" component={VoiceTest} />
+      <Route path="/memory-demo" component={MemoryDemo} />
       <Route component={NotFound} />
     </Switch>
   );

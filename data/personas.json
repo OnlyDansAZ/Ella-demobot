@@ -70,6 +70,58 @@
         "usesBulletPoints": true
       },
       "id": "262f295c-df3a-4837-8f49-2ccabbd0c7ac"
+    },
+    {
+      "name": "E2E Test - Sales Agent",
+      "description": "A stateless sales persona for testing",
+      "systemPrompt": "You are a sales agent AI with stateless memory for testing.",
+      "memoryMode": "stateless",
+      "voiceSettings": {
+        "stability": 0.5,
+        "similarityBoost": 0.7,
+        "style": 0.5,
+        "useSpeakerBoost": true
+      },
+      "id": "d8a93266-9a97-4a7d-8391-bab0bca43098"
+    },
+    {
+      "name": "E2E Test - Personal Assistant",
+      "description": "A persistent assistant persona for testing",
+      "systemPrompt": "You are a personal assistant AI with persistent memory for testing.",
+      "memoryMode": "persistent",
+      "voiceSettings": {
+        "stability": 0.5,
+        "similarityBoost": 0.7,
+        "style": 0.5,
+        "useSpeakerBoost": true
+      },
+      "id": "fa59d374-829b-4b4f-8068-6302f71002dd"
+    },
+    {
+      "name": "E2E Test - Sales Agent",
+      "description": "A stateless sales persona for testing",
+      "systemPrompt": "You are a sales agent AI with stateless memory for testing.",
+      "memoryMode": "stateless",
+      "voiceSettings": {
+        "stability": 0.5,
+        "similarityBoost": 0.7,
+        "style": 0.5,
+        "useSpeakerBoost": true
+      },
+      "id": "4b319e08-b962-46b4-8b3f-1dc30c9e2513"
+    },
+    {
+      "name": "E2E Test - Personal Assistant",
+      "description": "A persistent assistant persona for testing",
+      "systemPrompt": "You are a personal assistant AI with persistent memory for testing.",
+      "memoryMode": "persistent",
+      "voiceSettings": {
+        "stability": 0.5,
+        "similarityBoost": 0.7,
+        "style": 0.5,
+        "useSpeakerBoost": true
+      },
+      "id": "ead20288-303a-4881-9992-3f1a20ec971e"
     }
   ]
 }

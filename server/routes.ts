@@ -11,6 +11,7 @@ import calendlyRouter from './routes/calendlyRoutes';
 import appointmentRoutes from './routes/appointmentRoutes';
 import conversationRoutes from './routes/conversationRoutes';
 import personaRoutes from './routes/personaRoutes';
+import sessionRoutes from './routes/sessionRoutes';
 import { personaManager } from './personaManager';
 // Import the SignalWire service with ElevenLabs integration
 import signalWireRoutes from './routes/signalWireRoutes';
@@ -50,6 +51,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Persona management routes
   app.use("/api/personas", personaRoutes);
+  
+  // Session management routes
+  app.use("/api/session", sessionRoutes);
   
   // SignalWire phone call routes
   // Use the SignalWire implementation with ElevenLabs

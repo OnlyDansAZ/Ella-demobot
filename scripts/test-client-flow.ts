@@ -110,6 +110,20 @@ async function simulateClientFlow() {
     const statelessCallId = `call_${uuidv4()}`;
     const persistentCallId = `call_${uuidv4()}`;
     
+    // Important: Explicitly assign personas to call session IDs
+    // This ensures the call transcript uses the correct memory mode
+    personaManager.setSessionPersona(statelessCallId, salesPersona.id);
+    personaManager.setSessionPersona(persistentCallId, assistantPersona.id);
+    
+    // Verify the memory modes are assigned correctly
+    const statelessCallPersona = personaManager.getSessionPersona(statelessCallId);
+    const persistentCallPersona = personaManager.getSessionPersona(persistentCallId);
+    
+    console.log(`Call session persona assignments:
+    - Stateless call using: ${statelessCallPersona.name} (${statelessCallPersona.memoryMode} memory)
+    - Persistent call using: ${persistentCallPersona.name} (${persistentCallPersona.memoryMode} memory)
+    `);
+    
     // Create call records (simulating what happens when a call is made)
     const statelessCallRecord: CallRecord = {
       id: statelessCallId,
@@ -181,12 +195,12 @@ async function simulateClientFlow() {
     // Update call records to 'completed'
     await callRecordStorage.updateCallStatus(statelessCallId, 'completed', {
       duration: 120, // 2 minutes
-      notes: "End-to-end test call with stateless memory"
+      notes: ["End-to-end test call with stateless memory"]
     });
     
     await callRecordStorage.updateCallStatus(persistentCallId, 'completed', {
       duration: 120, // 2 minutes
-      notes: "End-to-end test call with persistent memory"
+      notes: ["End-to-end test call with persistent memory"]
     });
     
     // Simulate SignalWire status callback (which triggers memory cleanup)

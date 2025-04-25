@@ -661,5 +661,65 @@
     "retryCount": 0,
     "createdAt": "2025-04-25T16:57:02.670Z",
     "updatedAt": "2025-04-25T16:57:02.670Z"
+  },
+  {
+    "id": "call_d4276bf8-6b54-4ad6-b393-52ed2c088cfd",
+    "to": "+15551234567",
+    "from": "+15559876543",
+    "status": "completed",
+    "script": "This is a test script for the stateless persona call.",
+    "persona": "d8a93266-9a97-4a7d-8391-bab0bca43098",
+    "voice": "female",
+    "createdAt": "2025-04-25T19:20:38.358Z",
+    "updatedAt": "2025-04-25T19:20:38.625Z",
+    "duration": 120,
+    "notes": [
+      "End-to-end test call with stateless memory"
+    ]
+  },
+  {
+    "id": "call_80e99908-dd48-4e08-9658-f56e9a4d6cc6",
+    "to": "+15552345678",
+    "from": "+15559876543",
+    "status": "completed",
+    "script": "This is a test script for the persistent persona call.",
+    "persona": "fa59d374-829b-4b4f-8068-6302f71002dd",
+    "voice": "female",
+    "createdAt": "2025-04-25T19:20:38.358Z",
+    "updatedAt": "2025-04-25T19:20:38.625Z",
+    "duration": 120,
+    "notes": [
+      "End-to-end test call with persistent memory"
+    ]
+  },
+  {
+    "id": "call_063be1e5-fc03-478b-9411-d51b2291654b",
+    "to": "+15551234567",
+    "from": "+15559876543",
+    "status": "completed",
+    "script": "This is a test script for the stateless persona call.",
+    "persona": "4b319e08-b962-46b4-8b3f-1dc30c9e2513",
+    "voice": "female",
+    "createdAt": "2025-04-25T19:21:08.215Z",
+    "updatedAt": "2025-04-25T19:21:08.488Z",
+    "duration": 120,
+    "notes": [
+      "End-to-end test call with stateless memory"
+    ]
+  },
+  {
+    "id": "call_e78505ef-28d5-4528-92e4-5a2f7a25fafd",
+    "to": "+15552345678",
+    "from": "+15559876543",
+    "status": "completed",
+    "script": "This is a test script for the persistent persona call.",
+    "persona": "ead20288-303a-4881-9992-3f1a20ec971e",
+    "voice": "female",
+    "createdAt": "2025-04-25T19:21:08.216Z",
+    "updatedAt": "2025-04-25T19:21:08.489Z",
+    "duration": 120,
+    "notes": [
+      "End-to-end test call with persistent memory"
+    ]
   }
 ]
