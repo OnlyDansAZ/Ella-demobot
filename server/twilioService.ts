@@ -28,35 +28,46 @@ if (!fs.existsSync(TEMP_DIR)) {
 
 // Helper function for ElevenLabs voice generation
 const generateSpeech = async (text: string, voiceId: string, options: any): Promise<string> => {
-  return new Promise((resolve, reject) => {
+  try {
+    // Create output file path
+    const outputFile = options.outputFileName || path.join(TEMP_DIR, `speech_${Date.now()}.mp3`);
+    
+    // Set voice settings
+    const voice = {
+      voice_id: voiceId,
+      stability: options.stability || 0.5, 
+      similarity_boost: options.similarityBoost || 0.75,
+      style: options.style || 0.5,
+      use_speaker_boost: options.speakerBoost || true
+    };
+    
+    // Use fs to write directly to file
+    console.log(`Generating ElevenLabs audio to: ${outputFile}`);
+    
     try {
-      const outputFile = options.outputFileName || path.join(TEMP_DIR, `speech_${Date.now()}.mp3`);
-      
-      // Direct call to ElevenLabs API - workaround for TypeScript issues
-      // @ts-ignore - Ignoring TypeScript for third-party library
-      elevenLabs.generate({
-        text: text,
-        voiceId: voiceId,
-        fileName: outputFile,
-        stability: options.stability || 0.5,
-        similarityBoost: options.similarityBoost || 0.75,
-        style: options.style || 0.5,
-        speakerBoost: options.speakerBoost || true
-      }, (error: any, response: any) => {
-        if (error) {
-          console.error('ElevenLabs speech generation error:', error);
-          reject(error);
-        } else {
-          console.log('ElevenLabs response:', response);
-          // The response should contain a fileName property
-          resolve(response && response.fileName ? response.fileName : outputFile);
-        }
+      // Manual wrapper around the ElevenLabs library calls
+      // @ts-ignore - The ElevenLabs typings are not up to date
+      await new Promise((resolve, reject) => {
+        elevenLabs.generate(text, voice, outputFile)
+          .then(() => {
+            console.log(`ElevenLabs speech saved to: ${outputFile}`);
+            resolve(outputFile);
+          })
+          .catch((err: any) => {
+            console.error("ElevenLabs generate error:", err);
+            reject(err);
+          });
       });
-    } catch (error) {
-      console.error('ElevenLabs exception:', error);
-      reject(error);
+      
+      return outputFile;
+    } catch (err) {
+      console.error("Error generating speech with ElevenLabs:", err);
+      throw err;
     }
-  });
+  } catch (error) {
+    console.error('ElevenLabs exception:', error);
+    throw error;
+  }
 };
 
 // Types for phone call requests
