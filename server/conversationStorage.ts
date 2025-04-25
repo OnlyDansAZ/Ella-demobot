@@ -195,21 +195,35 @@ export class ConversationStorage {
   /**
    * Get messages from a conversation session
    * If the persona has a stateless memory mode, returns an empty array
+   * 
+   * @param sessionId The session ID
+   * @param memoryModeOverride Optional override for memory mode (for demo purposes)
    */
-  async getMessages(sessionId: string): Promise<ChatMessage[]> {
+  async getMessages(sessionId: string, memoryModeOverride?: 'persistent' | 'stateless'): Promise<ChatMessage[]> {
     const session = await this.getOrCreateSession(sessionId);
     
     // Get the current persona for this session
     const persona = personaManager.getSessionPersona(sessionId);
     
-    // If the persona uses stateless memory mode, don't return any history
-    if (persona.memoryMode === 'stateless') {
-      console.log(`Using stateless memory mode for session ${sessionId.substring(0, 8)}... - history not preserved`);
+    // Determine effective memory mode (use override if provided, otherwise use persona default)
+    const effectiveMemoryMode = memoryModeOverride || persona.memoryMode;
+    
+    // If using stateless memory mode (either by default or override), don't return any history
+    if (effectiveMemoryMode === 'stateless') {
+      if (memoryModeOverride) {
+        console.log(`[Demo] Using overridden stateless memory mode for session ${sessionId.substring(0, 8)}... - history not preserved`);
+      } else {
+        console.log(`Using stateless memory mode for session ${sessionId.substring(0, 8)}... - history not preserved`);
+      }
       return [];
     }
     
     // Otherwise return the full message history for persistent memory mode
-    console.log(`Using persistent memory mode for session ${sessionId.substring(0, 8)}... - returning ${session.messages.length} messages`);
+    if (memoryModeOverride) {
+      console.log(`[Demo] Using overridden persistent memory mode for session ${sessionId.substring(0, 8)}... - returning ${session.messages.length} messages`);
+    } else {
+      console.log(`Using persistent memory mode for session ${sessionId.substring(0, 8)}... - returning ${session.messages.length} messages`);
+    }
     return session.messages;
   }
   

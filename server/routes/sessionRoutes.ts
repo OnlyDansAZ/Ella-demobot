@@ -13,14 +13,26 @@ const router = express.Router();
  */
 router.get('/:sessionId/messages', async (req: Request, res: Response) => {
   const { sessionId } = req.params;
+  const { memoryModeOverride } = req.query; // Support query param for GET requests
   
   try {
     // Log the request
     log(`Retrieving messages for session ${sessionId}`);
     
-    // Get the messages through the conversationStorage service
+    // Validate memory mode override if present (for demo purposes)
+    let validatedMemoryModeOverride: 'persistent' | 'stateless' | undefined = undefined;
+    if (
+      memoryModeOverride && 
+      typeof memoryModeOverride === 'string' && 
+      (memoryModeOverride === 'persistent' || memoryModeOverride === 'stateless')
+    ) {
+      validatedMemoryModeOverride = memoryModeOverride as 'persistent' | 'stateless';
+      log(`[DEMO] Memory mode override for GET: ${memoryModeOverride} for session ${sessionId}`);
+    }
+    
+    // Get the messages through the conversationStorage service with optional override
     // This will automatically handle memory modes
-    const messages = await conversationStorage.getMessages(sessionId);
+    const messages = await conversationStorage.getMessages(sessionId, validatedMemoryModeOverride);
     
     // Return the messages
     res.json(messages);
@@ -39,13 +51,20 @@ router.get('/:sessionId/messages', async (req: Request, res: Response) => {
  */
 router.post('/:sessionId/messages', async (req: Request, res: Response) => {
   const { sessionId } = req.params;
-  const { content } = req.body;
+  const { content, memoryModeOverride } = req.body;
   
   if (!content) {
     return res.status(400).json({
       success: false,
       error: 'Message content is required'
     });
+  }
+  
+  // Validate memory mode override if present (for demo purposes)
+  let validatedMemoryModeOverride: 'persistent' | 'stateless' | undefined = undefined;
+  if (memoryModeOverride && (memoryModeOverride === 'persistent' || memoryModeOverride === 'stateless')) {
+    validatedMemoryModeOverride = memoryModeOverride;
+    log(`[DEMO] Memory mode override: ${memoryModeOverride} for session ${sessionId}`);
   }
   
   try {
@@ -66,8 +85,8 @@ router.post('/:sessionId/messages', async (req: Request, res: Response) => {
     // Get the persona for this session
     const persona = personaManager.getSessionPersona(sessionId);
     
-    // Generate a response based on the memory mode
-    const messages = await conversationStorage.getMessages(sessionId);
+    // Generate a response based on the memory mode (with optional override for demo purposes)
+    const messages = await conversationStorage.getMessages(sessionId, validatedMemoryModeOverride);
     const aiResponse = await generateResponse(messages, persona, sessionId);
     
     // Create an AI message
@@ -81,8 +100,8 @@ router.post('/:sessionId/messages', async (req: Request, res: Response) => {
     // Add the AI message to the session
     await conversationStorage.addMessage(sessionId, aiMessage);
     
-    // Get the updated messages
-    const updatedMessages = await conversationStorage.getMessages(sessionId);
+    // Get the updated messages (with optional override for demo purposes)
+    const updatedMessages = await conversationStorage.getMessages(sessionId, validatedMemoryModeOverride);
     
     // Return the messages
     res.json(updatedMessages);
