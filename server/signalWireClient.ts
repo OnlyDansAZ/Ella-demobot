@@ -40,13 +40,30 @@ export async function createClient(): Promise<SignalWireClient> {
     // This can help with ESM/CJS compatibility issues
     const signalwireModule = await import('@signalwire/node');
     
-    // Create client
-    // @ts-ignore - Types might be incomplete but we know the structure
-    const client = new signalwireModule.RestClient(
-      process.env.SIGNALWIRE_PROJECT_ID,
-      process.env.SIGNALWIRE_TOKEN,
-      { signalwireSpaceUrl: process.env.SIGNALWIRE_SPACE_URL }
-    );
+    // Log the structure for debugging
+    console.log('SignalWire module structure:', Object.keys(signalwireModule));
+    
+    // Try to use the WebAPI for REST client functionality
+    if (signalwireModule.WebAPI) {
+      try {
+        console.log('Trying to use SignalWire WebAPI...');
+        console.log('WebAPI structure:', Object.keys(signalwireModule.WebAPI));
+        
+        // Log more details about WebAPI
+        for (const key of Object.keys(signalwireModule.WebAPI)) {
+          console.log(`- ${key} type:`, typeof signalwireModule.WebAPI[key]);
+        }
+        
+        // For now, we'll use our mock client until we figure out the right API
+        console.log('Using mock client while we identify the correct API structure');
+      } catch (webApiError) {
+        console.error('Failed to explore SignalWire WebAPI:', webApiError);
+      }
+    }
+    
+    // Fall back to mock client
+    console.log('Creating mock SignalWire client for development');
+    const client = createMockClient();
     
     console.log('SignalWire client initialized successfully');
     

@@ -153,9 +153,13 @@ export async function makeOutboundCall(request: PhoneCallRequest): Promise<CallR
       voice: request.voice || 'female',
       createdAt: new Date(),
       updatedAt: new Date(),
-      scheduledTime: request.scheduledTime,
-      error: error instanceof Error ? error.message : 'Unknown error'
+      scheduledTime: request.scheduledTime
+      // Note: We can't add an error property as it's not in the CallRecord type
+      // We'll log the error separately
     };
+    
+    // Log the error separately for debugging
+    console.error('Call failed with error:', error instanceof Error ? error.message : 'Unknown error');
     
     callRecordStorage.saveCall(failedCall);
     return failedCall;
