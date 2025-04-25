@@ -4,7 +4,8 @@ import path from 'path';
 import { CallRecord, callRecordStorage } from '../twilioAdvanced';
 import { 
   getCallHistory, 
-  getCallRecord 
+  getCallRecord,
+  saveCallNote
 } from '../twilioAdvanced';  // We'll keep using the same call history storage
 import { generateSpeech, getVoiceId, ELEVENLABS_AUDIO_DIR } from '../elevenLabsService';
 import { makeOutboundCall, handleStatusCallback, PhoneCallRequest, getTempLaml } from '../signalWireService';
@@ -106,14 +107,19 @@ router.post('/phone-call/status-callback', (req: Request, res: Response) => {
  */
 router.post('/phone-call/response', (req: Request, res: Response) => {
   try {
-    // Get the user's speech input from the request
-    // SignalWire provides this in SpeechResult just like Twilio
-    const { SpeechResult } = req.body;
+    console.log('🔊 CALL RESPONSE RECEIVED:', req.body);
     
-    // Get a base URL for our audio files
+    // Get the user's speech input or DTMF (keypad) input
+    const { SpeechResult, Digits } = req.body;
+    
+    // Get a base URL for callbacks
     let baseUrl = process.env.PUBLIC_URL;
     if (!baseUrl) {
-      baseUrl = `https://${process.env.REPL_SLUG}.replit.app`;
+      if (process.env.REPL_SLUG) {
+        baseUrl = `https://${process.env.REPL_SLUG}.replit.app`;
+      } else {
+        baseUrl = 'https://workspace.replit.app';
+      }
     }
     
     // Create response with LAML (SignalWire's equivalent to TwiML)
@@ -122,53 +128,93 @@ router.post('/phone-call/response', (req: Request, res: Response) => {
     // Add a small pause for more natural conversation flow
     laml += '  <Pause length="1"/>\n';
     
-    // Generate response based on user speech input
-    if (SpeechResult) {
-      // User said something, prepare appropriate response
-      const userSpeech = SpeechResult.toLowerCase();
-      let responseText = "Thank you for your feedback. I've noted that down and will have our team follow up with you soon.";
+    // Check for user input (either speech or keypad)
+    const userInput = SpeechResult?.toLowerCase() || '';
+    const digitInput = Digits || '';
+    
+    // Log what we received
+    console.log(`User said: "${userInput || '<nothing>'}", Pressed: "${digitInput || '<nothing>'}"`);
+    
+    // Determine if this is a "yes" response
+    const isYes = 
+      userInput.includes('yes') || 
+      userInput.includes('yeah') || 
+      userInput.includes('sure') || 
+      userInput.includes('okay') || 
+      digitInput === '1';
       
-      // Enhanced response logic based on keywords
-      if (userSpeech.includes('price') || userSpeech.includes('cost') || userSpeech.includes('expensive') || userSpeech.includes('pricing') || userSpeech.includes('how much')) {
-        responseText = "Our pricing is very competitive. We offer multiple tiers starting with our Starter package at five thousand dollars plus a monthly fee of four hundred ninety-nine dollars. Would you like me to send you our detailed pricing information?";
-      } else if (userSpeech.includes('demo') || userSpeech.includes('try') || userSpeech.includes('test') || userSpeech.includes('see')) {
-        responseText = "I'd be happy to arrange a personalized demo for you. Our team can show you how Ella would work specifically with your business needs. What's the best email to reach you at for scheduling?";
-      } else if (userSpeech.includes('features') || userSpeech.includes('what can you do') || userSpeech.includes('capabilities') || userSpeech.includes('do')) {
-        responseText = "YoBot's Ella can handle appointment scheduling, answer customer questions 24/7, make outbound calls to follow up with leads, and seamlessly integrate with your existing business systems. She learns your business through your knowledge base and can be customized to your specific industry needs. What specific capabilities are you most interested in?";
-      } else if (userSpeech.includes('thank') || userSpeech.includes('goodbye') || userSpeech.includes('bye') || userSpeech.includes('later')) {
-        responseText = "You're welcome! Thank you for your interest in YoBot. We'll follow up with additional information. Have a wonderful day, and feel free to reach out if you have any other questions!";
-      } else if (userSpeech.includes('hello') || userSpeech.includes('hi') || userSpeech.includes('hey')) {
-        responseText = "Hello there! It's great to connect with you. I'm Ella, YoBot's AI assistant. How can I help you today?";
-      } else if (userSpeech.includes('integration') || userSpeech.includes('connect') || userSpeech.includes('work with')) {
-        responseText = "YoBot integrates seamlessly with most business systems including CRMs like Salesforce, calendar apps like Google Calendar and Microsoft Outlook, and communication platforms like Slack. What systems are you currently using that you'd need integration with?";
+    // Determine if this is a "no" response
+    const isNo = 
+      userInput.includes('no') || 
+      userInput.includes('nope') || 
+      userInput.includes('not') || 
+      digitInput === '2';
+    
+    if (isYes) {
+      // They want pricing information
+      const pricingInfo = `
+        Our pricing starts with our Starter package at five thousand dollars plus 
+        a monthly fee of four hundred ninety-nine dollars. This includes 24/7 
+        customer service, appointment scheduling, and basic lead follow-up.
+        
+        Our Pro package is eight thousand dollars with a seven hundred ninety-nine 
+        dollar monthly fee. This adds advanced reporting, CRM integration, and 
+        custom voice training.
+        
+        For enterprise solutions, we offer custom pricing based on your specific needs.
+      `;
+      
+      laml += `  <Say voice="woman" language="en-US">${pricingInfo}</Say>\n`;
+      laml += '  <Pause length="1"/>\n';
+      
+      // Ask if they want to be connected to sales
+      laml += '  <Gather input="speech dtmf" timeout="7" action="/api/phone-call/sales-connect" method="POST">\n';
+      laml += '    <Say voice="woman" language="en-US">Would you like to be connected to our sales team to discuss which package would work best for your business? Say yes or press 1 to connect now.</Say>\n';
+      laml += '  </Gather>\n';
+      
+      // Fallback if no response
+      laml += '  <Say voice="woman" language="en-US">We didn\'t hear a response. Thank you for your interest in YoBot. We\'ll follow up with you shortly. Have a great day!</Say>\n';
+    } 
+    else if (isNo) {
+      // They declined more information
+      laml += '  <Say voice="woman" language="en-US">No problem at all. Thank you for your time today. If you have any questions in the future, please don\'t hesitate to reach out. Have a wonderful day!</Say>\n';
+    }
+    else if (SpeechResult || Digits) {
+      // They said something else - handle common queries
+      let responseText = "I understand. Let me share a bit more about what makes YoBot special. Our AI assistant Ella is designed to sound completely natural and can handle complex sales conversations that convert leads into customers. Would you like to hear more about specific features?";
+      
+      // Check for specific topics
+      if (userInput.includes('price') || userInput.includes('cost') || userInput.includes('expensive') || userInput.includes('how much')) {
+        responseText = "Our pricing is very competitive. We offer multiple tiers starting with our Starter package at five thousand dollars plus a monthly fee of four hundred ninety-nine dollars. Would you like more detailed pricing information?";
+      } 
+      else if (userInput.includes('demo') || userInput.includes('try') || userInput.includes('test') || userInput.includes('see')) {
+        responseText = "I'd be happy to arrange a personalized demo for you. Our team can show you how Ella would work specifically for your business needs. Would you like us to contact you about scheduling a demo?";
+      } 
+      else if (userInput.includes('feature') || userInput.includes('what can') || userInput.includes('capabilities') || userInput.includes('do you do')) {
+        responseText = "YoBot's Ella can handle outbound sales calls, follow up with leads, schedule appointments, answer customer questions, and integrate with your existing business systems. Is there a specific capability you're most interested in?";
       }
       
-      // Generate speech using ElevenLabs (asynchronously)
-      const voiceId = getVoiceId('female');
-      
-      generateSpeech(responseText, voiceId)
-        .then(filename => {
-          console.log(`Generated response audio: ${filename}`);
-        })
-        .catch(err => {
-          console.error('Error generating response audio:', err);
-        });
-      
-      // Meanwhile, respond with standard TTS since we can't wait for ElevenLabs
-      // This ensures the call doesn't hang
-      laml += `  <Say voice="woman">${responseText}</Say>\n`;
+      // Add the response
+      laml += `  <Say voice="woman" language="en-US">${responseText}</Say>\n`;
       
       // Continue the conversation with another gather
-      laml += '  <Gather input="speech" timeout="5" action="/api/phone-call/response" method="POST">\n';
-      laml += '    <Say voice="woman">I\'m listening if you have any other questions.</Say>\n';
+      laml += '  <Gather input="speech dtmf" timeout="7" action="/api/phone-call/response" method="POST">\n';
+      laml += '    <Say voice="woman" language="en-US">Press 1 or say yes to learn more, or press 2 or say no to end this call.</Say>\n';
       laml += '  </Gather>\n';
-    } else {
-      // No speech detected, provide a helpful prompt
-      laml += '  <Say voice="woman">I\'m sorry, I didn\'t catch what you said. If you\'re interested in learning more about YoBot, please visit our website or call us back at a more convenient time. Thank you for your interest!</Say>\n';
+      
+      // Fallback if no response
+      laml += '  <Say voice="woman" language="en-US">We didn\'t hear a response. Thank you for your interest in YoBot. We\'ll follow up with you shortly. Have a great day!</Say>\n';
+    } 
+    else {
+      // No speech or digits detected
+      laml += '  <Say voice="woman" language="en-US">I\'m sorry, I didn\'t catch what you said. If you\'re interested in learning more about YoBot, please visit our website or call us back. Thank you for your interest!</Say>\n';
     }
     
     // Close the LAML response
     laml += '</Response>';
+    
+    // Log the generated LAML
+    console.log('Sending response LAML:', laml);
     
     // Set the appropriate content type and send the LAML response
     res.setHeader('Content-Type', 'text/xml');
@@ -178,7 +224,87 @@ router.post('/phone-call/response', (req: Request, res: Response) => {
     
     // Provide a helpful error response
     const errorLaml = '<?xml version="1.0" encoding="UTF-8"?>\n<Response>\n' +
-      '  <Say voice="woman">I apologize, but we encountered a technical issue. Please call us back later or visit our website for more information.</Say>\n' +
+      '  <Say voice="woman" language="en-US">I apologize, but we encountered a technical issue. Please call us back later or visit our website for more information.</Say>\n' +
+      '</Response>';
+    
+    res.setHeader('Content-Type', 'text/xml');
+    res.send(errorLaml);
+  }
+});
+
+/**
+ * Handle sales team connection request
+ * POST /api/phone-call/sales-connect
+ * This endpoint is called when user wants to speak with sales team
+ */
+router.post('/phone-call/sales-connect', (req: Request, res: Response) => {
+  try {
+    console.log('🔊 SALES CONNECTION REQUEST RECEIVED:', req.body);
+    
+    // Get the call SID and other parameters
+    const { CallSid, SpeechResult, Digits } = req.body;
+    
+    // Check for user input (either speech or keypad)
+    const userInput = SpeechResult?.toLowerCase() || '';
+    const digitInput = Digits || '';
+    
+    // Determine if this is a "yes" response
+    const isYes = 
+      userInput.includes('yes') || 
+      userInput.includes('yeah') || 
+      userInput.includes('sure') || 
+      userInput.includes('connect') || 
+      digitInput === '1';
+    
+    // Create response with LAML
+    let laml = '<?xml version="1.0" encoding="UTF-8"?>\n<Response>\n';
+    
+    if (isYes && CallSid) {
+      // Save a note about the sales connection request
+      try {
+        saveCallNote(CallSid, 'User requested connection to sales team for pricing information');
+      } catch (noteError) {
+        console.error('Error saving call note:', noteError);
+      }
+      
+      // In a real system, we would transfer to a sales team
+      // For this demo, we'll simulate the transfer
+      laml += '  <Say voice="woman" language="en-US">Great! I\'ll connect you with our sales team now. Please hold while I transfer you.</Say>\n';
+      laml += '  <Pause length="2"/>\n';
+      
+      // For a real transfer, we'd use:
+      // laml += `  <Dial>+1234567890</Dial>\n`;
+      
+      // For demo purposes, simulate the transfer
+      laml += '  <Say voice="woman" language="en-US">I\'m sorry, but our sales team is currently unavailable. We\'ve logged your interest and a sales representative will call you back within 24 hours. Thank you for your interest in YoBot!</Say>\n';
+    } else {
+      // They didn't confirm or we don't have a valid call SID
+      laml += '  <Say voice="woman" language="en-US">No problem. Thank you for your time today. A member of our team will follow up with more information about our products. Have a wonderful day!</Say>\n';
+      
+      if (CallSid) {
+        try {
+          saveCallNote(CallSid, 'User declined connection to sales team');
+        } catch (noteError) {
+          console.error('Error saving call note:', noteError);
+        }
+      }
+    }
+    
+    // Close the LAML response
+    laml += '</Response>';
+    
+    // Log the generated LAML
+    console.log('Sending sales connection LAML:', laml);
+    
+    // Set the appropriate content type and send the LAML response
+    res.setHeader('Content-Type', 'text/xml');
+    res.send(laml);
+  } catch (error) {
+    console.error('Error handling sales connection request:', error);
+    
+    // Provide a helpful error response
+    const errorLaml = '<?xml version="1.0" encoding="UTF-8"?>\n<Response>\n' +
+      '  <Say voice="woman" language="en-US">I apologize, but we encountered a technical issue connecting you with our sales team. Someone will call you back shortly. Thank you for your interest in YoBot!</Say>\n' +
       '</Response>';
     
     res.setHeader('Content-Type', 'text/xml');

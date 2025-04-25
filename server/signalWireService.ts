@@ -124,17 +124,27 @@ export async function makeOutboundCall(request: PhoneCallRequest): Promise<CallR
     // Create audio URL that SignalWire can access
     const audioUrl = `${baseUrl}/api/signalwire-audio/${audioFilename}`;
     
-    // Let's use a more interactive approach with a Gather for user input
-    // This will keep the call active and allow for interaction
+    // Simplified approach using best-practices from the user's suggestions
+    // We're not using <Play> until we have a proper CDN solution for audio files
+    // Instead, we're optimizing the Say verb options and adding interactivity
     const laml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
   <Say voice="woman" language="en-US">${script}</Say>
   <Pause length="1"/>
-  <Gather input="speech dtmf" timeout="5" action="${baseUrl}/api/phone-call/response" method="POST">
-    <Say voice="woman" language="en-US">Would you like to learn more about YoBot and what we offer? Say yes or press 1 to continue.</Say>
+  <Gather input="speech dtmf" timeout="10" action="${baseUrl}/api/phone-call/response" method="POST">
+    <Say voice="woman" language="en-US">
+      Would you like to learn more about YoBot and what we offer? 
+      Say yes or press 1 for pricing information.
+      Say no or press 2 to end this call.
+    </Say>
   </Gather>
-  <Say voice="woman" language="en-US">Thank you for your time. Goodbye.</Say>
+  <Say voice="woman" language="en-US">We didn't receive your response. Thank you for your time. Goodbye.</Say>
 </Response>`;
+    
+    // TODO: For production, we need to implement the full solution:
+    // 1. Host audio files on a public CDN (S3, Cloudflare R2, etc.)
+    // 2. Update LAML to use <Play> with the CDN URL
+    // 3. Optimize audio files for telephony (8kHz mono MP3)
     
     // Update call record status
     callRecordStorage.updateCallStatus(tempCallId, 'initiating', {

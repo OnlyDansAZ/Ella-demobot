@@ -39,6 +39,7 @@ export interface CallRecord {
   createdAt: Date;
   updatedAt: Date;
   scheduledTime?: Date;
+  notes?: string[]; // Array of notes about the call
 }
 
 // File-backed call records storage
@@ -111,6 +112,32 @@ class CallRecordStorage {
 
   getRecentCalls(limit: number = 10): CallRecord[] {
     return this.getAllCalls().slice(0, limit);
+  }
+  
+  /**
+   * Add a note to a call record
+   * @param id The ID of the call to update
+   * @param note The note to add
+   * @returns The updated call record or undefined if not found
+   */
+  addCallNote(id: string, note: string): CallRecord | undefined {
+    const call = this.calls.get(id);
+    if (!call) return undefined;
+    
+    // Create or append to the notes array
+    const notes = call.notes || [];
+    notes.push(note);
+    
+    // Update the call record
+    const updatedCall = {
+      ...call,
+      notes,
+      updatedAt: new Date()
+    };
+    
+    this.calls.set(id, updatedCall);
+    this.saveToFile();
+    return updatedCall;
   }
 }
 
@@ -415,5 +442,45 @@ export async function sendSMS(options: TwilioMessageOptions): Promise<string> {
   } catch (error) {
     console.error('Error sending SMS:', error);
     throw error;
+  }
+}
+
+/**
+ * Save a note to a call record
+ * This is used to track important interactions during a call
+ * 
+ * @param callSid The SID (ID) of the call to update
+ * @param note The note to add to the call record
+ * @returns The updated call record or undefined if not found
+ */
+export function saveCallNote(callSid: string, note: string): CallRecord | undefined {
+  try {
+    // Validate inputs
+    if (!callSid) {
+      console.error('Missing call SID when saving call note');
+      return undefined;
+    }
+    
+    if (!note) {
+      console.warn('Empty note provided for call', callSid);
+      return undefined;
+    }
+    
+    // Get the current timestamp
+    const timestamp = new Date();
+    
+    // Format timestamp for the note
+    const formattedTime = timestamp.toLocaleTimeString();
+    
+    // Create the formatted note with timestamp
+    const formattedNote = `[${formattedTime}] ${note}`;
+    
+    console.log(`Adding note to call ${callSid}: ${formattedNote}`);
+    
+    // Update the call record with the note
+    return callRecordStorage.addCallNote(callSid, formattedNote);
+  } catch (error) {
+    console.error('Error saving call note:', error);
+    return undefined;
   }
 }
