@@ -56,10 +56,23 @@ export async function makeOutboundCall(request: PhoneCallRequest): Promise<CallR
     });
     
     // Create a baseUrl for callbacks and audio playback
+    // Using a properly formatted public URL is crucial for SignalWire to reach back
     let baseUrl = process.env.PUBLIC_URL;
     if (!baseUrl) {
-      baseUrl = `https://${process.env.REPL_SLUG}.replit.app`;
+      // If running on Replit, use the Replit domains
+      if (process.env.REPL_ID && process.env.REPL_SLUG) {
+        if (process.env.REPL_OWNER) {
+          baseUrl = `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`;
+        } else {
+          baseUrl = `https://${process.env.REPL_SLUG}.replit.app`;
+        }
+      } else {
+        // Fallback to a local URL
+        baseUrl = 'https://workspace.replit.app';
+      }
     }
+    
+    console.log(`Using base URL for callbacks and audio: ${baseUrl}`);
     
     // Generate the audio file with ElevenLabs
     console.log('Generating ElevenLabs audio for call...');

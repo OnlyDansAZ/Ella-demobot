@@ -18,6 +18,7 @@ let clientInstance: SignalWireClient | null = null;
 
 /**
  * Create a SignalWire client instance
+ * Uses real SignalWire client in production mode
  */
 export async function createClient(): Promise<SignalWireClient> {
   try {
@@ -36,41 +37,129 @@ export async function createClient(): Promise<SignalWireClient> {
     
     console.log('Initializing SignalWire client...');
     
-    // Dynamically import the SignalWire module
-    // This can help with ESM/CJS compatibility issues
-    const signalwireModule = await import('@signalwire/node');
-    
-    // Log the structure for debugging
-    console.log('SignalWire module structure:', Object.keys(signalwireModule));
-    
-    // Try to use the WebAPI for REST client functionality
-    if (signalwireModule.WebAPI) {
-      try {
-        console.log('Trying to use SignalWire WebAPI...');
-        console.log('WebAPI structure:', Object.keys(signalwireModule.WebAPI));
-        
-        // Log more details about WebAPI
-        for (const key of Object.keys(signalwireModule.WebAPI)) {
-          console.log(`- ${key} type:`, typeof signalwireModule.WebAPI[key]);
+    // Use a direct approach - call native HTTP endpoints instead of relying on the library
+    // This is more reliable and bypasses issues with the SignalWire SDK
+    const directClient: SignalWireClient = {
+      calls: {
+        create: async (params: any) => {
+          console.log('Making real SignalWire call with direct HTTP approach:', params);
+          
+          // Format the request body according to SignalWire API documentation
+          const requestBody: Record<string, any> = {
+            to: params.to,
+            from: params.from,
+            url: params.laml ? undefined : params.url,
+            method: params.method || 'POST',
+            status_callback: params.statusCallback,
+            status_callback_method: params.statusCallbackMethod || 'POST',
+            twiml: params.laml // SignalWire uses "twiml" parameter for LAML
+          };
+          
+          // Remove undefined values
+          Object.keys(requestBody).forEach((key) => {
+            if (requestBody[key] === undefined) {
+              delete requestBody[key];
+            }
+          });
+          
+          try {
+            // Create auth string for Basic Authentication
+            const auth = Buffer.from(
+              `${process.env.SIGNALWIRE_PROJECT_ID}:${process.env.SIGNALWIRE_TOKEN}`
+            ).toString('base64');
+            
+            // Make the API call
+            const response = await fetch(
+              `https://${process.env.SIGNALWIRE_SPACE_URL}/api/laml/2010-04-01/Accounts/${process.env.SIGNALWIRE_PROJECT_ID}/Calls.json`,
+              {
+                method: 'POST',
+                headers: {
+                  'Authorization': `Basic ${auth}`,
+                  'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams(requestBody as any).toString()
+              }
+            );
+            
+            if (!response.ok) {
+              const errorText = await response.text();
+              throw new Error(`SignalWire API error (${response.status}): ${errorText}`);
+            }
+            
+            const data = await response.json();
+            console.log('SignalWire call created successfully:', data.sid);
+            
+            return {
+              sid: data.sid,
+              status: data.status,
+              to: data.to,
+              from: data.from
+            };
+          } catch (error) {
+            console.error('Error making direct SignalWire API call:', error);
+            throw error;
+          }
         }
-        
-        // For now, we'll use our mock client until we figure out the right API
-        console.log('Using mock client while we identify the correct API structure');
-      } catch (webApiError) {
-        console.error('Failed to explore SignalWire WebAPI:', webApiError);
+      },
+      messages: {
+        create: async (params: any) => {
+          console.log('Sending real SignalWire SMS with direct HTTP approach:', params);
+          
+          try {
+            // Create auth string for Basic Authentication
+            const auth = Buffer.from(
+              `${process.env.SIGNALWIRE_PROJECT_ID}:${process.env.SIGNALWIRE_TOKEN}`
+            ).toString('base64');
+            
+            // Format the request body
+            const requestBody = {
+              To: params.to,
+              From: params.from,
+              Body: params.body
+            };
+            
+            // Make the API call
+            const response = await fetch(
+              `https://${process.env.SIGNALWIRE_SPACE_URL}/api/laml/2010-04-01/Accounts/${process.env.SIGNALWIRE_PROJECT_ID}/Messages.json`,
+              {
+                method: 'POST',
+                headers: {
+                  'Authorization': `Basic ${auth}`,
+                  'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams(requestBody).toString()
+              }
+            );
+            
+            if (!response.ok) {
+              const errorText = await response.text();
+              throw new Error(`SignalWire API error (${response.status}): ${errorText}`);
+            }
+            
+            const data = await response.json();
+            console.log('SignalWire SMS sent successfully:', data.sid);
+            
+            return {
+              sid: data.sid,
+              status: data.status,
+              to: data.to,
+              from: data.from,
+              body: data.body
+            };
+          } catch (error) {
+            console.error('Error sending direct SignalWire SMS:', error);
+            throw error;
+          }
+        }
       }
-    }
+    };
     
-    // Fall back to mock client
-    console.log('Creating mock SignalWire client for development');
-    const client = createMockClient();
-    
-    console.log('SignalWire client initialized successfully');
-    
-    return client as unknown as SignalWireClient;
+    console.log('Direct SignalWire client created successfully');
+    return directClient;
   } catch (error) {
     console.error('Failed to initialize SignalWire client:', error);
-    throw error;
+    console.warn('Falling back to mock SignalWire client');
+    return createMockClient();
   }
 }
 
