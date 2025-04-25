@@ -14,9 +14,16 @@ import personaRoutes from './routes/personaRoutes';
 import { personaManager } from './personaManager';
 // Import the advanced Twilio service with ElevenLabs integration
 import twilioAdvancedRoutes from './routes/twilioAdvancedRoutes';
-import { ELEVENLABS_AUDIO_DIR } from './elevenLabsService';
+import { ELEVENLABS_AUDIO_DIR, cleanupOldAudioFiles } from './elevenLabsService';
+import { initTwilioClient } from './twilioAdvanced';
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Initialize Twilio client for phone calls and SMS
+  initTwilioClient();
+  
+  // Clean up old audio files on startup
+  cleanupOldAudioFiles();
+
   // API Routes
   app.get("/api/health", (_req, res) => {
     res.json({ status: "ok", message: "YoBot API is running" });
