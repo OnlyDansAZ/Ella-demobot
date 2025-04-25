@@ -1,4 +1,5 @@
 import { Router, Request, Response } from 'express';
+import twilio from 'twilio';
 import { 
   makeOutboundCall, 
   PhoneCallRequest, 
@@ -87,6 +88,81 @@ router.post('/phone-call/status', (req: Request, res: Response) => {
     // Always return valid TwiML even on error
     res.setHeader('Content-Type', 'text/xml');
     return res.send('<Response></Response>');
+  }
+});
+
+/**
+ * Handle user speech responses during a call
+ * POST /api/phone-call/response
+ */
+router.post('/phone-call/response', (req: Request, res: Response) => {
+  try {
+    const { CallSid, SpeechResult, Confidence } = req.body;
+    
+    console.log(`Received speech from call ${CallSid}: "${SpeechResult}" (confidence: ${Confidence})`);
+    
+    // Create TwiML response
+    const twiml = new twilio.twiml.VoiceResponse();
+    
+    // Add a small pause
+    twiml.pause({ length: 1 });
+    
+    // Choose voice type (Google voices sound better)
+    const voiceType = 'Google.en-US-Standard-F';
+    
+    if (SpeechResult) {
+      // User said something, respond to them
+      let responseText = "Thank you for your feedback. I've made a note of that.";
+      
+      // Simple response logic based on keywords
+      const userSpeech = SpeechResult.toLowerCase();
+      
+      if (userSpeech.includes('price') || userSpeech.includes('cost') || userSpeech.includes('expensive')) {
+        responseText = "Our pricing is very competitive. We offer multiple tiers starting with our Starter package at five thousand dollars plus a monthly fee of four hundred ninety-nine dollars.";
+      } else if (userSpeech.includes('demo') || userSpeech.includes('try')) {
+        responseText = "I'd be happy to arrange a demo for you. Would you like me to have our sales team contact you to schedule one?";
+      } else if (userSpeech.includes('features') || userSpeech.includes('what can you do')) {
+        responseText = "YoBot can handle appointments, answer customer questions, make outbound calls, and integrate with your existing systems. Our AI is highly customizable to your specific needs.";
+      } else if (userSpeech.includes('thank') || userSpeech.includes('goodbye') || userSpeech.includes('bye')) {
+        responseText = "You're welcome! Thank you for your interest in YoBot. Have a wonderful day!";
+      }
+      
+      // Respond with SSML for better voice quality
+      twiml.say({
+        voice: voiceType,
+        language: 'en-US'
+      }, `<speak><prosody rate="1.05" pitch="+0.2st">${responseText}</prosody></speak>`);
+      
+      // Add another gather to continue the conversation
+      // Use type assertion to avoid TypeScript errors
+      twiml.gather({
+        input: 'speech' as any,
+        speechTimeout: 'auto',
+        speechModel: 'phone_call',
+        language: 'en-US',
+        timeout: 8,
+        action: '/api/phone-call/response',
+      });
+    } else {
+      // No speech detected
+      twiml.say({
+        voice: voiceType,
+        language: 'en-US'
+      }, "<speak><prosody rate='0.95'>I didn't catch that. Thank you for your time. Please call us back if you have any questions.</prosody></speak>");
+    }
+    
+    // Set the appropriate content type and send the TwiML response
+    res.setHeader('Content-Type', 'text/xml');
+    res.send(twiml.toString());
+  } catch (error) {
+    console.error('Error handling speech response:', error);
+    
+    // Return a simple response on error
+    const errorTwiml = new twilio.twiml.VoiceResponse();
+    errorTwiml.say('Sorry, we encountered an error. Please try again later.');
+    
+    res.setHeader('Content-Type', 'text/xml');
+    res.send(errorTwiml.toString());
   }
 });
 

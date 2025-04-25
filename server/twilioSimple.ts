@@ -189,23 +189,13 @@ export async function makeOutboundCall(request: PhoneCallRequest): Promise<CallR
     // Use Google voices which sound more natural than the default Twilio voices
     const voiceType = request.voice === 'male' ? 'Google.en-US-Standard-D' : 'Google.en-US-Standard-F';
     
-    // Create enhanced SSML with better prosody and more natural speech patterns
-    const ssmlScript = `
+    // Create enhanced SSML with just the initial message
+    const initialScript = `
       <speak>
-        <prosody rate="1.1" pitch="+0.5st" volume="loud">
+        <prosody rate="1.05" pitch="+0.3st" volume="loud">
           ${processedScript}
-        </prosody>
-        
-        <break time="1.2s"/>
-        
-        <prosody rate="1" pitch="medium">
+          <break time="0.7s"/>
           Is there anything you'd like me to help you with today?
-        </prosody>
-        
-        <break time="2s"/>
-        
-        <prosody rate="0.9" pitch="+0.25st">
-          Thank you for your time. If you need to reach us later, please don't hesitate to call back or visit our website. Have a great day!
         </prosody>
       </speak>
     `;
@@ -214,20 +204,37 @@ export async function makeOutboundCall(request: PhoneCallRequest): Promise<CallR
     twiml.say({
       voice: voiceType,
       language: 'en-US'
-    }, ssmlScript);
+    }, initialScript);
     
-    // Add pause to allow user to respond
-    twiml.pause({ length: 10 });
+    // Add a short pause to allow the user to start speaking
+    twiml.pause({ length: 2 });
     
-    // If we have a callback URL, add a recording
-    if (request.callbackUrl) {
-      twiml.record({
-        action: request.callbackUrl,
-        transcribe: true,
-        maxLength: 60,
-        timeout: 5
-      });
-    }
+    // Gather user input with speech recognition and generous timeout
+    // This will actually listen to the user's response
+    // Directly use the gather method with type casting
+    twiml.gather({
+      // Force type to any to avoid TypeScript issues
+      input: 'speech' as any,
+      speechTimeout: 'auto',
+      speechModel: 'phone_call', 
+      language: 'en-US',
+      actionOnEmptyResult: true,
+      timeout: 10,
+      action: request.callbackUrl || '/api/phone-call/response',
+    });
+    
+    // Add a fallback message if the user doesn't respond
+    twiml.say({
+      voice: voiceType,
+      language: 'en-US'
+    }, '<speak><prosody rate="0.95" pitch="medium">Thank you for your time. Please call us back if you have any questions.</prosody></speak>');
+    
+    // Always add a recording option to capture the entire call
+    twiml.record({
+      transcribe: true,
+      maxLength: 120,
+      timeout: 10
+    });
     
     // Create a placeholder call record for queued state
     const tempCallId = `temp_${Date.now()}`;
