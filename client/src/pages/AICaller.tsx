@@ -312,27 +312,40 @@ export default function AICaller() {
   };
   
   // Get status badge styling with enhanced error messages and tooltips
-  const getStatusBadge = (status: string, errorDetails?: string) => {
+  const getStatusBadge = (status: string, errorDetails?: string, errorCode?: string) => {
     // Process the status to handle complex error cases
     let displayStatus = status.toLowerCase();
     let tooltip = '';
     
     // Extract error information if present in the status string
     if (displayStatus.includes('failed')) {
-      if (displayStatus.includes('audio')) {
+      // Handle specific error types with more detailed feedback
+      if (displayStatus.includes('audio-generation-failed')) {
         displayStatus = 'audio-failed';
-        tooltip = 'Audio generation failed. The system will automatically retry.';
-      } else if (displayStatus.includes('network')) {
+        tooltip = 'Audio generation failed. This could be due to an issue with the text-to-speech service.';
+      } else if (displayStatus.includes('network-error')) {
         displayStatus = 'network-error';
-        tooltip = 'Network connection issue. Please check your internet connection.';
-      } else if (displayStatus.includes('permission')) {
+        tooltip = 'Network connection issue. Please check your internet connection and try again.';
+      } else if (displayStatus.includes('permission-denied')) {
         displayStatus = 'permission-denied';
-        tooltip = 'Permission denied. Please check phone number format and service authorization.';
+        tooltip = 'Permission denied. Please check your API credentials and service authorization.';
+      } else if (displayStatus.includes('resource-not-found')) {
+        displayStatus = 'not-found';
+        tooltip = 'Required resource was not found. Please check your configuration.';
+      } else if (displayStatus.includes('rate-limited')) {
+        displayStatus = 'rate-limited';
+        tooltip = 'Rate limit exceeded. Please wait a few minutes before trying again.';
       } else if (displayStatus.includes('timeout')) {
         displayStatus = 'timeout';
         tooltip = 'Request timed out. The system will automatically retry.';
+      } else if (displayStatus.includes('invalid-phone')) {
+        displayStatus = 'invalid-phone';
+        tooltip = 'Invalid phone number format. Please use international format (e.g., +15551234567).';
+      } else if (displayStatus.includes('unreachable')) {
+        displayStatus = 'unreachable';
+        tooltip = 'The phone number is unreachable. Please verify it is correct and try again.';
       } else {
-        tooltip = 'Call failed to complete. See logs for details.';
+        tooltip = 'Call failed to complete. Check the error details for more information.';
       }
     } else if (displayStatus === 'busy') {
       tooltip = 'Recipient was busy. Try again later.';
@@ -344,11 +357,29 @@ export default function AICaller() {
       tooltip = 'Call is currently active.';
     } else if (displayStatus === 'queued' || displayStatus === 'scheduled') {
       tooltip = 'Call is waiting to be processed.';
+    } else if (displayStatus === 'initiating') {
+      tooltip = 'Call is being initiated. This typically takes a few seconds.';
+    } else if (displayStatus === 'generating-audio') {
+      tooltip = 'Generating high-quality speech audio with ElevenLabs.';
     }
     
-    // Use error details if provided (overrides default tooltip)
+    // Add error code to tooltip if available
+    if (errorCode) {
+      tooltip += ` (Error code: ${errorCode})`;
+    }
+    
+    // Use detailed error message if provided (prioritize this over generated tooltips)
     if (errorDetails) {
       tooltip = errorDetails;
+      // Still append error code if not already included in the details
+      if (errorCode && !tooltip.includes(errorCode)) {
+        tooltip += ` (Error code: ${errorCode})`;
+      }
+    }
+    
+    // Truncate very long tooltips for better UI
+    if (tooltip.length > 250) {
+      tooltip = tooltip.substring(0, 247) + '...';
     }
     
     // Render badge with appropriate styling and tooltip
@@ -368,6 +399,14 @@ export default function AICaller() {
           return <Badge variant="destructive"><XCircle className="h-3 w-3 mr-1" /> Permission Denied</Badge>;
         case 'timeout':
           return <Badge variant="destructive"><XCircle className="h-3 w-3 mr-1" /> Timeout</Badge>;
+        case 'not-found':
+          return <Badge variant="destructive"><XCircle className="h-3 w-3 mr-1" /> Not Found</Badge>;
+        case 'rate-limited':
+          return <Badge variant="destructive"><XCircle className="h-3 w-3 mr-1" /> Rate Limited</Badge>;
+        case 'invalid-phone':
+          return <Badge variant="destructive"><XCircle className="h-3 w-3 mr-1" /> Invalid Number</Badge>;
+        case 'unreachable':
+          return <Badge variant="destructive"><XCircle className="h-3 w-3 mr-1" /> Unreachable</Badge>;
         
         // Call states
         case 'busy':
@@ -380,6 +419,10 @@ export default function AICaller() {
         case 'queued':
         case 'scheduled':
           return <Badge variant="outline" className="border-amber-500 text-amber-500"><Clock className="h-3 w-3 mr-1" /> {displayStatus === 'queued' ? 'Queued' : 'Scheduled'}</Badge>;
+        case 'initiating':
+          return <Badge className="bg-blue-600"><Phone className="h-3 w-3 mr-1" /> Initiating</Badge>;
+        case 'generating-audio':
+          return <Badge className="bg-purple-600"><Play className="h-3 w-3 mr-1" /> Generating Audio</Badge>;
         
         // Default/unknown status
         default:
@@ -688,7 +731,7 @@ export default function AICaller() {
                         {callHistory.map((call: CallRecord) => (
                           <TableRow key={call.id}>
                             <TableCell>{formatPhoneNumber(call.to)}</TableCell>
-                            <TableCell>{getStatusBadge(call.status, call.errorDetails)}</TableCell>
+                            <TableCell>{getStatusBadge(call.status, call.errorDetails, call.errorCode)}</TableCell>
                             <TableCell>{call.persona}</TableCell>
                             <TableCell>
                               {call.duration ? `${Math.round(call.duration)}s` : '-'}
@@ -711,7 +754,7 @@ export default function AICaller() {
                               <p className="text-sm text-gray-500">{call.persona}</p>
                             </div>
                             <div className="text-right">
-                              {getStatusBadge(call.status, call.errorDetails)}
+                              {getStatusBadge(call.status, call.errorDetails, call.errorCode)}
                             </div>
                           </div>
                           <div className="flex justify-between text-sm mt-2 pt-2 border-t border-gray-100">

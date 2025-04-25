@@ -73,7 +73,14 @@ router.post('/phone-call', async (req: Request, res: Response) => {
 router.post('/phone-call/status-callback', (req: Request, res: Response) => {
   try {
     // SignalWire uses similar parameter names to Twilio
-    const { CallSid, CallStatus, CallDuration, RecordingUrl } = req.body;
+    const { 
+      CallSid, 
+      CallStatus, 
+      CallDuration, 
+      RecordingUrl,
+      ErrorCode,
+      ErrorMessage 
+    } = req.body;
     
     if (!CallSid || !CallStatus) {
       return res.status(400).json({ error: 'Invalid callback data' });
@@ -81,12 +88,29 @@ router.post('/phone-call/status-callback', (req: Request, res: Response) => {
     
     console.log(`Call ${CallSid} status update: ${CallStatus}`);
     
-    // Use the SignalWireService handleStatusCallback helper
+    // Extract error information if present
+    let errorType = undefined;
+    
+    // Determine error type from status and error code if available
+    if (CallStatus.toLowerCase().includes('failed') || ErrorCode) {
+      if (ErrorCode === '31201' || ErrorCode === '31607') {
+        errorType = 'invalid-number';
+      } else if (ErrorCode === '31204') {
+        errorType = 'unreachable';
+      } else if (ErrorCode) {
+        errorType = `error-${ErrorCode}`;
+      }
+    }
+    
+    // Use the SignalWireService handleStatusCallback helper with error information
     const updatedRecord = handleStatusCallback(
       CallSid, 
       CallStatus, 
       CallDuration, 
-      RecordingUrl
+      RecordingUrl,
+      errorType,
+      ErrorCode,
+      ErrorMessage
     );
     
     // Respond with success to SignalWire (use XML format as expected)
