@@ -26,46 +26,85 @@ if (!fs.existsSync(TEMP_DIR)) {
   fs.mkdirSync(TEMP_DIR, { recursive: true });
 }
 
-// Helper function for ElevenLabs voice generation
+// Helper function for ElevenLabs voice generation using direct API
 const generateSpeech = async (text: string, voiceId: string, options: any): Promise<string> => {
   try {
     // Create output file path
     const outputFile = options.outputFileName || path.join(TEMP_DIR, `speech_${Date.now()}.mp3`);
     
-    // Set voice settings
-    const voice = {
-      voice_id: voiceId,
-      stability: options.stability || 0.5, 
-      similarity_boost: options.similarityBoost || 0.75,
-      style: options.style || 0.5,
-      use_speaker_boost: options.speakerBoost || true
-    };
-    
-    // Use fs to write directly to file
     console.log(`Generating ElevenLabs audio to: ${outputFile}`);
     
-    try {
-      // Manual wrapper around the ElevenLabs library calls
-      // @ts-ignore - The ElevenLabs typings are not up to date
-      await new Promise((resolve, reject) => {
-        elevenLabs.generate(text, voice, outputFile)
-          .then(() => {
-            console.log(`ElevenLabs speech saved to: ${outputFile}`);
-            resolve(outputFile);
-          })
-          .catch((err: any) => {
-            console.error("ElevenLabs generate error:", err);
-            reject(err);
-          });
-      });
+    // Process text to improve speech readability
+    // Replace bullet points and similar characters with proper phrases for better speech
+    const processedText = text
+      .replace(/•\s*/g, "")      // Remove bullet points completely
+      .replace(/\*/g, "")        // Remove asterisks completely
+      .replace(/-\s+/g, "")      // Remove hyphens followed by whitespace
+      .replace(/^\s*-\s*/gm, "") // Remove hyphens at the beginning of each line
+      .replace(/\n\s*-\s*/g, "\n"); // Replace newline-hyphen patterns with just newlines
       
-      return outputFile;
-    } catch (err) {
-      console.error("Error generating speech with ElevenLabs:", err);
-      throw err;
+    // Get API key from environment
+    const ELEVENLABS_API_KEY = process.env.ELEVENLABS_API_KEY;
+    if (!ELEVENLABS_API_KEY) {
+      throw new Error("ElevenLabs API key is not configured or missing");
     }
+    
+    // Create a fresh ElevenLabs instance with the API key
+    const elevenlabsInstance = new ElevenLabs({
+      apiKey: ELEVENLABS_API_KEY,
+      voiceId: voiceId // Set the voiceId during initialization
+    });
+    
+    // Configure speech parameters with either persona-specific, user-provided, or defaults
+    const stability = options.stability !== undefined ? options.stability : 0.5;
+    const similarityBoost = options.similarityBoost !== undefined ? options.similarityBoost : 0.75;
+    const style = options.style !== undefined ? options.style : 0.5;
+    const useSpeakerBoost = options.useSpeakerBoost !== undefined ? options.useSpeakerBoost : true;
+    
+    console.log(`Using voice ID: ${voiceId} with parameters:`, { 
+      stability, similarityBoost, style, useSpeakerBoost 
+    });
+    
+    // Create a promise to handle the ElevenLabs API call
+    return new Promise((resolve, reject) => {
+      try {
+        // Make direct API call to ElevenLabs following the type definition
+        elevenlabsInstance.textToSpeech({
+          textInput: processedText,
+          fileName: outputFile,
+          stability: stability,
+          similarityBoost: similarityBoost,
+          style: style,
+          speakerBoost: useSpeakerBoost,
+          modelId: "eleven_turbo_v2"
+        }).then((result: any) => {
+          console.log("ElevenLabs API response:", result);
+          
+          // Verify file exists
+          if (fs.existsSync(outputFile)) {
+            console.log(`Verified ElevenLabs audio file exists: ${outputFile}`);
+            const stats = fs.statSync(outputFile);
+            console.log(`File size: ${stats.size} bytes`);
+            
+            if (stats.size === 0) {
+              reject(new Error("Generated audio file is empty"));
+            } else {
+              resolve(outputFile);
+            }
+          } else {
+            reject(new Error(`ElevenLabs audio file not found at expected location: ${outputFile}`));
+          }
+        }).catch((err: any) => {
+          console.error("ElevenLabs API error:", err);
+          reject(err);
+        });
+      } catch (err) {
+        console.error("Exception making ElevenLabs API call:", err);
+        reject(err);
+      }
+    });
   } catch (error) {
-    console.error('ElevenLabs exception:', error);
+    console.error('ElevenLabs speech generation error:', error);
     throw error;
   }
 };
