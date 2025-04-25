@@ -78,7 +78,7 @@ export default function QuickCallButton({
         ...values,
         persona: persona
       };
-      return apiRequest('/api/phone-call', 'POST', callData);
+      return apiRequest('POST', '/api/phone-call', callData);
     },
     onSuccess: () => {
       toast({

@@ -229,11 +229,11 @@ export default function AICaller() {
         
         const blob = await response.blob();
         return URL.createObjectURL(blob);
-      } catch (err) {
-        if (err.name === 'AbortError') {
+      } catch (err: any) {
+        if (err && err.name === 'AbortError') {
           throw new Error('Speech generation timed out. Please try again.');
         }
-        throw err;
+        throw new Error(err && err.message ? err.message : 'Speech generation failed');
       }
     },
     onSuccess: (audioUrl) => {
