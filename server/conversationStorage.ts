@@ -140,9 +140,22 @@ export class ConversationStorage {
   
   /**
    * Get messages from a conversation session
+   * If the persona has a stateless memory mode, returns an empty array
    */
   async getMessages(sessionId: string): Promise<ChatMessage[]> {
     const session = await this.getOrCreateSession(sessionId);
+    
+    // Get the current persona for this session
+    const persona = personaManager.getSessionPersona(sessionId);
+    
+    // If the persona uses stateless memory mode, don't return any history
+    if (persona.memoryMode === 'stateless') {
+      console.log(`Using stateless memory mode for session ${sessionId.substring(0, 8)}... - history not preserved`);
+      return [];
+    }
+    
+    // Otherwise return the full message history for persistent memory mode
+    console.log(`Using persistent memory mode for session ${sessionId.substring(0, 8)}... - returning ${session.messages.length} messages`);
     return session.messages;
   }
   
@@ -190,6 +203,26 @@ export class ConversationStorage {
     const result = this.sessions.delete(sessionId);
     this.saveToFile();
     return result;
+  }
+
+  /**
+   * Reset message history for stateless personas
+   * This should be called at the end of interactions with stateless personas
+   * such as when a sales call ends
+   */
+  async resetStatelessSession(sessionId: string): Promise<boolean> {
+    // Get the current persona for this session
+    const persona = personaManager.getSessionPersona(sessionId);
+    
+    // Only reset history if the persona is stateless
+    if (persona.memoryMode === 'stateless') {
+      console.log(`Resetting stateless memory for session ${sessionId.substring(0, 8)}...`);
+      return this.clearMessages(sessionId);
+    }
+    
+    // For persistent memory, don't reset anything
+    console.log(`Skipping reset for persistent memory session ${sessionId.substring(0, 8)}...`);
+    return false;
   }
 }
 

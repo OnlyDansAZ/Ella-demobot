@@ -10,6 +10,7 @@ import {
 } from '../twilioAdvanced';  // We'll keep using the same call history storage
 import { generateSpeech, getVoiceId, ELEVENLABS_AUDIO_DIR } from '../elevenLabsService';
 import { makeOutboundCall, handleStatusCallback, PhoneCallRequest, getTempLaml } from '../signalWireService';
+import { conversationStorage } from '../conversationStorage';
 
 // In-memory store of active call transcripts for WebSocket updates
 // Maps call SID to array of transcript entries
@@ -75,7 +76,7 @@ router.post('/phone-call', async (req: Request, res: Response) => {
  * Handle status callbacks from SignalWire
  * POST /api/phone-call/status-callback
  */
-router.post('/phone-call/status-callback', (req: Request, res: Response) => {
+router.post('/phone-call/status-callback', async (req: Request, res: Response) => {
   try {
     // SignalWire uses similar parameter names to Twilio
     const { 
@@ -117,6 +118,29 @@ router.post('/phone-call/status-callback', (req: Request, res: Response) => {
       ErrorCode,
       ErrorMessage
     );
+    
+    // Check if the call is completed or has failed/errored, then reset memory for stateless memory mode
+    if (CallStatus.toLowerCase() === 'completed' || 
+        CallStatus.toLowerCase() === 'failed' || 
+        CallStatus.toLowerCase() === 'busy' || 
+        CallStatus.toLowerCase() === 'no-answer' ||
+        CallStatus.toLowerCase() === 'canceled') {
+      
+      try {
+        // Import conversationStorage here to avoid circular dependency
+        const { conversationStorage } = require('../conversationStorage');
+        
+        // Use the call ID as the session ID for memory management
+        const sessionId = CallSid;
+        
+        // Reset memory for stateless personas (no-op for persistent memory)
+        await conversationStorage.resetStatelessSession(sessionId);
+        
+        console.log(`Memory management: Call ${CallSid} ended with status ${CallStatus}. Memory cleaned if stateless.`);
+      } catch (memoryError) {
+        console.error(`Error handling memory cleanup for call ${CallSid}:`, memoryError);
+      }
+    }
     
     // Respond with success to SignalWire (use XML format as expected)
     res.setHeader('Content-Type', 'text/xml');
