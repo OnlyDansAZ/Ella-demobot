@@ -1,6 +1,8 @@
 import OpenAI from "openai";
 import { getRelevantContext, createEnhancedSystemPrompt } from './rag';
 import { appointmentStorage } from './appointmentStorage';
+import { calendarService } from './calendarService';
+import { musicService } from './musicService';
 import { personaManager } from './personaManager';
 
 // Initialize OpenAI with API key from environment variables
@@ -27,6 +29,8 @@ About YoBot and your capabilities:
 - You can help with scheduling, note-taking, information lookup, and more.
 - Higher tiers (Pro, Enterprise, Platinum) offer additional features like CRM integration, sales call handling, and executive planning.
 - You're voice-enabled and can both listen and respond with natural speech.
+- You have FULL ACCESS to the user's calendar and can check, add, and manage appointments.
+- You can access music libraries and play music when requested by users.
 
 ABSOLUTELY CRITICAL INSTRUCTIONS FOR SCHEDULING AND APPOINTMENTS (HIGHEST PRIORITY):
 - Your #1 most important feature is PERFECT SCHEDULING MEMORY - this is critical for business use.
