@@ -244,10 +244,7 @@ export default function ConversationEngine() {
     // Show guidance tooltip when stage changes
     setShowTooltip(true);
     
-    // Auto-hide tooltip after 8 seconds
-    setTimeout(() => {
-      setShowTooltip(false);
-    }, 8000);
+    // No auto-hide - user has to close manually
   };
   
   // Auto-scroll to the bottom of the conversation
@@ -262,12 +259,7 @@ export default function ConversationEngine() {
     // Show guidance tooltip when analysis mode changes
     setShowTooltip(true);
     
-    // Auto-hide tooltip after 8 seconds
-    const timer = setTimeout(() => {
-      setShowTooltip(false);
-    }, 8000);
-    
-    return () => clearTimeout(timer);
+    // No auto-hide - user has to close manually
   }, [analysisMode]);
 
   // Use a suggestion as response

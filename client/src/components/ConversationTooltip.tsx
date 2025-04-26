@@ -28,7 +28,7 @@ export function ConversationTooltip(props: ConversationTooltipProps) {
   if (!isVisible) return null;
   
   return (
-    <React.Fragment>
+    <>
       <div className="tooltip-backdrop" onClick={onClose}></div>
       
       <div 
@@ -63,7 +63,7 @@ export function ConversationTooltip(props: ConversationTooltipProps) {
           </Button>
         </div>
       </div>
-    </React.Fragment>
+    </>
   );
 }
 
