@@ -65,10 +65,11 @@ export default function Admin() {
       <Separator className="my-6" />
       
       <Tabs defaultValue="knowledge">
-        <TabsList className="grid w-full md:w-auto grid-cols-2 md:grid-cols-3">
+        <TabsList className="grid w-full md:w-auto grid-cols-2 md:grid-cols-4">
           <TabsTrigger value="knowledge">Knowledge Base</TabsTrigger>
           <TabsTrigger value="settings">Settings</TabsTrigger>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
+          <TabsTrigger value="followup">Follow-up Intel</TabsTrigger>
         </TabsList>
         
         <TabsContent value="knowledge" className="mt-6">
@@ -136,6 +137,41 @@ export default function Admin() {
               <h2 className="text-2xl font-semibold mb-4">System Parameters</h2>
               <div className="rounded-md bg-amber-50 border border-amber-200 p-4 text-amber-800">
                 <p>Additional system configuration options would appear here.</p>
+              </div>
+            </div>
+          </div>
+        </TabsContent>
+        
+        <TabsContent value="followup" className="mt-6">
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-2xl font-semibold mb-4">Follow-up Intelligence</h2>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="rounded-md bg-purple-50 border border-purple-200 p-4 flex flex-col justify-between">
+                  <div>
+                    <h3 className="font-medium text-purple-800">Meeting Follow-up Manager</h3>
+                    <p className="text-sm text-purple-800 mt-2">Generate post-meeting summaries, track next steps, and collect participant feedback</p>
+                  </div>
+                  <div className="mt-4">
+                    <Link href="/followup">
+                      <Button className="w-full flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-700">
+                        <FileText className="h-4 w-4" />
+                        <span>Manage Follow-up Intelligence</span>
+                      </Button>
+                    </Link>
+                  </div>
+                </div>
+                
+                <div className="rounded-md bg-muted p-4">
+                  <h3 className="font-medium">Key Features</h3>
+                  <ul className="text-sm mt-2 space-y-1 list-disc pl-4">
+                    <li>Automated meeting summaries</li>
+                    <li>Next steps tracking and follow-up</li>
+                    <li>Participant feedback collection</li>
+                    <li>Status update tracking</li>
+                    <li>Calendar integration</li>
+                  </ul>
+                </div>
               </div>
             </div>
           </div>
