@@ -14,6 +14,7 @@ import personaRoutes from './routes/personaRoutes';
 import sessionRoutes from './routes/sessionRoutes';
 import calendarRoutes from './routes/calendarRoutes';
 import followupRoutes from './routes/followupRoutes';
+import salesIntelligenceRoutes from './routes/salesIntelligenceRoutes';
 import { personaManager } from './personaManager';
 import { calendarService } from './calendarService';
 // Import the SignalWire service with ElevenLabs integration
@@ -64,6 +65,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Follow-up intelligence routes
   app.use("/api/followup", followupRoutes);
+  
+  // Sales intelligence and analytics routes
+  app.use("/api/sales-intel", salesIntelligenceRoutes);
   
   // SignalWire phone call routes
   // Use the SignalWire implementation with ElevenLabs

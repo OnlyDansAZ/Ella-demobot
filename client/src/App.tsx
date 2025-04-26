@@ -17,6 +17,7 @@ import VoiceTest from "@/pages/VoiceTest";
 import MemoryDemo from "@/pages/MemoryDemo";
 import ConversationEngine from "@/pages/ConversationEngine";
 import FollowupIntel from "@/pages/FollowupIntel";
+import SalesIntelligence from "@/pages/SalesIntelligence";
 
 function Router() {
   return (
@@ -36,6 +37,7 @@ function Router() {
       <Route path="/conversation-engine" component={ConversationEngine} />
       <Route path="/followup" component={FollowupIntel} />
       <Route path="/followup/:id" component={FollowupIntel} />
+      <Route path="/sales-intelligence" component={SalesIntelligence} />
       <Route component={NotFound} />
     </Switch>
   );
