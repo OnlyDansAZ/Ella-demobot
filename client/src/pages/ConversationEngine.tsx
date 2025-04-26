@@ -1,13 +1,9 @@
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-// Using a simple div with overflow instead of ScrollArea component
-// import { ScrollArea } from '@/components/ui/scroll-area';
-import { Avatar } from '@/components/ui/avatar';
 
 // Recommendation engine types
 interface ChatMessage {
@@ -486,22 +482,33 @@ export default function ConversationEngine() {
               <CardDescription>Choose analysis approach</CardDescription>
             </CardHeader>
             <CardContent>
-              <Tabs defaultValue="strategic" onValueChange={(v) => setAnalysisMode(v as any)}>
-                <TabsList className="w-full">
-                  <TabsTrigger value="strategic" className="flex-1">Strategic</TabsTrigger>
-                  <TabsTrigger value="tactical" className="flex-1">Tactical</TabsTrigger>
-                </TabsList>
-                <TabsContent value="strategic" className="pt-4">
+              <div className="border-b pb-2">
+                <div className="flex space-x-1 p-1 bg-gray-100 rounded-lg">
+                  <button 
+                    className={`px-3 py-1.5 text-sm flex-1 rounded-md ${analysisMode === 'strategic' ? 'bg-white shadow' : ''}`}
+                    onClick={() => setAnalysisMode('strategic')}
+                  >
+                    Strategic
+                  </button>
+                  <button 
+                    className={`px-3 py-1.5 text-sm flex-1 rounded-md ${analysisMode === 'tactical' ? 'bg-white shadow' : ''}`}
+                    onClick={() => setAnalysisMode('tactical')}
+                  >
+                    Tactical
+                  </button>
+                </div>
+              </div>
+              <div className="pt-4">
+                {analysisMode === 'strategic' ? (
                   <div className="text-sm text-muted-foreground">
                     Focuses on long-term goals and relationship building. Provides suggestions aimed at understanding needs and building trust.
                   </div>
-                </TabsContent>
-                <TabsContent value="tactical" className="pt-4">
+                ) : (
                   <div className="text-sm text-muted-foreground">
                     Emphasizes immediate actions and overcoming objections. Suggestions are more direct and focused on advancing the sale.
                   </div>
-                </TabsContent>
-              </Tabs>
+                )}
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -514,7 +521,7 @@ export default function ConversationEngine() {
               <CardDescription>Test different approaches and analyze responses</CardDescription>
             </CardHeader>
             <CardContent className="flex-grow overflow-auto">
-              <ScrollArea className="h-[400px] pr-4">
+              <div className="h-[400px] pr-4 overflow-y-auto">
                 <div className="space-y-4">
                   {conversation.length === 0 ? (
                     <div className="flex flex-col items-center py-8">
@@ -569,11 +576,9 @@ export default function ConversationEngine() {
                       >
                         <div className="flex items-start gap-2 max-w-[80%]">
                           {!msg.isUser && (
-                            <Avatar className="h-8 w-8 mt-1">
-                              <div className="bg-primary text-primary-foreground h-full w-full flex items-center justify-center text-xs font-medium">
-                                AI
-                              </div>
-                            </Avatar>
+                            <div className="h-8 w-8 mt-1 rounded-full bg-primary text-white flex items-center justify-center text-xs font-medium">
+                              AI
+                            </div>
                           )}
                           <motion.div 
                             className={`rounded-lg px-4 py-2 ${
@@ -589,18 +594,16 @@ export default function ConversationEngine() {
                             </div>
                           </motion.div>
                           {msg.isUser && (
-                            <Avatar className="h-8 w-8 mt-1">
-                              <div className="bg-slate-600 text-white h-full w-full flex items-center justify-center text-xs font-medium">
-                                You
-                              </div>
-                            </Avatar>
+                            <div className="h-8 w-8 mt-1 rounded-full bg-slate-600 text-white flex items-center justify-center text-xs font-medium">
+                              You
+                            </div>
                           )}
                         </div>
                       </motion.div>
                     ))
                   )}
                 </div>
-              </ScrollArea>
+              </div>
             </CardContent>
             <CardFooter className="border-t pt-4">
               <div className="flex w-full gap-2">
@@ -634,7 +637,7 @@ export default function ConversationEngine() {
               <CardDescription>AI-generated suggestions based on context</CardDescription>
             </CardHeader>
             <CardContent className="pt-4 flex-grow overflow-auto">
-              <ScrollArea className="h-[400px] pr-4">
+              <div className="h-[400px] pr-4 overflow-y-auto">
                 {isAnalyzing ? (
                   <div className="flex flex-col items-center py-8">
                     <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full"></div>
@@ -693,7 +696,7 @@ export default function ConversationEngine() {
                     </div>
                   </div>
                 )}
-              </ScrollArea>
+              </div>
             </CardContent>
             <CardFooter className="border-t">
               {suggestions.length > 0 && (
