@@ -370,6 +370,79 @@ async function getUpcomingAppointments(limit: number = 3): Promise<any> {
   }
 }
 
+/**
+ * Get upcoming calendar events
+ * @param days Number of days to look ahead
+ * @param limit Maximum number of events to return
+ */
+async function getCalendarEvents(days: number = 7, limit: number = 5): Promise<any> {
+  try {
+    const events = calendarService.getUpcomingEvents(days, limit);
+    return {
+      success: true,
+      events,
+      error: null
+    };
+  } catch (error) {
+    console.error('Error getting calendar events:', error);
+    return {
+      success: false,
+      events: [],
+      error: error instanceof Error ? error.message : String(error)
+    };
+  }
+}
+
+/**
+ * Get today's calendar events
+ */
+async function getTodaysCalendarEvents(): Promise<any> {
+  try {
+    const events = calendarService.getEventsForToday();
+    return {
+      success: true,
+      events,
+      error: null
+    };
+  } catch (error) {
+    console.error('Error getting today\'s calendar events:', error);
+    return {
+      success: false,
+      events: [],
+      error: error instanceof Error ? error.message : String(error)
+    };
+  }
+}
+
+/**
+ * Get a formatted summary of the calendar
+ */
+async function getCalendarSummary(): Promise<string> {
+  try {
+    // Get calendar summary
+    const todaySummary = calendarService.getTodaySummary();
+    const tomorrowSummary = calendarService.getTomorrowSummary();
+    const upcomingSummary = calendarService.getUpcomingSummary(7);
+    
+    // Combine into a single summary
+    return `
+Calendar Summary:
+
+TODAY:
+${todaySummary}
+
+TOMORROW:
+${tomorrowSummary}
+
+UPCOMING EVENTS:
+${upcomingSummary}
+`.trim();
+  } catch (error) {
+    console.error('Error getting calendar summary:', error);
+    return 'Sorry, I was unable to retrieve your calendar summary at this time.';
+  }
+}
+
 // Summarize older messages to provide context without exceeding token limits
 function summarizeOlderMessages(messages: ChatMessage[]): string {
   if (!messages || messages.length === 0) {

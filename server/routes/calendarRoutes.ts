@@ -1,7 +1,7 @@
-import { Router } from 'express';
+import express from 'express';
 import { calendarService } from '../calendarService';
 
-const router = Router();
+const router = express.Router();
 
 /**
  * Get all calendar events
@@ -12,8 +12,12 @@ router.get('/', (req, res) => {
     const events = calendarService.getAllEvents();
     res.json({ success: true, events });
   } catch (error) {
-    console.error('Error getting all events:', error);
-    res.status(500).json({ success: false, error: 'Failed to retrieve calendar events' });
+    console.error('Error getting all calendar events:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to retrieve calendar events',
+      details: error instanceof Error ? error.message : String(error)
+    });
   }
 });
 
@@ -23,16 +27,26 @@ router.get('/', (req, res) => {
  */
 router.get('/date/:date', (req, res) => {
   try {
-    const date = new Date(req.params.date);
-    if (isNaN(date.getTime())) {
+    const { date } = req.params;
+    
+    if (!date) {
+      return res.status(400).json({ success: false, error: 'Date parameter is required' });
+    }
+    
+    const dateObj = new Date(date);
+    if (isNaN(dateObj.getTime())) {
       return res.status(400).json({ success: false, error: 'Invalid date format' });
     }
     
-    const events = calendarService.getEventsForDate(date);
+    const events = calendarService.getEventsForDate(dateObj);
     res.json({ success: true, events });
   } catch (error) {
     console.error('Error getting events for date:', error);
-    res.status(500).json({ success: false, error: 'Failed to retrieve calendar events' });
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to retrieve events for date',
+      details: error instanceof Error ? error.message : String(error)
+    });
   }
 });
 
@@ -46,7 +60,11 @@ router.get('/today', (req, res) => {
     res.json({ success: true, events });
   } catch (error) {
     console.error('Error getting today\'s events:', error);
-    res.status(500).json({ success: false, error: 'Failed to retrieve today\'s events' });
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to retrieve today\'s events',
+      details: error instanceof Error ? error.message : String(error)
+    });
   }
 });
 
@@ -60,7 +78,11 @@ router.get('/tomorrow', (req, res) => {
     res.json({ success: true, events });
   } catch (error) {
     console.error('Error getting tomorrow\'s events:', error);
-    res.status(500).json({ success: false, error: 'Failed to retrieve tomorrow\'s events' });
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to retrieve tomorrow\'s events',
+      details: error instanceof Error ? error.message : String(error)
+    });
   }
 });
 
@@ -70,14 +92,18 @@ router.get('/tomorrow', (req, res) => {
  */
 router.get('/upcoming', (req, res) => {
   try {
-    const days = parseInt(req.query.days as string || '7');
-    const limit = parseInt(req.query.limit as string || '5');
+    const days = parseInt(req.query.days as string) || 7;
+    const limit = parseInt(req.query.limit as string) || 5;
     
     const events = calendarService.getUpcomingEvents(days, limit);
     res.json({ success: true, events });
   } catch (error) {
     console.error('Error getting upcoming events:', error);
-    res.status(500).json({ success: false, error: 'Failed to retrieve upcoming events' });
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to retrieve upcoming events',
+      details: error instanceof Error ? error.message : String(error)
+    });
   }
 });
 
@@ -87,16 +113,26 @@ router.get('/upcoming', (req, res) => {
  */
 router.get('/agenda/:date', (req, res) => {
   try {
-    const date = new Date(req.params.date);
-    if (isNaN(date.getTime())) {
+    const { date } = req.params;
+    
+    if (!date) {
+      return res.status(400).json({ success: false, error: 'Date parameter is required' });
+    }
+    
+    const dateObj = new Date(date);
+    if (isNaN(dateObj.getTime())) {
       return res.status(400).json({ success: false, error: 'Invalid date format' });
     }
     
-    const agenda = calendarService.getAgenda(date);
+    const agenda = calendarService.getAgenda(dateObj);
     res.json({ success: true, agenda });
   } catch (error) {
     console.error('Error getting agenda for date:', error);
-    res.status(500).json({ success: false, error: 'Failed to retrieve agenda' });
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to retrieve agenda for date',
+      details: error instanceof Error ? error.message : String(error)
+    });
   }
 });
 
@@ -110,7 +146,11 @@ router.get('/agenda/today', (req, res) => {
     res.json({ success: true, agenda });
   } catch (error) {
     console.error('Error getting today\'s agenda:', error);
-    res.status(500).json({ success: false, error: 'Failed to retrieve today\'s agenda' });
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to retrieve today\'s agenda',
+      details: error instanceof Error ? error.message : String(error)
+    });
   }
 });
 
@@ -120,12 +160,17 @@ router.get('/agenda/today', (req, res) => {
  */
 router.get('/summary', (req, res) => {
   try {
-    const days = parseInt(req.query.days as string || '7');
+    const days = parseInt(req.query.days as string) || 7;
+    
     const summary = calendarService.getUpcomingSummary(days);
     res.json({ success: true, summary });
   } catch (error) {
     console.error('Error getting upcoming summary:', error);
-    res.status(500).json({ success: false, error: 'Failed to retrieve upcoming summary' });
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to retrieve upcoming summary',
+      details: error instanceof Error ? error.message : String(error)
+    });
   }
 });
 
@@ -138,7 +183,7 @@ router.post('/', (req, res) => {
     const { title, description, start, end, location, participants, allDay, recurring, recurrencePattern, reminderMinutes } = req.body;
     
     if (!title || !start || !end) {
-      return res.status(400).json({ success: false, error: 'Missing required fields: title, start, end' });
+      return res.status(400).json({ success: false, error: 'Title, start, and end are required fields' });
     }
     
     const event = calendarService.addEvent({
@@ -154,10 +199,14 @@ router.post('/', (req, res) => {
       reminderMinutes
     });
     
-    res.status(201).json({ success: true, event });
+    res.json({ success: true, event });
   } catch (error) {
-    console.error('Error adding event:', error);
-    res.status(500).json({ success: false, error: 'Failed to add event' });
+    console.error('Error adding calendar event:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to add calendar event',
+      details: error instanceof Error ? error.message : String(error)
+    });
   }
 });
 
@@ -167,10 +216,14 @@ router.post('/', (req, res) => {
  */
 router.put('/:id', (req, res) => {
   try {
-    const id = req.params.id;
+    const { id } = req.params;
     const { title, description, start, end, location, participants, allDay, recurring, recurrencePattern, reminderMinutes } = req.body;
     
-    const updatedEvent = calendarService.updateEvent(id, {
+    if (!id) {
+      return res.status(400).json({ success: false, error: 'Event ID parameter is required' });
+    }
+    
+    const event = calendarService.updateEvent(id, {
       title,
       description,
       start,
@@ -183,14 +236,18 @@ router.put('/:id', (req, res) => {
       reminderMinutes
     });
     
-    if (!updatedEvent) {
-      return res.status(404).json({ success: false, error: 'Event not found' });
+    if (!event) {
+      return res.status(404).json({ success: false, error: `Calendar event with ID ${id} not found` });
     }
     
-    res.json({ success: true, event: updatedEvent });
+    res.json({ success: true, event });
   } catch (error) {
-    console.error('Error updating event:', error);
-    res.status(500).json({ success: false, error: 'Failed to update event' });
+    console.error('Error updating calendar event:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to update calendar event',
+      details: error instanceof Error ? error.message : String(error)
+    });
   }
 });
 
@@ -200,17 +257,26 @@ router.put('/:id', (req, res) => {
  */
 router.delete('/:id', (req, res) => {
   try {
-    const id = req.params.id;
+    const { id } = req.params;
+    
+    if (!id) {
+      return res.status(400).json({ success: false, error: 'Event ID parameter is required' });
+    }
+    
     const deleted = calendarService.deleteEvent(id);
     
     if (!deleted) {
-      return res.status(404).json({ success: false, error: 'Event not found' });
+      return res.status(404).json({ success: false, error: `Calendar event with ID ${id} not found` });
     }
     
-    res.json({ success: true, message: 'Event deleted successfully' });
+    res.json({ success: true, message: `Calendar event with ID ${id} deleted successfully` });
   } catch (error) {
-    console.error('Error deleting event:', error);
-    res.status(500).json({ success: false, error: 'Failed to delete event' });
+    console.error('Error deleting calendar event:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to delete calendar event',
+      details: error instanceof Error ? error.message : String(error)
+    });
   }
 });
 
