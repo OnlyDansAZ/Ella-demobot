@@ -278,16 +278,24 @@ export default function ConversationEngine() {
                 {conversationStages.map((stage) => (
                   <div
                     key={stage.id}
-                    className={`p-3 border rounded-lg cursor-pointer ${currentStage === stage.id ? 'border-primary bg-primary/5' : ''}`}
+                    className={`p-3 border rounded-lg cursor-pointer hover:shadow-sm transition-all ${
+                      currentStage === stage.id 
+                        ? 'border-primary bg-primary/5 shadow-sm' 
+                        : 'hover:border-gray-300'
+                    }`}
                     onClick={() => advanceStage(stage.id)}
                   >
                     <div className="flex items-center">
-                      <div className={`w-3 h-3 rounded-full ${stage.color} mr-2`}></div>
+                      <div className={`w-4 h-4 rounded-full ${stage.color} mr-2 flex items-center justify-center`}>
+                        {currentStage === stage.id && (
+                          <div className="w-2 h-2 rounded-full bg-white"></div>
+                        )}
+                      </div>
                       <div className="font-medium">{stage.name}</div>
                     </div>
                     <div className="text-sm text-muted-foreground mt-1">{stage.description}</div>
                     {currentStage === stage.id && (
-                      <Badge variant="outline" className="mt-2">Current Stage</Badge>
+                      <Badge variant="outline" className="mt-2 bg-primary/10">Current Stage</Badge>
                     )}
                   </div>
                 ))}
@@ -302,15 +310,23 @@ export default function ConversationEngine() {
             </CardHeader>
             <CardContent>
               <div className="border-b pb-2">
-                <div className="flex space-x-1 p-1 bg-gray-100 rounded-lg">
+                <div className="flex space-x-1 p-1 bg-slate-100 rounded-lg">
                   <button 
-                    className={`px-3 py-1.5 text-sm flex-1 rounded-md ${analysisMode === 'strategic' ? 'bg-white shadow' : ''}`}
+                    className={`px-3 py-1.5 text-sm flex-1 rounded-md ${
+                      analysisMode === 'strategic' 
+                        ? 'bg-primary text-primary-foreground font-medium shadow' 
+                        : 'bg-white text-slate-700 hover:bg-slate-50'
+                    }`}
                     onClick={() => setAnalysisMode('strategic')}
                   >
                     Strategic
                   </button>
                   <button 
-                    className={`px-3 py-1.5 text-sm flex-1 rounded-md ${analysisMode === 'tactical' ? 'bg-white shadow' : ''}`}
+                    className={`px-3 py-1.5 text-sm flex-1 rounded-md ${
+                      analysisMode === 'tactical' 
+                        ? 'bg-primary text-primary-foreground font-medium shadow' 
+                        : 'bg-white text-slate-700 hover:bg-slate-50'
+                    }`}
                     onClick={() => setAnalysisMode('tactical')}
                   >
                     Tactical
@@ -344,43 +360,51 @@ export default function ConversationEngine() {
                 <div className="space-y-4">
                   {conversation.length === 0 ? (
                     <div className="flex flex-col items-center py-8">
-                      <div className="text-muted-foreground mb-6">
-                        No messages yet. Start a conversation!
+                      <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4">
+                        <span className="text-2xl">💬</span>
                       </div>
                       
-                      <div className="text-sm text-muted-foreground mb-3">
-                        Try these conversation starters:
+                      <div className="text-lg font-medium text-slate-800 mb-2">
+                        Start a conversation
                       </div>
-                      <div className="flex flex-wrap gap-2 justify-center max-w-md">
+                      
+                      <div className="text-sm text-muted-foreground mb-8 text-center max-w-xs">
+                        Type a message or try one of these conversation starters to see how the recommendation engine works
+                      </div>
+                      
+                      <div className="space-y-2 w-full max-w-sm">
                         <Button 
                           size="sm" 
                           variant="outline" 
+                          className="w-full justify-start text-left"
                           onClick={() => {
                             setMessage("Hello! I'm interested in learning more about your AI sales assistant.");
                             setTimeout(() => handleSendMessage(), 100);
                           }}
                         >
-                          Initial Inquiry
+                          <span className="mr-2">👋</span> Hello! I'm interested in learning more about your AI sales assistant.
                         </Button>
                         <Button 
                           size="sm"
                           variant="outline"
+                          className="w-full justify-start text-left"
                           onClick={() => {
                             setMessage("We're struggling with scaling our sales outreach. Can your solution help?");
                             setTimeout(() => handleSendMessage(), 100);
                           }}
                         >
-                          Problem Statement
+                          <span className="mr-2">🔍</span> We're struggling with scaling our sales outreach. Can your solution help?
                         </Button>
                         <Button 
                           size="sm"
                           variant="outline"
+                          className="w-full justify-start text-left"
                           onClick={() => {
                             setMessage("What makes your AI different from other solutions on the market?");
                             setTimeout(() => handleSendMessage(), 100);
                           }}
                         >
-                          Competitive Question
+                          <span className="mr-2">🤔</span> What makes your AI different from other solutions on the market?
                         </Button>
                       </div>
                     </div>
@@ -463,33 +487,37 @@ export default function ConversationEngine() {
                     {suggestions.map((suggestion) => (
                       <div 
                         key={suggestion.id}
-                        className="p-3 border rounded-lg"
+                        className="p-4 border rounded-lg hover:shadow-sm transition-all cursor-pointer"
+                        onClick={() => useSuggestion(suggestion)}
                       >
-                        <div className="flex justify-between items-start mb-2">
+                        <div className="flex justify-between items-start mb-3">
                           <Badge variant="outline" className={`
-                            ${suggestion.confidence > 0.9 ? 'bg-green-100 text-green-800' : 
-                              suggestion.confidence > 0.8 ? 'bg-blue-100 text-blue-800' : 
-                              'bg-yellow-100 text-yellow-800'}
+                            ${suggestion.confidence > 0.9 ? 'bg-green-100 text-green-800 border-green-200' : 
+                              suggestion.confidence > 0.8 ? 'bg-blue-100 text-blue-800 border-blue-200' : 
+                              'bg-yellow-100 text-yellow-800 border-yellow-200'}
                           `}>
                             {Math.round(suggestion.confidence * 100)}% Match
                           </Badge>
                           <Button 
                             size="sm" 
-                            variant="ghost" 
-                            className="h-6 text-xs"
-                            onClick={() => useSuggestion(suggestion)}
+                            variant="outline" 
+                            className="h-6 text-xs hover:bg-primary hover:text-primary-foreground"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              useSuggestion(suggestion);
+                            }}
                           >
-                            Use
+                            Use Response
                           </Button>
                         </div>
                         
-                        <div className="text-sm font-medium mb-2">{suggestion.text}</div>
+                        <div className="text-sm font-medium mb-3 leading-relaxed">{suggestion.text}</div>
                         
-                        <div className="text-xs text-slate-600 mb-2">
-                          <span className="font-medium">Reasoning:</span> {suggestion.reasoning}
+                        <div className="text-xs text-slate-600 mb-3 bg-slate-50 p-2 rounded-md">
+                          <span className="font-medium text-slate-700">Reasoning:</span> {suggestion.reasoning}
                         </div>
                         
-                        <div className="flex flex-wrap gap-1 mt-1">
+                        <div className="flex flex-wrap gap-1 mt-2">
                           {suggestion.keywords.map((keyword, idx) => (
                             <Badge key={idx} variant="secondary" className="text-xs">
                               {keyword}
@@ -501,10 +529,28 @@ export default function ConversationEngine() {
                   </div>
                 ) : (
                   <div className="flex flex-col items-center justify-center h-full text-center p-4">
-                    <div className="text-4xl mb-4">🔍</div>
-                    <div className="text-lg font-medium mb-2">No conversation detected</div>
-                    <div className="text-sm text-muted-foreground">
-                      Start chatting in the simulator to see personalized response suggestions based on conversation context
+                    <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4">
+                      <span className="text-2xl">🔍</span>
+                    </div>
+                    <div className="text-lg font-medium text-slate-800 mb-2">
+                      Waiting for conversation
+                    </div>
+                    <div className="text-sm text-muted-foreground max-w-xs">
+                      Begin a conversation in the simulator to see AI-generated response recommendations appear here
+                    </div>
+                    <div className="mt-8 flex items-center justify-center gap-2 text-xs text-slate-500">
+                      <div className="flex items-center">
+                        <div className="w-2 h-2 rounded-full bg-green-500 mr-1"></div>
+                        <span>High confidence</span>
+                      </div>
+                      <div className="flex items-center">
+                        <div className="w-2 h-2 rounded-full bg-blue-500 mr-1"></div>
+                        <span>Medium confidence</span>
+                      </div>
+                      <div className="flex items-center">
+                        <div className="w-2 h-2 rounded-full bg-yellow-500 mr-1"></div>
+                        <span>Low confidence</span>
+                      </div>
                     </div>
                   </div>
                 )}
