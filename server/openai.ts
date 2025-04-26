@@ -677,6 +677,100 @@ export async function generateResponse(
     // STEP 7: ADD CONTEXTUAL AWARENESS FOR SPECIFIC TOPICS
     const lowerCaseMessage = userMessage.toLowerCase();
     
+    // Add mid-call injections based on calendar state
+    try {
+      // Check if this is an appropriate moment for injection (not every message)
+      // Using conversationHistory.length as a heuristic - inject after 3rd, 6th message or if user mention scheduling
+      const isSchedulingRelated = lowerCaseMessage.includes('schedule') || 
+                                  lowerCaseMessage.includes('calendar') || 
+                                  lowerCaseMessage.includes('meeting') ||
+                                  lowerCaseMessage.includes('appointment') ||
+                                  lowerCaseMessage.includes('demo');
+      
+      const isAppropriateForInjection = isSchedulingRelated || 
+                                      conversationHistory.length === 3 || 
+                                      conversationHistory.length === 6 ||
+                                      conversationHistory.length === 11;
+      
+      if (isAppropriateForInjection) {
+        // Get calendar data
+        const todaysEvents = calendarService.getEventsForToday();
+        const upcomingEvents = calendarService.getUpcomingEvents(7, 3);
+        const hasEvents = (todaysEvents && todaysEvents.length > 0) || (upcomingEvents && upcomingEvents.length > 0);
+        
+        if (hasEvents) {
+          // User has events - inject confirmation or agenda prompt
+          if (todaysEvents && todaysEvents.length > 0) {
+            const nextEvent = todaysEvents[0];
+            const startTime = new Date(nextEvent.start).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            
+            // Choose a random dynamic prompt about today's event
+            const todayPrompts = [
+              `You're scheduled for "${nextEvent.title}" today at ${startTime}. Would you like me to send you an agenda or preparation materials?`,
+              `I see your ${nextEvent.title} is coming up at ${startTime} today. Is there anything specific you'd like to discuss during that meeting?`,
+              `Before we continue, I noticed you have ${nextEvent.title} at ${startTime} today. Would you like me to send a confirmation to the other attendees?`,
+              `Just a reminder that you have ${nextEvent.title} scheduled for ${startTime} today. Would you like me to review any materials in preparation?`
+            ];
+            
+            const randomIndex = Math.floor(Math.random() * todayPrompts.length);
+            messages.push({ 
+              role: "system", 
+              content: `MID-CONVERSATION CALENDAR INJECTION: If contextually appropriate, mention the following: "${todayPrompts[randomIndex]}"`
+            });
+            console.log('Added mid-conversation injection about today\'s event');
+          } else if (upcomingEvents && upcomingEvents.length > 0) {
+            const nextEvent = upcomingEvents[0];
+            const eventDate = new Date(nextEvent.start).toLocaleDateString([], {weekday: 'short', month: 'short', day: 'numeric'});
+            const startTime = new Date(nextEvent.start).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            
+            // Choose a random dynamic prompt about upcoming event
+            const upcomingPrompts = [
+              `I see you have "${nextEvent.title}" scheduled for ${eventDate} at ${startTime}. Would you like me to add any agenda items based on our conversation?`,
+              `Based on your calendar, you have ${nextEvent.title} on ${eventDate}. Would you like me to prepare any materials for that meeting?`,
+              `Before we move on, I noticed ${nextEvent.title} on your calendar for ${eventDate}. Is there anything you'd like me to do to help you prepare?`,
+              `Looking at your schedule, I see ${nextEvent.title} coming up on ${eventDate}. Should I send out a reminder to participants?`
+            ];
+            
+            const randomIndex = Math.floor(Math.random() * upcomingPrompts.length);
+            messages.push({ 
+              role: "system", 
+              content: `MID-CONVERSATION CALENDAR INJECTION: If contextually appropriate, mention the following: "${upcomingPrompts[randomIndex]}"`
+            });
+            console.log('Added mid-conversation injection about upcoming event');
+          }
+        } else {
+          // User has no events - inject open slot suggestion
+          // Get the next business day
+          const tomorrow = new Date();
+          tomorrow.setDate(tomorrow.getDate() + 1);
+          const dayAfterTomorrow = new Date();
+          dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 2);
+          
+          // Format dates in user-friendly format
+          const tomorrowStr = tomorrow.toLocaleDateString([], {weekday: 'long'});
+          const dayAfterTomorrowStr = dayAfterTomorrow.toLocaleDateString([], {weekday: 'long'});
+          
+          // Choose a random dynamic prompt about booking
+          const bookingPrompts = [
+            `We have some openings on ${tomorrowStr} and ${dayAfterTomorrowStr}. Would you like me to reserve a slot for you?`,
+            `I can see we have availability on ${tomorrowStr} morning. Should I lock in a time for us to continue this conversation?`,
+            `Since we're having such a productive conversation, would you like me to schedule a dedicated session on ${tomorrowStr} or ${dayAfterTomorrowStr}?`,
+            `I have a few premium slots open on ${tomorrowStr} that I can hold for you. Would you like me to reserve one?`,
+            `Based on what we've discussed, I think it would be valuable to schedule a more detailed session. We have openings on ${tomorrowStr} - should I find a time that works?`
+          ];
+          
+          const randomIndex = Math.floor(Math.random() * bookingPrompts.length);
+          messages.push({ 
+            role: "system", 
+            content: `MID-CONVERSATION BOOKING INJECTION: If this conversation has been going well and the user seems interested, mention the following: "${bookingPrompts[randomIndex]}"`
+          });
+          console.log('Added mid-conversation booking injection');
+        }
+      }
+    } catch (error) {
+      console.error('Error adding mid-conversation injections:', error);
+    }
+    
     // Check for appointment-related queries and add database information
     if (lowerCaseMessage.includes('appointment') || 
         lowerCaseMessage.includes('meeting') || 
@@ -890,6 +984,97 @@ export async function generateResponse(
         // Extract the preferred response format instruction if specified
         if (behaviorModifiers.preferredResponseFormat) {
           preferredResponseFormat = behaviorModifiers.preferredResponseFormat;
+        }
+        
+        // Apply calendar-aware personality adjustments if available
+        if (behaviorModifiers.calendarAwareness) {
+          try {
+            // Check if user has any upcoming events
+            const upcomingEvents = calendarService.getUpcomingEvents(7, 3);
+            const hasUpcomingEvents = upcomingEvents && upcomingEvents.length > 0;
+            
+            // Apply different personality traits based on calendar status
+            if (hasUpcomingEvents && behaviorModifiers.calendarAwareness.withBooking) {
+              // User has upcoming events - use confirmation-driven approach
+              const withBooking = behaviorModifiers.calendarAwareness.withBooking;
+              
+              if (withBooking.confirmationDriven) {
+                messages.push({ 
+                  role: "system", 
+                  content: "You are in CONFIRMATION MODE: Be proactive about confirming the user's upcoming events. Ask if they need any preparations or have questions about their scheduled events. Use phrases like 'I see you have X scheduled, would you like me to confirm that for you?' or 'Is there anything you need before your upcoming appointment?'"
+                });
+              }
+              
+              if (withBooking.agendaFocused) {
+                messages.push({ 
+                  role: "system", 
+                  content: "You are in AGENDA FOCUS MODE: Refer to upcoming events when making suggestions. Offer to send agendas, preparation materials, or reminders. Use phrases like 'Would you like me to send you an agenda for your upcoming meeting?' or 'I can help you prepare for your scheduled event.'"
+                });
+              }
+              
+              if (withBooking.followUpIntensity > 0.5) {
+                messages.push({ 
+                  role: "system", 
+                  content: `You are in HIGH FOLLOW-UP MODE: Emphasize the importance of follow-up activities related to their upcoming events. Suggest specific follow-up actions with strong recommendations. Use phrases like "We should definitely schedule a follow-up after your meeting" or "I strongly recommend we prepare materials before your upcoming event."`
+                });
+              } else if (withBooking.followUpIntensity > 0) {
+                messages.push({ 
+                  role: "system", 
+                  content: `You are in MODERATE FOLLOW-UP MODE: Suggest follow-up activities related to their upcoming events, but be gentle about it. Use phrases like "Would you like to schedule a follow-up after your meeting?" or "Perhaps we should prepare some materials for your upcoming event."`
+                });
+              }
+            } 
+            else if (!hasUpcomingEvents && behaviorModifiers.calendarAwareness.withoutBooking) {
+              // User has no upcoming events - use scheduling-focused approach
+              const withoutBooking = behaviorModifiers.calendarAwareness.withoutBooking;
+              
+              // Adjust urgency level
+              if (withoutBooking.urgencyLevel > 0.7) {
+                messages.push({ 
+                  role: "system", 
+                  content: "You are in HIGH URGENCY MODE: Create a strong sense of urgency about scheduling. Use phrases like 'We should get you locked in right away' or 'Our calendar fills up quickly, so let's secure your spot now.'"
+                });
+              } else if (withoutBooking.urgencyLevel > 0.3) {
+                messages.push({ 
+                  role: "system", 
+                  content: "You are in MODERATE URGENCY MODE: Suggest scheduling with a gentle sense of timeliness. Use phrases like 'It would be good to get something on the calendar soon' or 'Would you like to secure a spot in the coming week?'"
+                });
+              }
+              
+              // Apply slot suggestion style
+              if (withoutBooking.slotSuggestionStyle === 'aggressive') {
+                messages.push({ 
+                  role: "system", 
+                  content: "Use AGGRESSIVE SLOT SUGGESTIONS: Directly propose specific open time slots and assume the user wants to book. Use phrases like 'I'll pencil you in for Thursday at 2pm' or 'Let's get you scheduled for Monday morning.'"
+                });
+              } else if (withoutBooking.slotSuggestionStyle === 'direct') {
+                messages.push({ 
+                  role: "system", 
+                  content: "Use DIRECT SLOT SUGGESTIONS: Clearly offer specific open time slots with direct questions. Use phrases like 'Would Thursday at 2pm work for you?' or 'I have Monday morning or Tuesday afternoon available.'"
+                });
+              } else {
+                messages.push({ 
+                  role: "system", 
+                  content: "Use SUBTLE SLOT SUGGESTIONS: Gently mention availability without pushing. Use phrases like 'We do have some openings next week if you're interested' or 'I'd be happy to check our availability if you'd like to schedule something.'"
+                });
+              }
+              
+              // Include value propositions if provided
+              if (withoutBooking.valuePropositions && withoutBooking.valuePropositions.length > 0) {
+                const randomIndex = Math.floor(Math.random() * withoutBooking.valuePropositions.length);
+                const valueProposition = withoutBooking.valuePropositions[randomIndex];
+                
+                messages.push({ 
+                  role: "system", 
+                  content: `Include this VALUE PROPOSITION when suggesting scheduling: "${valueProposition}"`
+                });
+              }
+            }
+            
+            console.log(`Applied calendar-aware personality adjustments: hasUpcomingEvents=${hasUpcomingEvents}`);
+          } catch (error) {
+            console.error('Error applying calendar-aware personality:', error);
+          }
         }
       }
     }

@@ -18,6 +18,22 @@ export interface BehaviorModifiers {
   persuasiveness: number; // Controls persuasiveness (0.1=neutral, 0.5=balanced, 1.0=persuasive)
   usesBulletPoints: boolean; // Whether this persona organizes content with bullet points
   preferredResponseFormat?: string; // Optional preferred response format instruction
+  
+  // Calendar-aware personality traits (optional)
+  calendarAwareness?: {
+    // When user has booked events
+    withBooking?: {
+      confirmationDriven: boolean;   // Proactively confirms appointments
+      agendaFocused: boolean;        // Focuses on agenda and preparation
+      followUpIntensity: number;     // How strongly to push for follow-ups (0.1-1.0)
+    },
+    // When user has no bookings
+    withoutBooking?: {
+      urgencyLevel: number;          // Level of urgency to create (0.1-1.0)
+      slotSuggestionStyle: 'subtle' | 'direct' | 'aggressive'; // How to suggest open slots
+      valuePropositions: string[];   // Value propositions to use when suggesting bookings
+    }
+  }
 }
 
 /**
@@ -215,7 +231,29 @@ positive, solution-focused attitude and guide the conversation toward productive
           creativity: 0.6,         // Creative in positioning benefits
           persuasiveness: 0.9,     // Highly persuasive
           usesBulletPoints: true,  // Uses bullet points to highlight benefits
-          preferredResponseFormat: "Acknowledge their needs, highlight key benefits with bullet points, include a clear call-to-action, and end with an engaging question."
+          preferredResponseFormat: "Acknowledge their needs, highlight key benefits with bullet points, include a clear call-to-action, and end with an engaging question.",
+          
+          // Calendar-aware personality for sales specialist
+          calendarAwareness: {
+            // When prospect has booked a demo/meeting
+            withBooking: {
+              confirmationDriven: true,      // Proactively confirms appointments
+              agendaFocused: true,           // Focuses on preparation and agenda
+              followUpIntensity: 0.8         // Strong follow-up emphasis
+            },
+            // When prospect has no bookings yet
+            withoutBooking: {
+              urgencyLevel: 0.9,             // High urgency to book
+              slotSuggestionStyle: 'direct', // Directly suggest open slots
+              valuePropositions: [
+                "Our calendar fills up quickly, and I want to make sure you get the personalized attention you deserve.",
+                "Getting you scheduled now means we can start addressing your needs that much sooner.",
+                "Booking a demo is the best way to see firsthand how we can help your specific situation.",
+                "Scheduling now locks in current pricing before any upcoming adjustments.",
+                "I can hold a premium slot for you that just opened up in our schedule."
+              ]
+            }
+          }
         }
       },
       {
@@ -253,7 +291,29 @@ Focus on building trust and demonstrating value rather than pushing for immediat
           creativity: 0.5,         // Balanced creativity
           persuasiveness: 0.8,     // Highly persuasive
           usesBulletPoints: true,  // Uses bullet points to highlight benefits
-          preferredResponseFormat: "Start with a concise introduction, ask discovery questions, and respond to their needs with relevant solutions. Always end with a clear call-to-action."
+          preferredResponseFormat: "Start with a concise introduction, ask discovery questions, and respond to their needs with relevant solutions. Always end with a clear call-to-action.",
+          
+          // Calendar-aware personality for outbound sales
+          calendarAwareness: {
+            // When prospect has booked a demo/meeting
+            withBooking: {
+              confirmationDriven: true,      // Proactively confirms appointments
+              agendaFocused: true,           // Focuses on preparation and agenda
+              followUpIntensity: 0.7         // Strong follow-up emphasis
+            },
+            // When prospect has no bookings yet
+            withoutBooking: {
+              urgencyLevel: 0.8,              // High urgency to book
+              slotSuggestionStyle: 'aggressive', // Directly propose specific slots
+              valuePropositions: [
+                "Based on our conversation, I think we should get a quick 15-minute call on the calendar to explore this further.",
+                "I have a few slots open this week that I've reserved for promising prospects like yourself.",
+                "My calendar fills up quickly, but I can reserve a premium consultation slot for you right now.",
+                "Let's schedule a brief demo to address those specific pain points you mentioned.",
+                "Since we're having such a productive conversation, let's continue it in a dedicated session where I can show you exactly how we'd solve this."
+              ]
+            }
+          }
         }
       },
       {
