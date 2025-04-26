@@ -312,24 +312,38 @@ export default function ConversationEngine() {
               <div className="border-b pb-2">
                 <div className="flex space-x-1 p-1 bg-slate-100 rounded-lg">
                   <button 
-                    className={`px-3 py-1.5 text-sm flex-1 rounded-md ${
+                    className={`px-3 py-2 text-sm flex-1 rounded-md border transition-all ${
                       analysisMode === 'strategic' 
-                        ? 'bg-primary text-primary-foreground font-medium shadow' 
-                        : 'bg-white text-slate-700 hover:bg-slate-50'
+                        ? 'bg-blue-600 text-white font-medium shadow border-blue-700' 
+                        : 'bg-white text-slate-700 hover:bg-slate-50 border-slate-200'
                     }`}
                     onClick={() => setAnalysisMode('strategic')}
                   >
-                    Strategic
+                    <div className="flex items-center justify-center">
+                      {analysisMode === 'strategic' && (
+                        <svg className="w-3.5 h-3.5 mr-1.5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M5 13L9 17L19 7" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      )}
+                      Strategic
+                    </div>
                   </button>
                   <button 
-                    className={`px-3 py-1.5 text-sm flex-1 rounded-md ${
+                    className={`px-3 py-2 text-sm flex-1 rounded-md border transition-all ${
                       analysisMode === 'tactical' 
-                        ? 'bg-primary text-primary-foreground font-medium shadow' 
-                        : 'bg-white text-slate-700 hover:bg-slate-50'
+                        ? 'bg-orange-600 text-white font-medium shadow border-orange-700' 
+                        : 'bg-white text-slate-700 hover:bg-slate-50 border-slate-200'
                     }`}
                     onClick={() => setAnalysisMode('tactical')}
                   >
-                    Tactical
+                    <div className="flex items-center justify-center">
+                      {analysisMode === 'tactical' && (
+                        <svg className="w-3.5 h-3.5 mr-1.5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M5 13L9 17L19 7" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      )}
+                      Tactical
+                    </div>
                   </button>
                 </div>
               </div>
