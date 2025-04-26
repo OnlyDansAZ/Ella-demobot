@@ -1,0 +1,22 @@
+{
+  "default": [
+    {
+      "type": "reminder",
+      "timing": "1day",
+      "enabled": true,
+      "template": "Hi there! Just a friendly reminder about our {{eventTitle}} scheduled for {{eventTime}} tomorrow. Looking forward to it!"
+    },
+    {
+      "type": "agenda",
+      "timing": "immediately",
+      "enabled": true,
+      "template": "Thanks for scheduling {{eventTitle}}! I've attached the agenda for our meeting. Please let me know if you'd like to add anything specific."
+    },
+    {
+      "type": "followup",
+      "timing": "1hour",
+      "enabled": true,
+      "template": "Thank you for your time today! I wanted to follow up on our {{eventTitle}} with a quick summary and next steps. Please let me know if you have any questions."
+    }
+  ]
+}

@@ -200,6 +200,32 @@ router.post('/', (req, res) => {
       reminderMinutes
     });
     
+    // Trigger automated follow-up process when a booking is created
+    try {
+      // Trigger an immediate agenda send
+      automationService.triggerAutomation(event, 'agenda', 'immediately')
+        .then(success => {
+          console.log(`Agenda automation for new booking ${success ? 'scheduled successfully' : 'failed to schedule'}`);
+        })
+        .catch(error => {
+          console.error('Error scheduling agenda automation:', error);
+        });
+      
+      // Schedule a reminder for the day before
+      automationService.triggerAutomation(event, 'reminder', '1day')
+        .then(success => {
+          console.log(`Reminder automation for new booking ${success ? 'scheduled successfully' : 'failed to schedule'}`);
+        })
+        .catch(error => {
+          console.error('Error scheduling reminder automation:', error);
+        });
+        
+      console.log(`Automations triggered for new booking: ${event.title}`);
+    } catch (autoError) {
+      console.error('Error triggering automations for new booking:', autoError);
+      // Non-blocking - we still want to return the event even if automations fail
+    }
+    
     res.json({ success: true, event });
   } catch (error) {
     console.error('Error adding calendar event:', error);
@@ -276,6 +302,63 @@ router.delete('/:id', (req, res) => {
     res.status(500).json({ 
       success: false, 
       error: 'Failed to delete calendar event',
+      details: error instanceof Error ? error.message : String(error)
+    });
+  }
+});
+
+/**
+ * Manually trigger an automation for an event
+ * POST /api/calendar/:id/automation
+ */
+router.post('/:id/automation', (req, res) => {
+  try {
+    const { id } = req.params;
+    const { type, timing } = req.body;
+    
+    if (!id) {
+      return res.status(400).json({ success: false, error: 'Event ID parameter is required' });
+    }
+    
+    if (!type || !['reminder', 'agenda', 'followup'].includes(type)) {
+      return res.status(400).json({ success: false, error: 'Valid automation type is required (reminder, agenda, or followup)' });
+    }
+    
+    if (!timing || !['immediately', '1hour', '3hours', '1day', '2days'].includes(timing)) {
+      return res.status(400).json({ success: false, error: 'Valid timing is required (immediately, 1hour, 3hours, 1day, or 2days)' });
+    }
+    
+    // Get the event
+    const event = calendarService.getEventById(id);
+    
+    if (!event) {
+      return res.status(404).json({ success: false, error: `Calendar event with ID ${id} not found` });
+    }
+    
+    // Trigger the automation
+    automationService.triggerAutomation(event, type as 'reminder' | 'agenda' | 'followup', timing)
+      .then(success => {
+        res.json({ 
+          success: true, 
+          message: `Automation ${success ? 'triggered successfully' : 'failed to trigger'}`,
+          automationType: type,
+          timing: timing,
+          eventId: id
+        });
+      })
+      .catch(error => {
+        console.error('Error triggering automation:', error);
+        res.status(500).json({ 
+          success: false, 
+          error: 'Failed to trigger automation',
+          details: error instanceof Error ? error.message : String(error)
+        });
+      });
+  } catch (error) {
+    console.error('Error processing automation request:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to process automation request',
       details: error instanceof Error ? error.message : String(error)
     });
   }

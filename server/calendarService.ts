@@ -140,6 +140,14 @@ export class CalendarService {
   }
   
   /**
+   * Get a specific calendar event by ID
+   * @param id Event ID to retrieve
+   */
+  getEventById(id: string): CalendarEvent | undefined {
+    return this.events.get(id);
+  }
+  
+  /**
    * Get events for a specific date
    * @param date Date to get events for
    */

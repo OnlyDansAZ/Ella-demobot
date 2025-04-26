@@ -1,10 +1,35 @@
 import { CalendarEvent } from './calendarService';
 import { calendarService } from './calendarService';
-import { elevenLabsService } from './elevenLabsService';
-import { signalWireService } from './signalWireService';
-import { openai, ChatMessage } from './openai';
 import path from 'path';
 import fs from 'fs';
+
+// Service placeholders - these services might be implemented later
+// or can be used via their APIs directly
+class ElevenLabsService {
+  async generateSpeech(text: string): Promise<string> {
+    console.log('ElevenLabs speech generation simulation:', text);
+    // In a real implementation, this would generate speech
+    return '/temp/simulated-speech.mp3';
+  }
+}
+
+class SignalWireService {
+  async sendSMS(options: { to: string, body: string }): Promise<boolean> {
+    console.log('SignalWire SMS simulation:', options);
+    // In a real implementation, this would send an SMS
+    return true;
+  }
+  
+  async makeCall(options: { to: string, audioUrl: string }): Promise<boolean> {
+    console.log('SignalWire call simulation:', options);
+    // In a real implementation, this would make a call
+    return true;
+  }
+}
+
+// Create service instances
+export const elevenLabsService = new ElevenLabsService();
+export const signalWireService = new SignalWireService();
 
 /**
  * Automation log entry structure
@@ -23,7 +48,7 @@ interface AutomationLogEntry {
  */
 interface AutomationTrigger {
   type: 'reminder' | 'agenda' | 'followup';
-  timing: 'immediately' | '1hour' | '3hours' | '1day' | '2days';
+  timing: 'immediately' | '15min' | '1hour' | '2hours' | '3hours' | '1day' | '2days';
   enabled: boolean;
   template?: string;
 }
@@ -38,23 +63,47 @@ export class AutomationService {
   private automationsPath: string = path.join(process.cwd(), 'data', 'automations.json');
   private automationTriggers: Record<string, AutomationTrigger[]> = {
     default: [
+      // Day before reminder
       {
         type: 'reminder',
         timing: '1day',
         enabled: true,
         template: 'Hi there! Just a friendly reminder about our {{eventTitle}} scheduled for {{eventTime}} tomorrow. Looking forward to it!'
       },
+      // 2 hours before reminder (more urgent tone)
+      {
+        type: 'reminder',
+        timing: '2hours',
+        enabled: true,
+        template: 'Your {{eventTitle}} is coming up in 2 hours at {{eventTime}}. If you need to reschedule, please let me know as soon as possible. Otherwise, I\'ll see you there!'
+      },
+      // 15 minutes before reminder (final confirmation)
+      {
+        type: 'reminder',
+        timing: '15min',
+        enabled: true,
+        template: 'Your {{eventTitle}} is starting in 15 minutes. I\'m all set and looking forward to our conversation!'
+      },
+      // Agenda sent immediately upon booking
       {
         type: 'agenda',
         timing: 'immediately',
         enabled: true,
-        template: 'Thanks for scheduling {{eventTitle}}! I\'ve attached the agenda for our meeting. Please let me know if you\'d like to add anything specific.'
+        template: 'Thanks for scheduling {{eventTitle}}! I\'ve attached the agenda for our meeting:\n\n1. Introduction and goals\n2. Discussion of your specific needs\n3. Demonstration of relevant solutions\n4. Q&A\n5. Next steps\n\nPlease let me know if you\'d like to add anything specific.'
       },
+      // Meeting follow-up 1 hour after meeting
       {
         type: 'followup',
         timing: '1hour',
         enabled: true,
-        template: 'Thank you for your time today! I wanted to follow up on our {{eventTitle}} with a quick summary and next steps. Please let me know if you have any questions.'
+        template: 'Thank you for your time today! I wanted to follow up on our {{eventTitle}} with a quick summary:\n\n📝 Key Points Discussed:\n- Your current situation and challenges\n- Potential solutions we explored\n- Next steps for implementation\n\n⏭️ Action Items:\n1. I\'ll send over the materials we discussed\n2. You\'ll review and provide feedback\n3. We\'ll schedule a follow-up to finalize\n\nHow was your experience today? Is there anything else you need?'
+      },
+      // Check-in follow-up 1 day after meeting
+      {
+        type: 'followup',
+        timing: '1day',
+        enabled: true,
+        template: 'I hope you\'re doing well after our {{eventTitle}} yesterday. I\'m just checking in to see if you have any questions or thoughts after having some time to reflect. I\'m here to help with any next steps!'
       }
     ]
   };
@@ -191,9 +240,15 @@ export class AutomationService {
       // Calculate when the reminder should be sent
       let reminderTime: Date;
       
-      if (trigger.timing === '1hour') {
+      if (trigger.timing === '15min') {
+        reminderTime = new Date(eventStart);
+        reminderTime.setMinutes(reminderTime.getMinutes() - 15);
+      } else if (trigger.timing === '1hour') {
         reminderTime = new Date(eventStart);
         reminderTime.setHours(reminderTime.getHours() - 1);
+      } else if (trigger.timing === '2hours') {
+        reminderTime = new Date(eventStart);
+        reminderTime.setHours(reminderTime.getHours() - 2);
       } else if (trigger.timing === '3hours') {
         reminderTime = new Date(eventStart);
         reminderTime.setHours(reminderTime.getHours() - 3);
@@ -308,15 +363,15 @@ export class AutomationService {
       const eventDate = new Date(event.start).toLocaleDateString([], {weekday: 'long', month: 'long', day: 'numeric'});
       const eventTime = new Date(event.start).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
       
-      return `Don't forget about your upcoming ${event.title} on ${eventDate} at ${eventTime}${event.location ? ` at ${event.location}` : ''}. We're looking forward to it!`;
+      return `Don\'t forget about your upcoming ${event.title} on ${eventDate} at ${eventTime}${event.location ? ` at ${event.location}` : ''}. We\'re looking forward to it!`;
     } else if (trigger.type === 'agenda') {
-      return `Thank you for scheduling ${event.title}. Here's the agenda for our upcoming meeting:\n\n` +
+      return `Thank you for scheduling ${event.title}. Here\'s the agenda for our upcoming meeting:\n\n` +
         `1. Introduction and overview\n` +
         `2. Discussion of your specific needs\n` +
         `3. Presentation of solutions\n` +
         `4. Q&A\n` +
         `5. Next steps\n\n` +
-        `If you'd like to add anything to this agenda, please let me know!`;
+        `If you\'d like to add anything to this agenda, please let me know!`;
     } else if (trigger.type === 'followup') {
       return `Thank you for your time during our ${event.title} meeting. I wanted to follow up with a quick summary and next steps:\n\n` +
         `We discussed the following key points:\n` +
@@ -324,9 +379,9 @@ export class AutomationService {
         `- Potential solutions and approaches\n` +
         `- Timeline and implementation steps\n\n` +
         `Our next steps are:\n` +
-        `1. I'll send over the materials we discussed\n` +
-        `2. You'll review and provide feedback\n` +
-        `3. We'll schedule a follow-up call to finalize details\n\n` +
+        `1. I\'ll send over the materials we discussed\n` +
+        `2. You\'ll review and provide feedback\n` +
+        `3. We\'ll schedule a follow-up call to finalize details\n\n` +
         `Please let me know if you have any questions!`;
     }
     
