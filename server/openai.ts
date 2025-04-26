@@ -671,8 +671,107 @@ export async function generateResponse(
           
           console.log('Found scheduled appointments in database, adding to context');
         }
+
+        // Get calendar events for more context
+        try {
+          // Get today's calendar events
+          const todaysEvents = calendarService.getEventsForToday();
+          if (todaysEvents && todaysEvents.length > 0) {
+            const todayEventData = todaysEvents.map((event) => {
+              const startTime = new Date(event.start).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+              return `- ${event.title} at ${startTime}${event.location ? ` (${event.location})` : ''}`;
+            }).join('\n');
+            
+            messages.push({ 
+              role: "system", 
+              content: `TODAY'S CALENDAR EVENTS:\n${todayEventData}\n\nPlease reference these events when discussing today's schedule.`
+            });
+            console.log('Found today\'s calendar events, adding to context');
+          }
+          
+          // Get upcoming calendar events
+          const upcomingEvents = calendarService.getUpcomingEvents(7, 5);
+          if (upcomingEvents && upcomingEvents.length > 0) {
+            const upcomingEventData = upcomingEvents.map((event) => {
+              const eventDate = new Date(event.start).toLocaleDateString([], {weekday: 'short', month: 'short', day: 'numeric'});
+              const startTime = new Date(event.start).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+              return `- ${event.title} on ${eventDate} at ${startTime}${event.location ? ` (${event.location})` : ''}`;
+            }).join('\n');
+            
+            messages.push({ 
+              role: "system", 
+              content: `UPCOMING CALENDAR EVENTS:\n${upcomingEventData}\n\nPlease reference these events when discussing future scheduling.`
+            });
+            console.log('Found upcoming calendar events, adding to context');
+          }
+          
+          // Add calendar summary if user is asking for an overview
+          if (lowerCaseMessage.includes('summary') || 
+              lowerCaseMessage.includes('overview') || 
+              lowerCaseMessage.includes('what do i have')) {
+            const calendarSummary = calendarService.getUpcomingSummary(7);
+            messages.push({ 
+              role: "system", 
+              content: `CALENDAR SUMMARY:\n${calendarSummary}`
+            });
+            console.log('User requested calendar summary, adding to context');
+          }
+        } catch (calendarError) {
+          console.error('Error retrieving calendar data:', calendarError);
+        }
       } catch (error) {
         console.error('Error retrieving appointment data:', error);
+      }
+    }
+    
+    // Check for music-related queries
+    if (lowerCaseMessage.includes('music') || 
+        lowerCaseMessage.includes('play') || 
+        lowerCaseMessage.includes('song') ||
+        lowerCaseMessage.includes('track') ||
+        lowerCaseMessage.includes('listening')) {
+      
+      try {
+        // Get current track information
+        const currentTrack = musicService.getCurrentTrack();
+        
+        if (currentTrack && currentTrack.isPlaying) {
+          messages.push({ 
+            role: "system", 
+            content: `CURRENTLY PLAYING MUSIC: "${currentTrack.title}" by ${currentTrack.artist} (${currentTrack.genre}). You can control music playback by telling me to play specific genres or stop the music.`
+          });
+          console.log('Found currently playing music, adding to context');
+        } else {
+          // List available music options
+          const availableTracks = musicService.getAllTracks();
+          const genreSet = new Set<string>();
+          availableTracks.forEach(track => genreSet.add(track.genre));
+          const genres = Array.from(genreSet);
+          
+          messages.push({ 
+            role: "system", 
+            content: `MUSIC SERVICE: No music is currently playing. Available genres: ${genres.join(', ')}. Suggest the user can say "play [genre]" to start music.`
+          });
+          console.log('No music playing, adding available genres to context');
+        }
+        
+        // Process music command if user requests to play or stop
+        if ((lowerCaseMessage.includes('play') && 
+             (lowerCaseMessage.includes('music') || 
+              lowerCaseMessage.includes('song') || 
+              lowerCaseMessage.includes('track'))) || 
+            lowerCaseMessage.includes('stop music') || 
+            lowerCaseMessage.includes('pause music')) {
+          
+          const musicResponse = musicService.processRequest(userMessage);
+          messages.push({ 
+            role: "system", 
+            content: `MUSIC COMMAND PROCESSED: ${musicResponse}\nInclude this information in your response.`
+          });
+          console.log('Processed music command:', musicResponse);
+        }
+      } catch (error) {
+        console.error('Error handling music request:', error);
       }
     }
     
@@ -684,7 +783,15 @@ export async function generateResponse(
           'today', 'tomorrow', 'next week', 'am', 'pm', 'o\'clock', 'book', 'booking',
           'morning', 'afternoon', 'evening', 'reschedule', 'cancel', 'availability'
         ],
-        instruction: "CRITICAL SCHEDULING INSTRUCTION: The user is discussing scheduling. Pay extremely close attention to ANY dates, times, or appointment details in BOTH this message AND all previous messages. First check if we have a database appointment entry. If the user is specifically requesting to view, change or cancel an existing appointment, mention that these operations can be handled through our appointment system and that you'll relay their request. If the user is asking to schedule a new meeting or call, offer our Calendly link by saying: \"You can easily schedule a meeting with us using our Calendly booking system. Would you like me to share the booking link with you?\". If they agree, respond with: \"Great! Here's our Calendly link where you can select a time that works for you: [Calendly Booking URL would be shown here]\". Ensure you've reviewed the ENTIRE conversation history for all scheduling details."
+        instruction: "CRITICAL SCHEDULING INSTRUCTION: The user is discussing scheduling. Pay extremely close attention to ANY dates, times, or appointment details in BOTH this message AND all previous messages. First check if we have a database appointment entry. If the user is specifically requesting to view, change or cancel an existing appointment, mention that these operations can be handled through our appointment system and that you'll relay their request. If the user is asking to schedule a new meeting or call, offer our Calendly link by saying: \"You can easily schedule a meeting with us using our Calendly booking system. Would you like me to share the booking link with you?\". If they agree, respond with: \"Great! Here's our Calendly link where you can select a time that works for you: [Calendly Booking URL would be shown here]\". If there are any calendar events provided in the context, reference them in your response. Ensure you've reviewed the ENTIRE conversation history for all scheduling details."
+      },
+      musicPlayback: {
+        keywords: [
+          'music', 'play', 'song', 'track', 'listen', 'audio', 'tune', 'melody',
+          'playlist', 'genre', 'artist', 'jazz', 'classical', 'ambient', 'stop',
+          'pause', 'resume', 'volume', 'sound'
+        ],
+        instruction: "MUSIC PLAYBACK INSTRUCTION: The user is requesting information about or control of music playback. If music is currently playing according to the context, acknowledge this in your response. If they're requesting to play music, confirm what's playing or what they would like to play. Available genres include jazz, classical, ambient, concentration, and meditation. You can control playback by responding to 'play [genre]' or 'stop music' commands. Make sure to confirm what action you've taken regarding music in your response."
       },
       productFeatures: {
         keywords: [
