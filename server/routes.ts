@@ -13,11 +13,13 @@ import conversationRoutes from './routes/conversationRoutes';
 import personaRoutes from './routes/personaRoutes';
 import sessionRoutes from './routes/sessionRoutes';
 import calendarRoutes from './routes/calendarRoutes';
+import followupRoutes from './routes/followupRoutes';
 import { personaManager } from './personaManager';
 import { calendarService } from './calendarService';
 // Import the SignalWire service with ElevenLabs integration
 import signalWireRoutes from './routes/signalWireRoutes';
 import { ELEVENLABS_AUDIO_DIR, cleanupOldAudioFiles } from './elevenLabsService';
+import { followupIntelService } from './followupIntelService';
 import { getClient } from './signalWireClient';
 import { WebSocketServer, WebSocket } from 'ws';
 
@@ -59,6 +61,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Calendar management routes
   app.use("/api/calendar", calendarRoutes);
+  
+  // Follow-up intelligence routes
+  app.use("/api/followup", followupRoutes);
   
   // SignalWire phone call routes
   // Use the SignalWire implementation with ElevenLabs

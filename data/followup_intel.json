@@ -1,0 +1,28 @@
+{
+  "records": [
+    {
+      "id": "followup-1745650262707",
+      "eventId": "event-1",
+      "eventTitle": "Team Sync Meeting",
+      "meetingDate": "2025-04-26T10:00:00.000Z",
+      "keySummaryPoints": [
+        "Discussed project status and timeline",
+        "Identified key challenges and solutions",
+        "Reviewed upcoming deliverables and deadlines",
+        "Assigned action items to team members"
+      ],
+      "nextStepsRecommended": [
+        "Schedule follow-up meeting within 2 weeks",
+        "Prepare status report for stakeholders",
+        "Complete assigned action items before next meeting",
+        "Share meeting notes with all participants"
+      ],
+      "nextStepsTaken": [
+        "Sent status report to stakeholders"
+      ],
+      "statusUpdatesSent": [],
+      "createdAt": "2025-04-26T06:51:02.707Z",
+      "updatedAt": "2025-04-26T06:51:19.783Z"
+    }
+  ]
+}
