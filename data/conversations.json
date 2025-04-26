@@ -8,50 +8,50 @@
         "userId": null,
         "messages": [
           {
-            "id": "66289449-377c-4831-a4d2-5b7603615427",
+            "id": "ab7531f8-cced-4f83-83f5-1012ff6f01b1",
             "content": "Hello! I'm Ella, your AI assistant. How can I help you today?",
             "isUser": false,
-            "timestamp": "2025-04-25T09:15:58.881Z"
+            "timestamp": "2025-04-26T03:08:31.994Z"
           },
           {
-            "id": "5f1adfa9-82fa-495a-87e0-644d79127c2e",
-            "content": "number",
+            "id": "b58d41ea-5258-4b2f-8d6e-43dbafec699f",
+            "content": "Hi Ella!",
             "isUser": true,
-            "timestamp": "2025-04-25T09:37:33.679Z"
+            "timestamp": "2025-04-26T03:10:14.090Z"
           },
           {
-            "id": "aa6df727-4c32-4e07-94b3-f14fc10f6ddc",
-            "content": "It looks like you mentioned \"number,\" but I'm not quite sure what you need help with. Could you provide a bit more detail or context? Whether it's a math problem, a phone number, or something else, I'm here to help!",
+            "id": "ec5b8837-662a-4665-ad93-1a5c7bc04766",
+            "content": "Hi there! It's great to hear from you. How can I assist you today? Whether you're looking to streamline your schedule, manage tasks more effectively, or explore YoBot's capabilities, I'm here to help!",
             "isUser": false,
-            "timestamp": "2025-04-25T09:37:40.328Z"
+            "timestamp": "2025-04-26T03:10:20.086Z"
           },
           {
-            "id": "9f1b556f-4a41-4745-a8c1-22926e5b269d",
-            "content": "Google  take me but like without bangers and the drug problems  hello  hello  I tried to talk back with her  but it was obviously just a recording and the call then disconnected  the voice sounded a little bit better but still robotic",
+            "id": "04ddd990-2cff-4820-a063-79714a93af90",
+            "content": "What do I got on my schedule today",
             "isUser": true,
-            "timestamp": "2025-04-25T11:59:12.224Z"
+            "timestamp": "2025-04-26T03:11:13.804Z"
           },
           {
-            "id": "2dd6683a-8c1d-4084-a993-e23cc277ce71",
-            "content": "It sounds like you're having a frustrating experience with a voice assistant or automated system. I'm sorry to hear that! Those systems can sometimes be a bit impersonal and not very helpful when you're trying to get specific assistance. If you're dealing with a Google product and need help, I can try to guide you through some troubleshooting steps or help you find the right support resources. Could you let me know a bit more about what you're trying to accomplish? That way, I can assist you better!",
+            "id": "e5d54b11-1f0c-4ecd-9129-3df877e22157",
+            "content": "It looks like we haven't explicitly confirmed any appointments for today in our system. If you have any specific appointments or tasks you need to manage, you can let me know, and I can help you organize them. If you need to schedule a new meeting, I can provide you with our Calendly link. Would you like that?",
             "isUser": false,
-            "timestamp": "2025-04-25T11:59:20.020Z"
+            "timestamp": "2025-04-26T03:11:16.982Z"
           },
           {
-            "id": "028c267d-0074-4e93-bf0f-d31787ca28da",
-            "content": "how difficult would it be  to have  script of the call that's taking place on the screen  after you press make the call  I have the transcript there in real time  I know that phone call GPT has that option or has that built in I just don't know how difficult it would be if it's worth it",
+            "id": "df8ac8db-d300-4e79-89c5-8a902a3e4fba",
+            "content": "What do you mean you're gonna play music you can't just put it on my calendar",
             "isUser": true,
-            "timestamp": "2025-04-25T12:49:06.251Z"
+            "timestamp": "2025-04-26T03:12:06.524Z"
           },
           {
-            "id": "7606c5a4-7b19-4fd5-940e-bdad90342bde",
-            "content": "Getting a real-time transcript of a call on your screen can be quite handy, especially if you're dealing with lots of information or need to keep accurate records. Implementing this feature can vary in difficulty depending on the tools and technologies you're using.\n\nIf you're thinking about using a service like GPT for real-time transcription, it can be a good choice because it's designed to handle natural language processing tasks. Many platforms already offer this kind of functionality, or you can integrate APIs that provide speech-to-text services. \n\nHere's a rough idea of what's involved:\n\n1. **Integration**: You'll need to integrate a speech-to-text service into your system. There are several APIs available, like Google's Speech-to-Text, AWS Transcribe, or even some third-party services that might be using GPT models.\n\n2. **Real-time Processing**: Ensure that your system can handle real-time data processing. This might require some backend setup to manage the data flow efficiently.\n\n3. **User Interface**: You'll need a user interface that can display the transcript as it's being generated. This might involve some front-end development work.\n\n4. **Testing and Calibration**: Once set up, you'll need to test the system thoroughly to ensure accuracy and efficiency. Speech recognition can vary in accuracy depending on the quality of the audio and the clarity of speech.\n\nIf you're considering implementing this, it might be worth exploring existing solutions first to see if they meet your needs before investing in a custom setup. Let me know if there's anything else you'd like to know!",
+            "id": "8b27d471-503a-4eb6-ae60-2af8de0607d0",
+            "content": "I apologize for any confusion! It seems there might have been a misunderstanding. I don't have the capability to play music or add it to your calendar without your specific request. If you need help with scheduling or anything else, please let me know, and I'll be happy to assist you. If you'd like to schedule a meeting or event, I can provide you with our Calendly link to make it easy. Would you like that?",
             "isUser": false,
-            "timestamp": "2025-04-25T12:49:20.849Z"
+            "timestamp": "2025-04-26T03:12:09.885Z"
           }
         ],
         "createdAt": "2025-04-23T01:01:18.628Z",
-        "updatedAt": "2025-04-25T12:49:20.849Z"
+        "updatedAt": "2025-04-26T03:12:09.885Z"
       }
     ],
     [
