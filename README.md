@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # YoBot Enterprise AI Voice Platform
 
 An intelligent voice communication platform that leverages cutting-edge telecommunications technology to simplify and enhance phone interactions using AI that sounds almost indistinguishable from humans.
@@ -77,10 +78,33 @@ AWS_SECRET_ACCESS_KEY=your-secret-key
 AWS_REGION=your-region
 S3_BUCKET_NAME=your-bucket-name
 ```
+=======
+# Ella AI Frontend
+
+Ella is an intelligent AI-powered sales assistant designed to handle outbound sales calls, texting, appointment setting, client follow-ups, and product sales. This repository contains the frontend portion of the Ella AI platform.
+
+## Key Features
+
+- Advanced AI conversation engine with stateful memory
+- Calendar integration with automated follow-ups
+- Interactive call management
+- Real-time voice synthesis using ElevenLabs
+- Follow-up intelligence with meeting summaries and action tracking
+- Persona management for different sales contexts
+
+## Technology Stack
+
+- React 18 with TypeScript
+- Tailwind CSS for styling
+- Shadcn UI components
+- TanStack Query for data fetching
+- Wouter for routing
+>>>>>>> bcccf4cfa403e4b14b358b3f28aa3c582fb9ab56
 
 ## Getting Started
 
 1. Clone the repository
+<<<<<<< HEAD
 2. Install dependencies: `npm install`
 3. Start the development server: `npm run dev`
 4. Access the application at `http://localhost:5000`
@@ -92,3 +116,21 @@ For production deployment, ensure you've configured the CDN-based audio hosting 
 ## License
 
 Copyright © 2025 YoBot - All Rights Reserved
+=======
+2. Install dependencies
+   ```
+   npm install
+   ```
+3. Start the development server
+   ```
+   npm run dev
+   ```
+
+## Environment Configuration
+
+Create a `.env` file with the following variables:
+
+```
+VITE_API_URL=your_backend_api_url
+```
+>>>>>>> bcccf4cfa403e4b14b358b3f28aa3c582fb9ab56
