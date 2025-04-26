@@ -203,20 +203,29 @@ const SalesIntelligence: React.FC = () => {
   const [activeTab, setActiveTab] = useState('heatmaps');
 
   // Fetch heatmaps
-  const { data: heatmaps, isLoading: heatmapsLoading } = useQuery({
+  const { data: heatmapsData, isLoading: heatmapsLoading, isError: heatmapsError } = useQuery({
     queryKey: ['/api/sales-intel/heatmaps'],
+    retry: 1,
+    retryDelay: 1000,
     refetchOnWindowFocus: false,
   });
+  
+  // Safely access heatmaps data
+  const heatmaps = Array.isArray(heatmapsData) ? heatmapsData : [];
 
   // Fetch performance report
-  const { data: performanceReport, isLoading: reportLoading } = useQuery({
+  const { data: performanceReport, isLoading: reportLoading, isError: reportError } = useQuery({
     queryKey: ['/api/sales-intel/performance'],
+    retry: 1,
+    retryDelay: 1000,
     refetchOnWindowFocus: false,
   });
 
   // Fetch pipeline data
-  const { data: pipelineData, isLoading: pipelineLoading } = useQuery({
+  const { data: pipelineData, isLoading: pipelineLoading, isError: pipelineError } = useQuery({
     queryKey: ['/api/sales-intel/pipeline'],
+    retry: 1,
+    retryDelay: 1000,
     refetchOnWindowFocus: false,
   });
 
