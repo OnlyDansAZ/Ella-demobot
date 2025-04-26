@@ -331,7 +331,7 @@ export default function ConversationEngine() {
                   <button 
                     className={`px-3 py-2 text-sm flex-1 rounded-md border transition-all ${
                       analysisMode === 'tactical' 
-                        ? 'bg-orange-600 text-white font-medium shadow border-orange-700' 
+                        ? 'bg-blue-600 text-white font-medium shadow border-blue-700' 
                         : 'bg-white text-slate-700 hover:bg-slate-50 border-slate-200'
                     }`}
                     onClick={() => setAnalysisMode('tactical')}
