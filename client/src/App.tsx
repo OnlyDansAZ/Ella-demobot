@@ -16,6 +16,7 @@ import AICaller from "@/pages/AICaller";
 import VoiceTest from "@/pages/VoiceTest";
 import MemoryDemo from "@/pages/MemoryDemo";
 import ConversationEngine from "@/pages/ConversationEngine";
+import FollowupIntel from "@/pages/FollowupIntel";
 
 function Router() {
   return (
@@ -33,6 +34,8 @@ function Router() {
       <Route path="/voice-test" component={VoiceTest} />
       <Route path="/memory-demo" component={MemoryDemo} />
       <Route path="/conversation-engine" component={ConversationEngine} />
+      <Route path="/followup" component={FollowupIntel} />
+      <Route path="/followup/:id" component={FollowupIntel} />
       <Route component={NotFound} />
     </Switch>
   );
