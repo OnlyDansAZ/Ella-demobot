@@ -1,9 +1,21 @@
 import React, { useEffect, useState } from 'react';
-import { X, Copy, Check, Mail, Brain, ArrowLeft, History, Lightbulb, Target, Sparkles, Link, Star, Pencil, BookOpen } from 'lucide-react';
+import { 
+  X, Copy, Check, Mail, Brain, ArrowLeft, History, Lightbulb, 
+  Target, Sparkles, Link, Star, Pencil, BookOpen, FileText,
+  FileJson, Download, ClipboardCopy, FileDown
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface ConversationTooltipProps {
   stage: string;
@@ -19,6 +31,18 @@ interface SavedTip {
   stage: string;
   mode: string;
   text: string;
+  timestamp: string;
+}
+
+interface ExportData {
+  title: string;
+  stage: string;
+  analysisMode: string;
+  content: string;
+  notes?: string;
+  confidence?: number;
+  memoryMode?: string;
+  savedTips?: SavedTip[];
   timestamp: string;
 }
 
@@ -177,6 +201,374 @@ export function ConversationTooltip(props: ConversationTooltipProps) {
           variant: "destructive"
         });
       });
+  };
+
+  // Prepare export data in different formats
+  const prepareExportData = (): ExportData => {
+    return {
+      title: `Sales Guidance: ${getStageName(stage)} - ${analysisMode === 'strategic' ? 'Strategic' : 'Tactical'} Approach`,
+      stage,
+      analysisMode,
+      content: getTooltipText(stage, analysisMode),
+      notes: personalNotes || undefined,
+      confidence,
+      memoryMode,
+      savedTips: pinnedTips.length > 0 ? pinnedTips : undefined,
+      timestamp: new Date().toISOString()
+    };
+  };
+
+  // Export as formatted text/clipboard
+  const exportAsText = () => {
+    const data = prepareExportData();
+    let text = `# ${data.title}\n\n`;
+    text += `Date: ${new Date(data.timestamp).toLocaleString()}\n`;
+    text += `Conversation Stage: ${getStageName(data.stage)}\n`;
+    text += `Analysis Mode: ${data.analysisMode === 'strategic' ? 'Strategic' : 'Tactical'}\n`;
+    text += `Confidence Score: ${Math.round((data.confidence || 0) * 100)}%\n\n`;
+    text += `## Guidance\n\n${data.content}\n\n`;
+    
+    if (data.savedTips && data.savedTips.length > 0) {
+      text += `## Saved Tips\n\n`;
+      data.savedTips.forEach(tip => {
+        text += `- ${getStageName(tip.stage)} (${tip.mode === 'strategic' ? 'Strategic' : 'Tactical'}):\n  ${tip.text.split('\n').join('\n  ')}\n\n`;
+      });
+    }
+
+    if (data.notes) {
+      text += `## Personal Notes\n\n${data.notes}\n\n`;
+    }
+
+    text += `## Psychology Insights\n\n`;
+    const psychologyText = getPsychologyExplanation(data.stage, data.analysisMode)?.props?.children
+      .map((child: any) => {
+        if (typeof child === 'string') return child;
+        if (child?.type === 'p') return child.props.children.flat().join('');
+        if (child?.type === 'ul') {
+          return child.props.children.map((li: any) => `- ${li.props.children}`).join('\n');
+        }
+        return '';
+      })
+      .filter(Boolean)
+      .join('\n\n');
+    
+    text += psychologyText || "No psychology insights available.";
+    text += `\n\n---\nExported from YoBot Conversation Engine`;
+
+    navigator.clipboard.writeText(text);
+    toast({
+      title: "Text Report Copied",
+      description: "Detailed report has been copied to your clipboard",
+    });
+    
+    return text;
+  };
+
+  // Export as JSON
+  const exportAsJson = () => {
+    const data = prepareExportData();
+    const jsonString = JSON.stringify(data, null, 2);
+    
+    // Create and download the file
+    const blob = new Blob([jsonString], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `sales-guidance-${data.stage}-${data.analysisMode}-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    toast({
+      title: "JSON Exported",
+      description: "Data exported as JSON file for analysis",
+    });
+    
+    return jsonString;
+  };
+
+  // Export as CSV
+  const exportAsCsv = () => {
+    const data = prepareExportData();
+    
+    // Create header row
+    let csv = "Title,Stage,Mode,Content,Notes,Confidence,MemoryMode,Timestamp\n";
+    
+    // Create data row (escape commas and quotes in content)
+    const escapeCsvField = (field: string) => {
+      if (!field) return '';
+      return `"${field.replace(/"/g, '""')}"`;
+    };
+    
+    csv += [
+      escapeCsvField(data.title),
+      escapeCsvField(getStageName(data.stage)),
+      escapeCsvField(data.analysisMode),
+      escapeCsvField(data.content),
+      escapeCsvField(data.notes || ''),
+      data.confidence ? (data.confidence * 100).toFixed(2) : '',
+      escapeCsvField(data.memoryMode || ''),
+      escapeCsvField(data.timestamp)
+    ].join(',') + '\n';
+    
+    // Add saved tips as additional rows if available
+    if (data.savedTips && data.savedTips.length > 0) {
+      csv += "\nSaved Tips\nStage,Mode,Content,Timestamp\n";
+      data.savedTips.forEach(tip => {
+        csv += [
+          escapeCsvField(getStageName(tip.stage)),
+          escapeCsvField(tip.mode),
+          escapeCsvField(tip.text),
+          escapeCsvField(tip.timestamp)
+        ].join(',') + '\n';
+      });
+    }
+    
+    // Create and download the file
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `sales-guidance-${data.stage}-${data.analysisMode}-${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    toast({
+      title: "CSV Exported",
+      description: "Data exported as CSV file for spreadsheet use",
+    });
+    
+    return csv;
+  };
+
+  // Export as PDF (using browser's print to PDF functionality)
+  const exportAsPdf = () => {
+    const data = prepareExportData();
+    
+    // Create a temporary iframe with styled content to print
+    const iframe = document.createElement('iframe');
+    iframe.style.position = 'fixed';
+    iframe.style.right = '0';
+    iframe.style.bottom = '0';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    iframe.style.border = '0';
+    document.body.appendChild(iframe);
+    
+    const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+    
+    if (iframeDoc) {
+      iframeDoc.open();
+      iframeDoc.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>${data.title}</title>
+          <style>
+            body {
+              font-family: Arial, sans-serif;
+              max-width: 800px;
+              margin: 0 auto;
+              padding: 20px;
+              color: #333;
+              line-height: 1.5;
+            }
+            .header {
+              text-align: center;
+              margin-bottom: 20px;
+              padding-bottom: 10px;
+              border-bottom: 1px solid #eee;
+            }
+            .logo {
+              font-size: 18px;
+              font-weight: bold;
+              color: #1a56db;
+              margin-bottom: 5px;
+            }
+            h1 {
+              font-size: 22px;
+              margin: 10px 0;
+              color: #1a56db;
+            }
+            .meta {
+              font-size: 14px;
+              color: #666;
+              margin: 10px 0;
+            }
+            .meta-item {
+              margin: 5px 0;
+              display: flex;
+              justify-content: space-between;
+            }
+            .meta-label {
+              font-weight: bold;
+              color: #666;
+            }
+            .section {
+              margin: 25px 0;
+            }
+            h2 {
+              font-size: 18px;
+              margin: 15px 0 10px 0;
+              padding-bottom: 5px;
+              border-bottom: 1px solid #eee;
+              color: #1a56db;
+            }
+            ul {
+              padding-left: 20px;
+              margin: 10px 0;
+            }
+            li {
+              margin: 5px 0;
+            }
+            .footer {
+              margin-top: 30px;
+              font-size: 12px;
+              color: #999;
+              text-align: center;
+              border-top: 1px solid #eee;
+              padding-top: 10px;
+            }
+            .confidence {
+              display: inline-block;
+              padding: 2px 8px;
+              border-radius: 12px;
+              color: white;
+              font-weight: bold;
+              background-color: #1a56db;
+            }
+            .saved-tip {
+              padding: 10px;
+              margin: 10px 0;
+              background-color: #f9fafb;
+              border-left: 3px solid #1a56db;
+              border-radius: 3px;
+            }
+            .note-box {
+              padding: 15px;
+              background-color: #fffde7;
+              border-radius: 4px;
+              margin: 10px 0;
+            }
+            @media print {
+              body {
+                padding: 0;
+                margin: 0;
+                font-size: 12px;
+              }
+              .no-print {
+                display: none;
+              }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div class="logo">YoBot™ Conversation Engine</div>
+            <h1>${data.title}</h1>
+            <div class="meta">
+              <div class="meta-item">
+                <span class="meta-label">Date:</span>
+                <span>${new Date(data.timestamp).toLocaleString()}</span>
+              </div>
+              <div class="meta-item">
+                <span class="meta-label">Conversation Stage:</span>
+                <span>${getStageName(data.stage)}</span>
+              </div>
+              <div class="meta-item">
+                <span class="meta-label">Analysis Mode:</span>
+                <span>${data.analysisMode === 'strategic' ? 'Strategic' : 'Tactical'}</span>
+              </div>
+              <div class="meta-item">
+                <span class="meta-label">Confidence Score:</span>
+                <span class="confidence">${Math.round((data.confidence || 0) * 100)}%</span>
+              </div>
+              <div class="meta-item">
+                <span class="meta-label">Memory Mode:</span>
+                <span>${data.memoryMode === 'persistent' ? 'Persistent Memory' : 'Stateless Memory'}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="section">
+            <h2>Guidance</h2>
+            <div>${data.content.replace(/\n/g, '<br>').replace(/•\s/g, '• ')}</div>
+          </div>
+
+          ${data.savedTips && data.savedTips.length > 0 ? `
+          <div class="section">
+            <h2>Saved Tips</h2>
+            ${data.savedTips.map(tip => `
+              <div class="saved-tip">
+                <strong>${getStageName(tip.stage)} (${tip.mode === 'strategic' ? 'Strategic' : 'Tactical'})</strong>
+                <p>${tip.text.replace(/\n/g, '<br>')}</p>
+                <small>Saved: ${new Date(tip.timestamp).toLocaleString()}</small>
+              </div>
+            `).join('')}
+          </div>
+          ` : ''}
+
+          ${data.notes ? `
+          <div class="section">
+            <h2>Personal Notes</h2>
+            <div class="note-box">${data.notes.replace(/\n/g, '<br>')}</div>
+          </div>
+          ` : ''}
+
+          <div class="section">
+            <h2>Psychology Insights</h2>
+            <div>${getPsychologyExplanation(data.stage, data.analysisMode)?.props?.children
+              .map((child: any) => {
+                if (typeof child === 'string') return child;
+                if (child?.type === 'p') return `<p>${child.props.children.flat().join('')}</p>`;
+                if (child?.type === 'ul') {
+                  return `<ul>${child.props.children.map((li: any) => `<li>${li.props.children}</li>`).join('')}</ul>`;
+                }
+                return '';
+              })
+              .filter(Boolean)
+              .join('') || "No psychology insights available."}
+            </div>
+          </div>
+
+          <div class="footer">
+            <p>Exported from YoBot™ Conversation Engine on ${new Date().toLocaleString()}</p>
+            <p>© ${new Date().getFullYear()} YoBot, Inc. All rights reserved.</p>
+          </div>
+        </body>
+        </html>
+      `);
+      iframeDoc.close();
+      
+      // Wait for resources to load
+      setTimeout(() => {
+        try {
+          iframe.contentWindow?.focus();
+          iframe.contentWindow?.print();
+          
+          // Clean up
+          setTimeout(() => {
+            document.body.removeChild(iframe);
+          }, 1000);
+          
+          toast({
+            title: "PDF Export",
+            description: "Use the browser's print dialog to save as PDF",
+          });
+        } catch (e) {
+          console.error('Print error:', e);
+          document.body.removeChild(iframe);
+          toast({
+            title: "Export Failed",
+            description: "Could not generate PDF. Try another format.",
+            variant: "destructive"
+          });
+        }
+      }, 500);
+    }
   };
 
   if (!isVisible) return null;
@@ -433,6 +825,55 @@ export function ConversationTooltip(props: ConversationTooltipProps) {
             <Link className="h-3.5 w-3.5 group-hover:text-primary transition-colors" />
             <span>Share link</span>
           </Button>
+          
+          {/* Export dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="gap-1.5 text-muted-foreground group"
+              >
+                <FileDown className="h-3.5 w-3.5 group-hover:text-primary transition-colors" />
+                <span>Export</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-64 export-dropdown-menu">
+              <DropdownMenuLabel className="font-semibold text-center bg-primary-50/20 py-2">
+                Export War Room Report
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem className="cursor-pointer flex flex-col items-start" onClick={exportAsPdf}>
+                <div className="flex items-center w-full">
+                  <FileText className="h-4 w-4 mr-2 text-primary export-icon" />
+                  <span className="export-label">Professional PDF</span>
+                </div>
+                <span className="export-description ml-6">Clean, print-ready document for clients/investors</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem className="cursor-pointer flex flex-col items-start" onClick={exportAsText}>
+                <div className="flex items-center w-full">
+                  <ClipboardCopy className="h-4 w-4 mr-2 text-primary export-icon" />
+                  <span className="export-label">Markdown to Clipboard</span>
+                </div>
+                <span className="export-description ml-6">Instant paste into docs, CRMs, Slack</span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem className="cursor-pointer flex flex-col items-start" onClick={exportAsCsv}>
+                <div className="flex items-center w-full">
+                  <Download className="h-4 w-4 mr-2 text-primary export-icon" />
+                  <span className="export-label">Export as CSV</span>
+                </div>
+                <span className="export-description ml-6">Spreadsheet-ready format for analysis</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem className="cursor-pointer flex flex-col items-start" onClick={exportAsJson}>
+                <div className="flex items-center w-full">
+                  <FileJson className="h-4 w-4 mr-2 text-primary export-icon" />
+                  <span className="export-label">Export as JSON</span>
+                </div>
+                <span className="export-description ml-6">For developers and automation</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           
           <span className="flex-1"></span>
           

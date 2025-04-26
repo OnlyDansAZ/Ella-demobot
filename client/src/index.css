@@ -366,6 +366,44 @@
   100% { transform: scale(1); }
 }
 
+/* Export dropdown styling */
+.export-dropdown-menu {
+  max-width: 280px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.export-menu-item {
+  display: flex;
+  align-items: center;
+  padding: 10px 12px;
+  gap: 8px;
+  transition: all 0.2s ease;
+}
+
+.export-menu-item:hover {
+  background-color: var(--theme-primary-5);
+}
+
+.export-icon {
+  width: 18px;
+  height: 18px;
+  color: var(--theme-primary);
+  flex-shrink: 0;
+}
+
+.export-label {
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.export-description {
+  font-size: 12px;
+  color: var(--theme-muted-foreground);
+  margin-top: 2px;
+}
+
 /* Animated loading indicator */
 .loading-indicator {
   display: inline-flex;
