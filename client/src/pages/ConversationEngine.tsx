@@ -325,9 +325,25 @@ export default function ConversationEngine() {
                       <div className="font-medium">{stage.name}</div>
                     </div>
                     <div className="text-sm text-muted-foreground mt-1">{stage.description}</div>
-                    {currentStage === stage.id && (
-                      <Badge variant="outline" className="mt-2 bg-primary/10">Current Stage</Badge>
-                    )}
+                    <div className="flex items-center justify-between mt-2">
+                      {currentStage === stage.id && (
+                        <>
+                          <Badge variant="outline" className="bg-primary/10">Current Stage</Badge>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="h-7 w-7 p-0 rounded-full"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setShowTooltip(true);
+                            }}
+                          >
+                            <Info className="h-4 w-4 text-primary" />
+                            <span className="sr-only">Show guidance</span>
+                          </Button>
+                        </>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -336,8 +352,21 @@ export default function ConversationEngine() {
           
           <Card>
             <CardHeader>
-              <CardTitle>Analysis Mode</CardTitle>
-              <CardDescription>Choose analysis approach</CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Analysis Mode</CardTitle>
+                  <CardDescription>Choose analysis approach</CardDescription>
+                </div>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-8 w-8 p-0 rounded-full"
+                  onClick={() => setShowTooltip(true)}
+                >
+                  <Info className="h-4 w-4 text-primary" />
+                  <span className="sr-only">Show guidance</span>
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
               <div className="border-b pb-2">
@@ -486,8 +515,19 @@ export default function ConversationEngine() {
                       </div>
                     ))
                   )}
+                  <div ref={messageEndRef} />
                 </div>
               </div>
+              
+              {/* Contextual Tooltip */}
+              {showTooltip && (
+                <ConversationTooltip 
+                  stage={currentStage}
+                  analysisMode={analysisMode}
+                  visible={showTooltip}
+                  onClose={() => setShowTooltip(false)}
+                />
+              )}
             </CardContent>
             <CardFooter className="border-t pt-4">
               <div className="flex w-full gap-2">

@@ -265,6 +265,33 @@
   transition-duration: 0s !important;
 }
 
+/* Tooltip animations */
+@keyframes tooltipEntrance {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -45%) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+.tooltip-entrance {
+  animation: tooltipEntrance 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+.tooltip-backdrop {
+  background-color: rgba(0, 0, 0, 0.5);
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 40;
+  animation: fadeIn 0.2s ease-out;
+}
+
 /* Animated loading indicator */
 .loading-indicator {
   display: inline-flex;
