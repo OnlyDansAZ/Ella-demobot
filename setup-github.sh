@@ -29,8 +29,10 @@ git commit -m "Initial commit of Ella AI Frontend"
 # Set up remote
 echo ""
 echo "Step 3: Setting up GitHub remote..."
-echo "Using repository: https://github.com/OnlyDansAZ/ella-frontend.git"
-git remote add origin https://github.com/OnlyDansAZ/ella-frontend.git
+echo "Please enter your GitHub repository URL (e.g., https://github.com/yourusername/ella-ai.git):"
+read repo_url
+git remote add origin $repo_url
+echo "Using repository: $repo_url"
 
 # Push to GitHub
 echo ""
@@ -47,7 +49,7 @@ git push -u origin main
 if [ $? -eq 0 ]; then
     echo ""
     echo "✅ Success! Your Ella frontend has been pushed to GitHub."
-    echo "View your repository at: https://github.com/OnlyDansAZ/ella-frontend"
+    echo "View your repository at: $repo_url"
     echo ""
     
     # Ask about GitHub Pages
@@ -57,14 +59,18 @@ if [ $? -eq 0 ]; then
     read -p "Enter your choice (1 or 2): " choice
     
     if [ "$choice" = "1" ]; then
+        # Extract username and repo name from URL
+        repo_name=$(echo $repo_url | sed -E 's/.*\/([^\/]+)\.git/\1/')
+        username=$(echo $repo_url | sed -E 's/.*github\.com\/([^\/]+).*/\1/')
+        
         echo ""
         echo "To set up GitHub Pages:"
-        echo "1. Go to https://github.com/OnlyDansAZ/ella-frontend/settings/pages"
+        echo "1. Go to the repository settings page and select 'Pages' from the left menu"
         echo "2. Under 'Source', select 'Deploy from a branch'"
         echo "3. Select 'main' branch"
         echo "4. Click 'Save'"
         echo ""
-        echo "Your site will be available at: https://onlydansaz.github.io/ella-frontend/"
+        echo "Your site will be available at: https://$username.github.io/$repo_name/"
     fi
     
     echo ""

@@ -18,8 +18,9 @@ git commit -m "Initial commit of Ella AI Frontend"
 
 ## Step 3: Connect to GitHub repository
 ```
-git remote add origin https://github.com/OnlyDansAZ/ella-frontend.git
+git remote add origin https://github.com/yourusername/your-repository-name.git
 ```
+Replace the URL with your actual GitHub repository URL.
 
 ## Step 4: Push to GitHub
 ```
