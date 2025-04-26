@@ -1,8 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Info } from 'lucide-react';
+import { ConversationTooltip } from '@/components/ConversationTooltip';
 
 // Recommendation engine types
 interface ChatMessage {
@@ -69,6 +71,8 @@ export default function ConversationEngine() {
   const [suggestions, setSuggestions] = useState<ResponseSuggestion[]>([]);
   const [analysisMode, setAnalysisMode] = useState<'strategic' | 'tactical'>('strategic');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [showTooltip, setShowTooltip] = useState(false);
+  const messageEndRef = useRef<HTMLDivElement>(null);
 
   // Generate suggestions based on conversation
   useEffect(() => {
@@ -237,7 +241,34 @@ export default function ConversationEngine() {
 
   const advanceStage = (newStage: string) => {
     setCurrentStage(newStage);
+    // Show guidance tooltip when stage changes
+    setShowTooltip(true);
+    
+    // Auto-hide tooltip after 8 seconds
+    setTimeout(() => {
+      setShowTooltip(false);
+    }, 8000);
   };
+  
+  // Auto-scroll to the bottom of the conversation
+  useEffect(() => {
+    if (messageEndRef.current) {
+      messageEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [conversation]);
+  
+  // Show tooltip when changing analysis mode
+  useEffect(() => {
+    // Show guidance tooltip when analysis mode changes
+    setShowTooltip(true);
+    
+    // Auto-hide tooltip after 8 seconds
+    const timer = setTimeout(() => {
+      setShowTooltip(false);
+    }, 8000);
+    
+    return () => clearTimeout(timer);
+  }, [analysisMode]);
 
   // Use a suggestion as response
   const useSuggestion = (suggestion: ResponseSuggestion) => {
