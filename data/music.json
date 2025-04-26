@@ -1,0 +1,47 @@
+[
+  {
+    "id": "1",
+    "title": "Peaceful Morning",
+    "artist": "Ambient Sounds",
+    "genre": "Ambient",
+    "duration": 180,
+    "year": 2023,
+    "album": "Relaxation Collection"
+  },
+  {
+    "id": "2",
+    "title": "Focus Time",
+    "artist": "Productive Beats",
+    "genre": "Concentration",
+    "duration": 210,
+    "year": 2023,
+    "album": "Work Flow"
+  },
+  {
+    "id": "3",
+    "title": "Smooth Jazz Cafe",
+    "artist": "Jazz Ensemble",
+    "genre": "Jazz",
+    "duration": 240,
+    "year": 2022,
+    "album": "Cafe Vibes"
+  },
+  {
+    "id": "4",
+    "title": "Meditation Sounds",
+    "artist": "Mindfulness Group",
+    "genre": "Meditation",
+    "duration": 300,
+    "year": 2023,
+    "album": "Deep Calm"
+  },
+  {
+    "id": "5",
+    "title": "Classical Morning",
+    "artist": "Symphony Orchestra",
+    "genre": "Classical",
+    "duration": 270,
+    "year": 2021,
+    "album": "Morning Classics"
+  }
+]

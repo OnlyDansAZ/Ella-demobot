@@ -612,6 +612,35 @@ export async function generateResponse(
     }
     
     // STEP 6: CONSTRUCT MESSAGE ARRAY WITH OPTIMIZED HISTORY
+    // First, proactively check for calendar events regardless of user query
+    try {
+      // Get today's calendar events for proactive mentions
+      const todaysEvents = calendarService.getEventsForToday();
+      if (todaysEvents && todaysEvents.length > 0) {
+        const nextEvent = todaysEvents[0]; // Get the nearest event
+        const startTime = new Date(nextEvent.start).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        
+        // Add proactive calendar memory injection
+        systemPromptWithMemory += `\n\nPROACTIVE CALENDAR AWARENESS: The user has "${nextEvent.title}" scheduled today at ${startTime}${nextEvent.location ? ` at ${nextEvent.location}` : ''}. If contextually appropriate, mention this event proactively in your response even if the user doesn't ask about their schedule.`;
+        console.log('Added proactive calendar awareness to system prompt');
+      }
+      
+      // Get upcoming events for the next 2 days to enhance memory
+      const upcomingEvents = calendarService.getUpcomingEvents(2, 3);
+      if (upcomingEvents && upcomingEvents.length > 0) {
+        const eventDetails = upcomingEvents.map(event => {
+          const eventDate = new Date(event.start).toLocaleDateString([], {weekday: 'short', month: 'short', day: 'numeric'});
+          const startTime = new Date(event.start).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+          return `${event.title} on ${eventDate} at ${startTime}`;
+        }).join('; ');
+        
+        systemPromptWithMemory += `\n\nUPCOMING SCHEDULE AWARENESS: The user has these upcoming events: ${eventDetails}. Refer to these details when discussing availability or scheduling.`;
+        console.log('Added upcoming schedule awareness to system prompt');
+      }
+    } catch (error) {
+      console.error('Error adding proactive calendar awareness:', error);
+    }
+    
     const messages: ChatMessage[] = [
       { role: "system", content: systemPromptWithMemory }
     ];
@@ -781,9 +810,10 @@ export async function generateResponse(
         keywords: [
           'schedule', 'appointment', 'meeting', 'call', 'time', 'date', 'calendar', 'calendly',
           'today', 'tomorrow', 'next week', 'am', 'pm', 'o\'clock', 'book', 'booking',
-          'morning', 'afternoon', 'evening', 'reschedule', 'cancel', 'availability'
+          'morning', 'afternoon', 'evening', 'reschedule', 'cancel', 'availability', 'demo', 
+          'consultation', 'follow-up', 'session', 'free', 'slot', 'available'
         ],
-        instruction: "CRITICAL SCHEDULING INSTRUCTION: The user is discussing scheduling. Pay extremely close attention to ANY dates, times, or appointment details in BOTH this message AND all previous messages. First check if we have a database appointment entry. If the user is specifically requesting to view, change or cancel an existing appointment, mention that these operations can be handled through our appointment system and that you'll relay their request. If the user is asking to schedule a new meeting or call, offer our Calendly link by saying: \"You can easily schedule a meeting with us using our Calendly booking system. Would you like me to share the booking link with you?\". If they agree, respond with: \"Great! Here's our Calendly link where you can select a time that works for you: [Calendly Booking URL would be shown here]\". If there are any calendar events provided in the context, reference them in your response. Ensure you've reviewed the ENTIRE conversation history for all scheduling details."
+        instruction: "CRITICAL SCHEDULING INSTRUCTION: The user is discussing scheduling. Always begin your response by acknowledging any relevant calendar events provided in the context, even if they haven't explicitly asked about their schedule. Say something like: \"I see you have X scheduled for [time/date]\" before answering their query.\n\nPay extremely close attention to ANY dates, times, or appointment details in BOTH this message AND all previous messages.\n\nFor existing appointments: If the user already has something scheduled according to the calendar data, reference it specifically by title, date and time in your response. Use phrasing like \"I can see your [event name] is already on the calendar for [day] at [time]. Would you like me to confirm that for you now?\"\n\nFor new scheduling: If they're asking to schedule something new, first check for open time slots in the provided calendar data and suggest specific available times. Example: \"Looking at your calendar, you have open availability on Thursday afternoon between 2-4pm. Would that work for your sales demo?\"\n\nFor follow-ups: If they mention a past interaction, make the connection to any upcoming scheduled events. For example: \"Since we had that productive conversation last week, I see you have a demo scheduled for Thursday. Is there anything specific you'd like covered in that session?\"\n\nFor Calendly: Only if needed, offer our Calendly system: \"If those times don't work, you can easily schedule using our Calendly booking system. Would you like me to share the booking link?\"\n\nEnsure you've reviewed the ENTIRE conversation history for all scheduling details."
       },
       musicPlayback: {
         keywords: [
