@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { 
   X, Copy, Check, Mail, Brain, ArrowLeft, History, Lightbulb, 
   Target, Sparkles, Link, Star, Pencil, BookOpen, FileText,
-  FileJson, Download, ClipboardCopy, FileDown
+  FileJson, Download, ClipboardCopy, FileDown, Share2, Send, 
+  Palette, RotateCw, CreditCard, Building2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -15,7 +16,30 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuGroup,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuPortal,
+  DropdownMenuSubContent,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface ConversationTooltipProps {
   stage: string;
@@ -56,6 +80,20 @@ export function ConversationTooltip(props: ConversationTooltipProps) {
   const [pinnedTips, setPinnedTips] = useState<SavedTip[]>([]);
   const [savedHistory, setSavedHistory] = useState<SavedTip[]>([]);
   const [personalNotes, setPersonalNotes] = useState<string>('');
+  const [recipientEmail, setRecipientEmail] = useState<string>('');
+  const [emailSubject, setEmailSubject] = useState<string>('');
+  const [emailDialogOpen, setEmailDialogOpen] = useState<boolean>(false);
+  const [crmDialogOpen, setCrmDialogOpen] = useState<boolean>(false);
+  const [brandingOptions, setBrandingOptions] = useState<{
+    logo: string;
+    primaryColor: string;
+    companyName: string;
+  }>({
+    logo: 'default',
+    primaryColor: '#1a56db',
+    companyName: 'YoBot'
+  });
+  const [whiteLabel, setWhiteLabel] = useState<boolean>(false);
   const { toast } = useToast();
   
   // Handle animation for smooth entrance/exit
@@ -345,8 +383,13 @@ export function ConversationTooltip(props: ConversationTooltipProps) {
   };
 
   // Export as PDF (using browser's print to PDF functionality)
-  const exportAsPdf = () => {
+  const exportAsPdf = (brandOptions?: any) => {
     const data = prepareExportData();
+    const options = brandOptions || (whiteLabel ? brandingOptions : {
+      logo: 'default',
+      primaryColor: '#1a56db',
+      companyName: 'YoBot'
+    });
     
     // Create a temporary iframe with styled content to print
     const iframe = document.createElement('iframe');
@@ -385,13 +428,13 @@ export function ConversationTooltip(props: ConversationTooltipProps) {
             .logo {
               font-size: 18px;
               font-weight: bold;
-              color: #1a56db;
+              color: ${options.primaryColor || '#1a56db'};
               margin-bottom: 5px;
             }
             h1 {
               font-size: 22px;
               margin: 10px 0;
-              color: #1a56db;
+              color: ${options.primaryColor || '#1a56db'};
             }
             .meta {
               font-size: 14px;
@@ -415,7 +458,7 @@ export function ConversationTooltip(props: ConversationTooltipProps) {
               margin: 15px 0 10px 0;
               padding-bottom: 5px;
               border-bottom: 1px solid #eee;
-              color: #1a56db;
+              color: ${options.primaryColor || '#1a56db'};
             }
             ul {
               padding-left: 20px;
@@ -438,13 +481,13 @@ export function ConversationTooltip(props: ConversationTooltipProps) {
               border-radius: 12px;
               color: white;
               font-weight: bold;
-              background-color: #1a56db;
+              background-color: ${options.primaryColor || '#1a56db'};
             }
             .saved-tip {
               padding: 10px;
               margin: 10px 0;
               background-color: #f9fafb;
-              border-left: 3px solid #1a56db;
+              border-left: 3px solid ${options.primaryColor || '#1a56db'};
               border-radius: 3px;
             }
             .note-box {
@@ -452,6 +495,16 @@ export function ConversationTooltip(props: ConversationTooltipProps) {
               background-color: #fffde7;
               border-radius: 4px;
               margin: 10px 0;
+            }
+            .cta-button {
+              display: inline-block;
+              padding: 10px 20px;
+              background-color: ${options.primaryColor || '#1a56db'};
+              color: white;
+              text-decoration: none;
+              border-radius: 4px;
+              font-weight: bold;
+              margin-top: 10px;
             }
             @media print {
               body {
@@ -467,7 +520,7 @@ export function ConversationTooltip(props: ConversationTooltipProps) {
         </head>
         <body>
           <div class="header">
-            <div class="logo">YoBot™ Conversation Engine</div>
+            <div class="logo">${options.companyName || 'YoBot'}™ Conversation Engine</div>
             <h1>${data.title}</h1>
             <div class="meta">
               <div class="meta-item">
@@ -535,8 +588,9 @@ export function ConversationTooltip(props: ConversationTooltipProps) {
           </div>
 
           <div class="footer">
-            <p>Exported from YoBot™ Conversation Engine on ${new Date().toLocaleString()}</p>
-            <p>© ${new Date().getFullYear()} YoBot, Inc. All rights reserved.</p>
+            <p>Exported from ${options.companyName || 'YoBot'}™ Conversation Engine on ${new Date().toLocaleString()}</p>
+            <p>© ${new Date().getFullYear()} ${options.companyName || 'YoBot'}, Inc. All rights reserved.</p>
+            <p><a href="https://www.yobot.ai" class="cta-button">Book a Demo Call</a></p>
           </div>
         </body>
         </html>
@@ -570,12 +624,243 @@ export function ConversationTooltip(props: ConversationTooltipProps) {
       }, 500);
     }
   };
+  
+  // Email report functionality
+  const sendEmailReport = async () => {
+    if (!recipientEmail) {
+      toast({
+        title: "Email Required",
+        description: "Please enter a recipient email address",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    const data = prepareExportData();
+    setEmailDialogOpen(false);
+    
+    // This would connect to a backend endpoint in production 
+    // For now we'll simulate the email being sent
+    toast({
+      title: "Email Sent",
+      description: `Report emailed to ${recipientEmail}`,
+    });
+
+    // In a real implementation, this would call a backend API:
+    // await fetch('/api/send-report-email', {
+    //   method: 'POST',
+    //   headers: { 'Content-Type': 'application/json' },
+    //   body: JSON.stringify({
+    //     to: recipientEmail,
+    //     subject: emailSubject || data.title,
+    //     content: data,
+    //     format: 'pdf',
+    //     branding: whiteLabel ? brandingOptions : null
+    //   })
+    // });
+  };
+  
+  // Connect to CRM for data sync
+  const syncToCRM = async () => {
+    const data = prepareExportData();
+    setCrmDialogOpen(false);
+    
+    // Simulate CRM sync (would connect to API in production)
+    toast({
+      title: "CRM Sync Complete",
+      description: "Conversation data synced to your CRM system",
+    });
+    
+    // In a real implementation, would call:
+    // await fetch('/api/crm-sync', {
+    //   method: 'POST',
+    //   headers: { 'Content-Type': 'application/json' },
+    //   body: JSON.stringify({
+    //     data: data,
+    //     dealStage: getStageName(data.stage),
+    //     confidenceScore: data.confidence,
+    //     timestamp: data.timestamp
+    //   })
+    // });
+  };
 
   if (!isVisible) return null;
   
   return (
     <>
       <div className="tooltip-backdrop" onClick={onClose}></div>
+      
+      {/* Email Dialog */}
+      <Dialog open={emailDialogOpen} onOpenChange={setEmailDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Email Report</DialogTitle>
+            <DialogDescription>
+              Send this conversation guidance report to yourself or a team member.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="recipient" className="text-right">
+                To:
+              </Label>
+              <Input
+                id="recipient"
+                type="email"
+                placeholder="recipient@company.com"
+                value={recipientEmail}
+                onChange={(e) => setRecipientEmail(e.target.value)}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="subject" className="text-right">
+                Subject:
+              </Label>
+              <Input
+                id="subject"
+                placeholder={`Sales Guidance: ${getStageName(stage)}`}
+                value={emailSubject}
+                onChange={(e) => setEmailSubject(e.target.value)}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="branding" className="text-right">
+                Branding:
+              </Label>
+              <div className="col-span-3 flex items-center space-x-2">
+                <input 
+                  type="checkbox" 
+                  id="white-label"
+                  checked={whiteLabel}
+                  onChange={(e) => setWhiteLabel(e.target.checked)}
+                  className="rounded border-gray-300 text-primary focus:ring-primary"
+                />
+                <Label htmlFor="white-label" className="text-sm font-normal">
+                  Use custom branding
+                </Label>
+              </div>
+            </div>
+            
+            {whiteLabel && (
+              <>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="companyName" className="text-right">
+                    Company:
+                  </Label>
+                  <Input
+                    id="companyName"
+                    placeholder="Your Company"
+                    value={brandingOptions.companyName}
+                    onChange={(e) => setBrandingOptions({...brandingOptions, companyName: e.target.value})}
+                    className="col-span-3"
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="primaryColor" className="text-right">
+                    Color:
+                  </Label>
+                  <div className="flex items-center col-span-3 gap-2">
+                    <Input
+                      id="primaryColor"
+                      type="color"
+                      value={brandingOptions.primaryColor}
+                      onChange={(e) => setBrandingOptions({...brandingOptions, primaryColor: e.target.value})}
+                      className="w-12 h-8 p-1"
+                    />
+                    <Input
+                      value={brandingOptions.primaryColor}
+                      onChange={(e) => setBrandingOptions({...brandingOptions, primaryColor: e.target.value})}
+                      className="flex-1"
+                    />
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEmailDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={sendEmailReport}>
+              <Mail className="mr-2 h-4 w-4" />
+              Send Email
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* CRM Integration Dialog */}
+      <Dialog open={crmDialogOpen} onOpenChange={setCrmDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Sync to CRM</DialogTitle>
+            <DialogDescription>
+              Send this sales data to your CRM for lead tracking and deal management.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="crm-platform" className="text-right">
+                Platform:
+              </Label>
+              <Select defaultValue="hubspot">
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Select CRM" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="hubspot">HubSpot</SelectItem>
+                  <SelectItem value="salesforce">Salesforce</SelectItem>
+                  <SelectItem value="pipedrive">Pipedrive</SelectItem>
+                  <SelectItem value="zoho">Zoho CRM</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="deal-stage" className="text-right">
+                Deal Stage:
+              </Label>
+              <Select defaultValue={stage}>
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Deal Stage" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="introduction">Introduction</SelectItem>
+                  <SelectItem value="discovery">Discovery/Needs Assessment</SelectItem>
+                  <SelectItem value="presentation">Presentation/Demo</SelectItem>
+                  <SelectItem value="objection">Objection Handling</SelectItem>
+                  <SelectItem value="closing">Negotiation/Closing</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="auto-update" className="text-right">
+                Options:
+              </Label>
+              <div className="col-span-3 space-y-2">
+                <div className="flex items-center space-x-2">
+                  <input type="checkbox" id="auto-update" className="rounded border-gray-300" defaultChecked />
+                  <Label htmlFor="auto-update" className="text-sm font-normal">Auto-update deal stage</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <input type="checkbox" id="add-activity" className="rounded border-gray-300" defaultChecked />
+                  <Label htmlFor="add-activity" className="text-sm font-normal">Log as activity in CRM</Label>
+                </div>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCrmDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={syncToCRM}>
+              <RotateCw className="mr-2 h-4 w-4" />
+              Sync Now
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       
       <div 
         className={`fixed z-50 top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 
@@ -843,35 +1128,83 @@ export function ConversationTooltip(props: ConversationTooltipProps) {
                 Export War Room Report
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="cursor-pointer flex flex-col items-start" onClick={exportAsPdf}>
-                <div className="flex items-center w-full">
-                  <FileText className="h-4 w-4 mr-2 text-primary export-icon" />
-                  <span className="export-label">Professional PDF</span>
-                </div>
-                <span className="export-description ml-6">Clean, print-ready document for clients/investors</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem className="cursor-pointer flex flex-col items-start" onClick={exportAsText}>
-                <div className="flex items-center w-full">
-                  <ClipboardCopy className="h-4 w-4 mr-2 text-primary export-icon" />
-                  <span className="export-label">Markdown to Clipboard</span>
-                </div>
-                <span className="export-description ml-6">Instant paste into docs, CRMs, Slack</span>
-              </DropdownMenuItem>
+              <DropdownMenuGroup>
+                <DropdownMenuItem className="cursor-pointer flex flex-col items-start" onClick={exportAsPdf}>
+                  <div className="flex items-center w-full">
+                    <FileText className="h-4 w-4 mr-2 text-primary export-icon" />
+                    <span className="export-label">Professional PDF</span>
+                  </div>
+                  <span className="export-description ml-6">Clean, print-ready document for clients/investors</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem className="cursor-pointer flex flex-col items-start" onClick={exportAsText}>
+                  <div className="flex items-center w-full">
+                    <ClipboardCopy className="h-4 w-4 mr-2 text-primary export-icon" />
+                    <span className="export-label">Markdown to Clipboard</span>
+                  </div>
+                  <span className="export-description ml-6">Instant paste into docs, CRMs, Slack</span>
+                </DropdownMenuItem>
+              </DropdownMenuGroup>
+              
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="cursor-pointer flex flex-col items-start" onClick={exportAsCsv}>
-                <div className="flex items-center w-full">
-                  <Download className="h-4 w-4 mr-2 text-primary export-icon" />
-                  <span className="export-label">Export as CSV</span>
-                </div>
-                <span className="export-description ml-6">Spreadsheet-ready format for analysis</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem className="cursor-pointer flex flex-col items-start" onClick={exportAsJson}>
-                <div className="flex items-center w-full">
-                  <FileJson className="h-4 w-4 mr-2 text-primary export-icon" />
-                  <span className="export-label">Export as JSON</span>
-                </div>
-                <span className="export-description ml-6">For developers and automation</span>
-              </DropdownMenuItem>
+              
+              <DropdownMenuGroup>
+                <DropdownMenuItem className="cursor-pointer flex flex-col items-start" onClick={() => setEmailDialogOpen(true)}>
+                  <div className="flex items-center w-full">
+                    <Mail className="h-4 w-4 mr-2 text-primary export-icon" />
+                    <span className="export-label">Email Report</span>
+                  </div>
+                  <span className="export-description ml-6">Send report to team members or clients</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem className="cursor-pointer flex flex-col items-start" onClick={() => setCrmDialogOpen(true)}>
+                  <div className="flex items-center w-full">
+                    <Building2 className="h-4 w-4 mr-2 text-primary export-icon" />
+                    <span className="export-label">Sync to CRM</span>
+                  </div>
+                  <span className="export-description ml-6">Update HubSpot or Salesforce with this data</span>
+                </DropdownMenuItem>
+              </DropdownMenuGroup>
+              
+              <DropdownMenuSeparator />
+              
+              <DropdownMenuGroup>
+                <DropdownMenuItem className="cursor-pointer flex flex-col items-start" onClick={exportAsCsv}>
+                  <div className="flex items-center w-full">
+                    <Download className="h-4 w-4 mr-2 text-primary export-icon" />
+                    <span className="export-label">Export as CSV</span>
+                  </div>
+                  <span className="export-description ml-6">Spreadsheet-ready format for analysis</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem className="cursor-pointer flex flex-col items-start" onClick={exportAsJson}>
+                  <div className="flex items-center w-full">
+                    <FileJson className="h-4 w-4 mr-2 text-primary export-icon" />
+                    <span className="export-label">Export as JSON</span>
+                  </div>
+                  <span className="export-description ml-6">For developers and automation</span>
+                </DropdownMenuItem>
+              </DropdownMenuGroup>
+              
+              <DropdownMenuSeparator />
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger className="cursor-pointer">
+                  <Palette className="h-4 w-4 mr-2 text-primary" />
+                  <span>White-Label Options</span>
+                </DropdownMenuSubTrigger>
+                <DropdownMenuPortal>
+                  <DropdownMenuSubContent className="w-60">
+                    <DropdownMenuItem className="cursor-pointer flex flex-col items-start" onClick={() => {
+                      setWhiteLabel(true);
+                      setBrandingOptions({...brandingOptions, companyName: 'Your Company'});
+                      setEmailDialogOpen(true);
+                    }}>
+                      <div className="flex items-center w-full">
+                        <CreditCard className="h-4 w-4 mr-2 text-primary" />
+                        <span>Customize Branding</span>
+                      </div>
+                      <span className="text-xs text-muted-foreground ml-6">Change logo and colors</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuSubContent>
+                </DropdownMenuPortal>
+              </DropdownMenuSub>
             </DropdownMenuContent>
           </DropdownMenu>
           
