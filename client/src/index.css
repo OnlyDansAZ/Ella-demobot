@@ -298,7 +298,7 @@
   transition-duration: 0s !important;
 }
 
-/* Tooltip animations */
+/* Tooltip animations and styles */
 @keyframes tooltipEntrance {
   from {
     opacity: 0;
@@ -316,6 +316,7 @@
 
 .tooltip-backdrop {
   background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(2px);
   position: fixed;
   top: 0;
   left: 0;
@@ -323,6 +324,46 @@
   bottom: 0;
   z-index: 40;
   animation: fadeIn 0.2s ease-out;
+}
+
+/* Glow and highlight effects */
+.bot-bubble.highlight-match {
+  box-shadow: 0 0 10px 2px var(--theme-primary-20);
+  border-left-color: var(--theme-primary);
+  animation: glow-pulse 1.5s infinite alternate ease-in-out;
+}
+
+@keyframes glow-pulse {
+  from {
+    box-shadow: 0 0 5px 1px var(--theme-primary-20);
+  }
+  to {
+    box-shadow: 0 0 15px 3px var(--theme-primary-50);
+  }
+}
+
+/* Tab styling improvements */
+.conversation-tooltip-tabs [data-state="active"] {
+  position: relative;
+  font-weight: 500;
+}
+
+.conversation-tooltip-tabs [data-state="active"]::after {
+  content: '';
+  position: absolute;
+  bottom: -8px;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background-color: var(--theme-primary);
+  animation: fadeIn 0.2s ease-out;
+}
+
+/* Custom animation for the "star" pinned tips */
+@keyframes star-pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.2); color: #e0a82e; }
+  100% { transform: scale(1); }
 }
 
 /* Animated loading indicator */

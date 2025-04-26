@@ -1,21 +1,37 @@
 import React, { useEffect, useState } from 'react';
-import { X, Copy, Check, Mail, Brain, ArrowLeft } from 'lucide-react';
+import { X, Copy, Check, Mail, Brain, ArrowLeft, History, Lightbulb, Target, Sparkles, Link, Star, Pencil, BookOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface ConversationTooltipProps {
   stage: string;
   analysisMode: string;
   visible: boolean;
+  confidence?: number;
+  memoryMode?: string;
   onClose: () => void;
 }
 
+interface SavedTip {
+  id: string;
+  stage: string;
+  mode: string;
+  text: string;
+  timestamp: string;
+}
+
 export function ConversationTooltip(props: ConversationTooltipProps) {
-  const { stage, analysisMode, visible, onClose } = props;
+  const { stage, analysisMode, visible, confidence = 0.85, memoryMode = 'persistent', onClose } = props;
   const [isVisible, setIsVisible] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
-  const [showPsychology, setShowPsychology] = useState(false);
+  const [activeTab, setActiveTab] = useState<string>(analysisMode === 'strategic' ? 'strategy' : 'tactical');
+  const [customTip, setCustomTip] = useState<string>('');
+  const [isEditing, setIsEditing] = useState(false);
+  const [pinnedTips, setPinnedTips] = useState<SavedTip[]>([]);
+  const [savedHistory, setSavedHistory] = useState<SavedTip[]>([]);
+  const [personalNotes, setPersonalNotes] = useState<string>('');
   const { toast } = useToast();
   
   // Handle animation for smooth entrance/exit
@@ -63,6 +79,106 @@ export function ConversationTooltip(props: ConversationTooltipProps) {
       });
   };
   
+  // Helper function for copying current tab's content
+  const copyActiveTabContent = () => {
+    let textToCopy = '';
+    
+    switch (activeTab) {
+      case 'strategy':
+        textToCopy = getTooltipText(stage, 'strategic');
+        break;
+      case 'tactical':
+        textToCopy = getTooltipText(stage, 'tactical');
+        break;
+      case 'psychology':
+        // For psychology tab, format the text differently
+        const title = `Sales Psychology: ${getStageName(stage)} - ${analysisMode === 'strategic' ? 'Strategic' : 'Tactical'} Approach`;
+        const content = getTooltipText(stage, analysisMode);
+        textToCopy = `${title}\n\n${content}`;
+        break;
+      case 'notes':
+        textToCopy = personalNotes;
+        break;
+      case 'history':
+        // Format saved history as a list
+        textToCopy = 'Saved Sales Tips:\n\n' + 
+          savedHistory.map(tip => 
+            `${tip.stage} (${tip.mode}): ${tip.text}`
+          ).join('\n\n');
+        break;
+      default:
+        textToCopy = getTooltipText(stage, analysisMode);
+    }
+    
+    navigator.clipboard.writeText(textToCopy)
+      .then(() => {
+        setIsCopied(true);
+        toast({
+          title: "Copied to clipboard",
+          description: `${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} content copied to clipboard`,
+        });
+        
+        setTimeout(() => setIsCopied(false), 2000);
+      })
+      .catch(() => {
+        toast({
+          title: "Failed to copy",
+          description: "Could not copy to clipboard. Please try again.",
+          variant: "destructive"
+        });
+      });
+  };
+  
+  // Function to pin/save current tip
+  const saveTip = () => {
+    const newTip: SavedTip = {
+      id: `${Date.now()}`,
+      stage,
+      mode: analysisMode,
+      text: isEditing && customTip ? customTip : getTooltipText(stage, analysisMode),
+      timestamp: new Date().toISOString()
+    };
+    
+    // Add to pinned tips
+    setPinnedTips([...pinnedTips, newTip]);
+    
+    // Also add to history
+    setSavedHistory([...savedHistory, newTip]);
+    
+    toast({
+      title: "Tip saved",
+      description: "This tip has been pinned to your saved collection",
+    });
+  };
+  
+  // Function to generate a shareable link
+  const generateShareableLink = () => {
+    // Create a base64 encoded version of the tip
+    const tipData = {
+      stage,
+      mode: analysisMode,
+      text: isEditing && customTip ? customTip : getTooltipText(stage, analysisMode)
+    };
+    
+    const encodedData = btoa(JSON.stringify(tipData));
+    const shareableUrl = `${window.location.origin}${window.location.pathname}?tip=${encodedData}`;
+    
+    navigator.clipboard.writeText(shareableUrl)
+      .then(() => {
+        toast({
+          title: "Link copied",
+          description: "Shareable link has been copied to clipboard",
+        });
+      })
+      .catch(() => {
+        toast({
+          title: "Failed to copy link",
+          description: "Could not copy shareable link. Please try again.",
+          variant: "destructive"
+        });
+      });
+  };
+
   if (!isVisible) return null;
   
   return (
@@ -74,129 +190,279 @@ export function ConversationTooltip(props: ConversationTooltipProps) {
           max-w-md w-full bg-white rounded-lg shadow-xl border border-primary/10 p-5
           tooltip-entrance transition-opacity duration-300 ${visible ? 'opacity-100' : 'opacity-0'}`}
       >
-        {!showPsychology ? (
-          // Standard tooltip content view
-          <>
-            <div className="flex justify-between items-start mb-3">
-              <h3 className="text-lg font-medium text-slate-800">Conversation Guidance</h3>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="h-7 w-7 p-0 rounded-full"
-                onClick={onClose}
-              >
-                <X className="h-4 w-4" />
-                <span className="sr-only">Close</span>
-              </Button>
+        {/* Header with context information */}
+        <div className="flex justify-between items-start mb-3">
+          <div>
+            <h3 className="text-lg font-medium text-slate-800 flex items-center gap-2">
+              Conversation Guidance
+              {confidence > 0 && (
+                <span className="text-xs px-1.5 py-0.5 bg-primary/10 text-primary rounded-full">
+                  {Math.round(confidence * 100)}% match
+                </span>
+              )}
+            </h3>
+            <div className="text-xs text-muted-foreground flex gap-2 mt-1">
+              <span className="px-1.5 py-0.5 bg-slate-100 rounded-full">{getStageName(stage)}</span>
+              <span className="px-1.5 py-0.5 bg-slate-100 rounded-full">{memoryMode === 'persistent' ? 'Persistent Memory' : 'Stateless'}</span>
+            </div>
+          </div>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="h-7 w-7 p-0 rounded-full"
+            onClick={onClose}
+          >
+            <X className="h-4 w-4" />
+            <span className="sr-only">Close</span>
+          </Button>
+        </div>
+        
+        {/* Tab interface */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full conversation-tooltip-tabs">
+          <TabsList className="w-full mb-4 grid grid-cols-5">
+            <TabsTrigger value="strategy" className="flex items-center gap-1">
+              <Target className="h-3.5 w-3.5" />
+              <span>Strategy</span>
+            </TabsTrigger>
+            <TabsTrigger value="tactical" className="flex items-center gap-1">
+              <Lightbulb className="h-3.5 w-3.5" />
+              <span>Tactical</span>
+            </TabsTrigger>
+            <TabsTrigger value="psychology" className="flex items-center gap-1">
+              <Brain className="h-3.5 w-3.5" />
+              <span>Psychology</span>
+            </TabsTrigger>
+            <TabsTrigger value="history" className="flex items-center gap-1">
+              <History className="h-3.5 w-3.5" />
+              <span>Saved</span>
+            </TabsTrigger>
+            <TabsTrigger value="notes" className="flex items-center gap-1">
+              <Pencil className="h-3.5 w-3.5" />
+              <span>Notes</span>
+            </TabsTrigger>
+          </TabsList>
+          
+          {/* Strategic tab content */}
+          <TabsContent value="strategy" className="space-y-4">
+            <div className="p-3 bg-primary/5 rounded-md">
+              {getTooltipContent(stage, 'strategic')}
             </div>
             
-            <div className="mb-4 p-3 bg-primary/5 rounded-md">
-              {getTooltipContent(stage, analysisMode)}
-            </div>
-            
-            <Button
-              variant="ghost"
-              size="sm"
-              className="gap-1.5 mb-4 text-primary hover:text-primary/80 group w-full justify-center border border-dashed border-primary/20 hover:border-primary/40 py-2"
-              onClick={() => setShowPsychology(true)}
-            >
-              <Brain className="h-4 w-4 group-hover:animate-pulse" />
-              <span>Why this approach works (Sales Psychology)</span>
-            </Button>
-
-            <div className="flex items-center gap-2 mb-4 pt-2 border-t">
-              <span className="text-sm text-muted-foreground mr-auto">Find this useful?</span>
-              <Button 
-                variant="outline" 
-                size="sm"
-                className="gap-1.5"
-                onClick={handleCopy}
-              >
-                {isCopied ? (
-                  <>
-                    <Check className="h-3.5 w-3.5" />
-                    <span>Copied</span>
-                  </>
-                ) : (
-                  <>
-                    <Copy className="h-3.5 w-3.5" />
-                    <span>Copy to clipboard</span>
-                  </>
-                )}
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm"
-                className="gap-1.5"
-                onClick={() => {
-                  const subject = `Sales Tips: ${getStageName(stage)} - ${analysisMode === 'strategic' ? 'Strategic' : 'Tactical'} Approach`;
-                  const body = encodeURIComponent(getTooltipText(stage, analysisMode));
-                  window.open(`mailto:?subject=${encodeURIComponent(subject)}&body=${body}`, '_blank');
-                  toast({
-                    title: "Email client opened",
-                    description: "Tips have been prepared for sending via email",
-                  });
-                }}
-              >
-                <Mail className="h-3.5 w-3.5" />
-                <span>Email tips</span>
-              </Button>
-            </div>
-            
-            <div className="flex justify-end">
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={onClose}
-              >
-                Got it
-              </Button>
-            </div>
-          </>
-        ) : (
-          // Psychology explanation view
-          <>
-            <div className="flex justify-between items-start mb-3">
+            {/* Edit/customize button */}
+            {!isEditing ? (
               <Button
                 variant="ghost"
                 size="sm"
-                className="gap-1.5 text-primary"
-                onClick={() => setShowPsychology(false)}
+                className="gap-1.5 text-primary hover:text-primary/80 group w-full justify-center border border-dashed border-primary/20 hover:border-primary/40 py-2"
+                onClick={() => {
+                  setCustomTip(getTooltipText(stage, 'strategic'));
+                  setIsEditing(true);
+                }}
               >
-                <ArrowLeft className="h-4 w-4" />
-                <span>Back to tips</span>
+                <Pencil className="h-4 w-4" />
+                <span>Customize this tip</span>
               </Button>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="h-7 w-7 p-0 rounded-full"
-                onClick={onClose}
-              >
-                <X className="h-4 w-4" />
-                <span className="sr-only">Close</span>
-              </Button>
-            </div>
-            
-            <div className="mb-4">
-              <h3 className="text-lg font-medium text-slate-800 mb-2">
-                <span className="text-primary">Why This Approach Works</span>
-              </h3>
-              <div className="text-sm text-slate-700 space-y-4 p-3 bg-primary/5 rounded-md">
-                {getPsychologyExplanation(stage, analysisMode)}
+            ) : (
+              <div className="space-y-2">
+                <textarea 
+                  className="w-full p-3 rounded-md border border-input min-h-[100px]" 
+                  value={customTip} 
+                  onChange={(e) => setCustomTip(e.target.value)}
+                />
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5 flex-1"
+                    onClick={() => setIsEditing(false)}
+                  >
+                    <X className="h-3.5 w-3.5" />
+                    <span>Cancel</span>
+                  </Button>
+                  <Button
+                    variant="default"
+                    size="sm"
+                    className="gap-1.5 flex-1"
+                    onClick={() => setIsEditing(false)}
+                  >
+                    <Check className="h-3.5 w-3.5" />
+                    <span>Save</span>
+                  </Button>
+                </div>
               </div>
+            )}
+          </TabsContent>
+          
+          {/* Tactical tab content */}
+          <TabsContent value="tactical" className="space-y-4">
+            <div className="p-3 bg-primary/5 rounded-md">
+              {getTooltipContent(stage, 'tactical')}
             </div>
             
-            <div className="flex justify-end">
-              <Button 
-                variant="outline" 
+            {/* Edit/customize button */}
+            {!isEditing ? (
+              <Button
+                variant="ghost"
                 size="sm"
-                onClick={() => setShowPsychology(false)}
+                className="gap-1.5 text-primary hover:text-primary/80 group w-full justify-center border border-dashed border-primary/20 hover:border-primary/40 py-2"
+                onClick={() => {
+                  setCustomTip(getTooltipText(stage, 'tactical'));
+                  setIsEditing(true);
+                }}
               >
-                Return to tips
+                <Pencil className="h-4 w-4" />
+                <span>Customize this tip</span>
               </Button>
+            ) : (
+              <div className="space-y-2">
+                <textarea 
+                  className="w-full p-3 rounded-md border border-input min-h-[100px]" 
+                  value={customTip} 
+                  onChange={(e) => setCustomTip(e.target.value)}
+                />
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5 flex-1"
+                    onClick={() => setIsEditing(false)}
+                  >
+                    <X className="h-3.5 w-3.5" />
+                    <span>Cancel</span>
+                  </Button>
+                  <Button
+                    variant="default"
+                    size="sm"
+                    className="gap-1.5 flex-1"
+                    onClick={() => setIsEditing(false)}
+                  >
+                    <Check className="h-3.5 w-3.5" />
+                    <span>Save</span>
+                  </Button>
+                </div>
+              </div>
+            )}
+          </TabsContent>
+          
+          {/* Psychology tab content */}
+          <TabsContent value="psychology" className="space-y-4">
+            <div className="text-sm text-slate-700 space-y-4 p-3 bg-primary/5 rounded-md">
+              {getPsychologyExplanation(stage, analysisMode)}
             </div>
-          </>
-        )}
+          </TabsContent>
+          
+          {/* History tab content */}
+          <TabsContent value="history" className="space-y-4">
+            {pinnedTips.length > 0 ? (
+              <div className="space-y-3">
+                {pinnedTips.map(tip => (
+                  <div key={tip.id} className="p-3 border rounded-md text-sm flex flex-col">
+                    <div className="flex justify-between mb-1">
+                      <span className="font-medium">{getStageName(tip.stage)} ({tip.mode === 'strategic' ? 'Strategic' : 'Tactical'})</span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 w-6 p-0"
+                        onClick={() => {
+                          setPinnedTips(pinnedTips.filter(t => t.id !== tip.id));
+                        }}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                    <p className="text-slate-600 mb-2">{tip.text}</p>
+                    <div className="text-xs text-slate-400 mt-auto">
+                      Saved {new Date(tip.timestamp).toLocaleString()}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="p-8 text-center text-muted-foreground">
+                <Star className="h-8 w-8 mx-auto mb-2 opacity-20" />
+                <p>You haven't saved any tips yet.</p>
+                <p className="text-sm mt-1">Click the star icon to save tips for later reference.</p>
+              </div>
+            )}
+          </TabsContent>
+          
+          {/* Notes tab content */}
+          <TabsContent value="notes" className="space-y-4">
+            <textarea
+              className="w-full p-3 border rounded-md min-h-[200px]"
+              placeholder="Add your personal notes here..."
+              value={personalNotes}
+              onChange={(e) => setPersonalNotes(e.target.value)}
+            />
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5 w-full"
+              onClick={() => {
+                // Auto-save is implemented through the state change above
+                toast({
+                  title: "Notes saved",
+                  description: "Your notes have been saved"
+                });
+              }}
+            >
+              <Check className="h-3.5 w-3.5" />
+              <span>Save notes</span>
+            </Button>
+          </TabsContent>
+        </Tabs>
+        
+        {/* Action buttons */}
+        <div className="flex items-center gap-2 mt-4 pt-2 border-t">
+          <Button 
+            variant="ghost" 
+            size="sm"
+            className="gap-1.5 text-muted-foreground group"
+            onClick={saveTip}
+          >
+            <Star className="h-3.5 w-3.5 group-hover:text-yellow-500 transition-all group-active:animate-[star-pulse_0.5s]" />
+            <span>Pin tip</span>
+          </Button>
+          
+          <Button 
+            variant="ghost" 
+            size="sm"
+            className="gap-1.5 text-muted-foreground group"
+            onClick={generateShareableLink}
+          >
+            <Link className="h-3.5 w-3.5 group-hover:text-primary transition-colors" />
+            <span>Share link</span>
+          </Button>
+          
+          <span className="flex-1"></span>
+          
+          <Button 
+            variant="outline" 
+            size="sm"
+            className="gap-1.5"
+            onClick={copyActiveTabContent}
+          >
+            {isCopied ? (
+              <>
+                <Check className="h-3.5 w-3.5" />
+                <span>Copied</span>
+              </>
+            ) : (
+              <>
+                <Copy className="h-3.5 w-3.5" />
+                <span>Copy</span>
+              </>
+            )}
+          </Button>
+          
+          <Button 
+            variant="default" 
+            size="sm"
+            onClick={onClose}
+          >
+            Done
+          </Button>
+        </div>
       </div>
     </>
   );
