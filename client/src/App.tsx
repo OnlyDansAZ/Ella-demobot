@@ -15,6 +15,7 @@ import BookDemo from "@/pages/BookDemo";
 import AICaller from "@/pages/AICaller";
 import VoiceTest from "@/pages/VoiceTest";
 import MemoryDemo from "@/pages/MemoryDemo";
+import ConversationEngine from "@/pages/ConversationEngine";
 
 function Router() {
   return (
@@ -31,6 +32,7 @@ function Router() {
       <Route path="/ai-caller" component={AICaller} />
       <Route path="/voice-test" component={VoiceTest} />
       <Route path="/memory-demo" component={MemoryDemo} />
+      <Route path="/conversation-engine" component={ConversationEngine} />
       <Route component={NotFound} />
     </Switch>
   );
