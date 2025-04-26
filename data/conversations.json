@@ -205,17 +205,6 @@
       }
     ],
     [
-      "test_stateless_1745607872663",
-      {
-        "id": 1745607872688,
-        "sessionId": "test_stateless_1745607872663",
-        "userId": null,
-        "messages": [],
-        "createdAt": "2025-04-25T19:04:32.688Z",
-        "updatedAt": "2025-04-25T19:04:32.695Z"
-      }
-    ],
-    [
       "test_persistent_1745607872663",
       {
         "id": 1745607872691,
