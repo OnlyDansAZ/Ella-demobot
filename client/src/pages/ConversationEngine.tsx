@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -82,291 +81,113 @@ export default function ConversationEngine() {
     setIsAnalyzing(true);
     
     setTimeout(() => {
-      const newSuggestions = generateSuggestions(lastUserMessage.content, currentStage, conversation);
+      const newSuggestions = generateSuggestions(lastUserMessage.content, currentStage);
       setSuggestions(newSuggestions);
       setIsAnalyzing(false);
     }, 1000);
   }, [conversation, currentStage]);
 
   // Generate realistic suggestions based on message content and stage
-  const generateSuggestions = (userMessage: string, stage: string, convo: ChatMessage[]): ResponseSuggestion[] => {
+  const generateSuggestions = (userMessage: string, stage: string): ResponseSuggestion[] => {
     const lowercaseMessage = userMessage.toLowerCase();
     
-    // Detection patterns with corresponding suggestions based on conversation stage
-    const patterns: Record<string, any> = {
-      introduction: {
-        pricing: {
-          keywords: ['price', 'cost', 'expensive', 'affordable', 'pricing'],
-          suggestions: [
-            { 
-              text: "I'd be happy to discuss our pricing options! Before I do, can you tell me a bit about what you're looking for so I can recommend the most suitable package?", 
-              reasoning: "Deflect early price objection by gathering needs first",
-              confidence: 0.92
-            },
-            { 
-              text: "Our plans start at $5,000 for our Starter package, which many of our clients find to be an excellent value. Would you like me to walk you through what's included?",
-              reasoning: "Address price question directly but focus on value",
-              confidence: 0.86
-            }
-          ]
+    // Example suggestions based on stage
+    const stageSuggestions: Record<string, ResponseSuggestion[]> = {
+      'introduction': [
+        {
+          id: '1',
+          text: "Hello! Thank you for your interest in our AI sales assistant. Could you tell me a bit about your business needs?",
+          reasoning: "Open with a friendly greeting and ask about needs",
+          keywords: ["hello", "interest", "sales", "assistant"],
+          stage: "introduction",
+          confidence: 0.95
         },
-        greeting: {
-          keywords: ['hi', 'hello', 'hey', 'morning', 'afternoon'],
-          suggestions: [
-            { 
-              text: "Hello! It's great to connect with you today. I'm Ella, an AI sales assistant. What brings you to explore YoBot's services?", 
-              reasoning: "Warm greeting with open-ended question",
-              confidence: 0.95
-            },
-            { 
-              text: "Hi there! Thanks for reaching out. I'd love to learn more about your business and how we might be able to help. Could you tell me a bit about your company?",
-              reasoning: "Friendly introduction with business focus",
-              confidence: 0.92
-            }
-          ]
+        {
+          id: '2',
+          text: "I'd be happy to provide more information about our product. What aspects are you most interested in learning about?",
+          reasoning: "Focus on providing information based on specific interests",
+          keywords: ["information", "product", "interested"],
+          stage: "introduction",
+          confidence: 0.88
         }
-      },
-      discovery: {
-        problems: {
-          keywords: ['struggle', 'challenge', 'difficult', 'issue', 'problem'],
-          suggestions: [
-            { 
-              text: "That sounds challenging. Can you tell me more about how this issue is affecting your business operations or sales results?", 
-              reasoning: "Explore impact of pain point",
-              confidence: 0.94
-            },
-            { 
-              text: "I understand that challenge. Many of our clients faced similar issues before implementing our solution. How long has this been a problem for your team?",
-              reasoning: "Empathize and establish timeline",
-              confidence: 0.91
-            }
-          ]
+      ],
+      'discovery': [
+        {
+          id: '3',
+          text: "It sounds like you're facing challenges with scaling your sales outreach. How has this impacted your business growth?",
+          reasoning: "Explore the impact of their challenge",
+          keywords: ["challenges", "scaling", "outreach", "impact"],
+          stage: "discovery",
+          confidence: 0.92
         },
-        goals: {
-          keywords: ['want', 'looking for', 'goal', 'achieve', 'improve'],
-          suggestions: [
-            { 
-              text: "That's a great goal. If you were to achieve this, what would the impact be on your business in terms of revenue or efficiency?", 
-              reasoning: "Quantify potential value",
-              confidence: 0.93
-            },
-            { 
-              text: "I appreciate you sharing that goal. On a scale of 1-10, how important is solving this particular challenge compared to other priorities?",
-              reasoning: "Assess priority level",
-              confidence: 0.88
-            }
-          ]
+        {
+          id: '4',
+          text: "I'm curious to know more about your current process. What tools are you currently using for sales outreach?",
+          reasoning: "Understand current solutions to position our product",
+          keywords: ["process", "tools", "current", "using"],
+          stage: "discovery",
+          confidence: 0.87
         }
-      },
-      presentation: {
-        features: {
-          keywords: ['feature', 'capability', 'can it', 'does it', 'how does'],
-          suggestions: [
-            { 
-              text: "Yes, YoBot includes that capability! Let me explain how it works and the specific benefits you'll experience based on what you've shared about your needs.", 
-              reasoning: "Confirm feature with personalized benefits",
-              confidence: 0.96
-            },
-            { 
-              text: "That's a great question about our features. YoBot's technology handles that through our AI-powered conversation engine, which means you'll be able to [specific benefit tied to their needs].",
-              reasoning: "Technical explanation with benefit bridge",
-              confidence: 0.90
-            }
-          ]
+      ],
+      'presentation': [
+        {
+          id: '5',
+          text: "Our AI sales assistant is designed to handle the entire sales process, from initial contact to closing. For businesses like yours, this typically results in a 40% increase in qualified leads.",
+          reasoning: "Present key value proposition with specific results",
+          keywords: ["designed", "entire", "process", "increase"],
+          stage: "presentation",
+          confidence: 0.93
         },
-        comparison: {
-          keywords: ['compare', 'other', 'competitor', 'different', 'versus'],
-          suggestions: [
-            { 
-              text: "Unlike other solutions that [limitation], YoBot is specifically designed to [advantage]. Based on what you've shared, this would be particularly valuable for your situation because [personalized reason].", 
-              reasoning: "Differentiate with personalized relevance",
-              confidence: 0.92
-            },
-            { 
-              text: "That's a great question. While other options in the market focus on [competitor approach], we've taken a different approach by [unique approach]. Our clients particularly value this because [specific outcome].",
-              reasoning: "Highlight unique approach and outcomes",
-              confidence: 0.89
-            }
-          ]
+        {
+          id: '6',
+          text: "What sets our solution apart is the natural, human-like conversations it can conduct. Would you like to hear a sample of how it sounds?",
+          reasoning: "Highlight key differentiator with offer to demonstrate",
+          keywords: ["sets apart", "natural", "human-like", "sample"],
+          stage: "presentation",
+          confidence: 0.91
         }
-      },
-      objection: {
-        time: {
-          keywords: ['not ready', 'too soon', 'later', 'not now', 'timing'],
-          suggestions: [
-            { 
-              text: "I understand timing is important. Many of our clients felt the same way initially, but found that implementing sooner actually [benefit]. What specific concerns do you have about the timing?", 
-              reasoning: "Acknowledge, counter with benefit, explore deeper",
-              confidence: 0.94
-            },
-            { 
-              text: "I appreciate your perspective on timing. Would it be helpful if I shared how other companies in similar situations managed the implementation process to minimize disruption?",
-              reasoning: "Respect objection and offer social proof",
-              confidence: 0.91
-            }
-          ]
+      ],
+      'objection': [
+        {
+          id: '7',
+          text: "That's a valid concern about pricing. Many of our clients initially felt the same way, but found that the ROI becomes positive within the first 3 months. Would it help to see a breakdown of the expected return?",
+          reasoning: "Acknowledge pricing concern and reframe as investment with ROI",
+          keywords: ["concern", "pricing", "ROI", "return"],
+          stage: "objection",
+          confidence: 0.94
         },
-        budget: {
-          keywords: ['expensive', 'cost', 'budget', 'afford', 'investment'],
-          suggestions: [
-            { 
-              text: "I understand budget considerations are important. When our clients evaluate the cost, they typically find that the ROI becomes positive within [timeframe] through [specific savings or revenue]. How does that align with your expectations?", 
-              reasoning: "Reframe as investment with ROI timeline",
-              confidence: 0.95
-            },
-            { 
-              text: "That's a fair concern. Would it be helpful to explore some of our flexible payment options that have helped other businesses implement our solution within their budget constraints?",
-              reasoning: "Acknowledge and offer alternatives",
-              confidence: 0.90
-            }
-          ]
+        {
+          id: '8',
+          text: "I understand your hesitation about implementation. We've designed our onboarding process to be as smooth as possible, typically taking less than a week. Would you like to hear how we supported a similar company through this process?",
+          reasoning: "Address implementation concerns with social proof",
+          keywords: ["hesitation", "implementation", "onboarding", "process"],
+          stage: "objection",
+          confidence: 0.89
         }
-      },
-      closing: {
-        interest: {
-          keywords: ['interested', 'sounds good', 'next steps', 'move forward', 'learn more'],
-          suggestions: [
-            { 
-              text: "I'm glad to hear you're interested! The next step would be a personalized demo with our implementation specialist. I have availability this Thursday or Friday - which would work better for your schedule?", 
-              reasoning: "Assume close with specific options",
-              confidence: 0.96
-            },
-            { 
-              text: "That's great to hear! Based on what we've discussed, I'd recommend starting with our [appropriate package] plan. Would you like me to prepare a detailed proposal for you to review?",
-              reasoning: "Specific recommendation with action step",
-              confidence: 0.93
-            }
-          ]
+      ],
+      'closing': [
+        {
+          id: '9',
+          text: "Based on what you've shared, I think our Pro package would be the best fit. Would you like to schedule a personalized demo to see exactly how it would work for your team?",
+          reasoning: "Recommend specific solution and suggest next step",
+          keywords: ["based on", "best fit", "demo", "schedule"],
+          stage: "closing",
+          confidence: 0.96
         },
-        hesitation: {
-          keywords: ['think about', 'consider', 'not sure', 'maybe', 'possibly'],
-          suggestions: [
-            { 
-              text: "I understand you'd like to consider this further. To help with your decision, what specific information would be most useful for you to have at this point?", 
-              reasoning: "Respect decision while identifying specific needs",
-              confidence: 0.92
-            },
-            { 
-              text: "That makes sense. Many of our clients wanted time to consider before moving forward. What I've found helpful is to schedule a brief follow-up call next week - would Tuesday or Wednesday work for you?",
-              reasoning: "Normalize hesitation while maintaining momentum",
-              confidence: 0.89
-            }
-          ]
+        {
+          id: '10',
+          text: "It sounds like you're interested in moving forward. What would be the best way to introduce this to the rest of your decision-making team?",
+          reasoning: "Assume interest and explore decision-making process",
+          keywords: ["interested", "moving forward", "decision-making", "team"],
+          stage: "closing",
+          confidence: 0.92
         }
-      }
+      ]
     };
     
-    // Get the patterns for current stage
-    const stagePatterns = patterns[stage] || {};
-    let matchedSuggestions: ResponseSuggestion[] = [];
-    
-    // Find matching patterns in the user message
-    Object.entries(stagePatterns).forEach(([category, data]: [string, any]) => {
-      const { keywords, suggestions } = data;
-      
-      // Check if any keywords match
-      const matches = keywords.some((keyword: string) => lowercaseMessage.includes(keyword));
-      
-      if (matches) {
-        // Add suggestions from this category
-        suggestions.forEach((sugg: { text: string, reasoning: string, confidence: number }) => {
-          matchedSuggestions.push({
-            id: Math.random().toString(36).substring(2, 9),
-            text: sugg.text,
-            reasoning: sugg.reasoning,
-            keywords: keywords,
-            stage: stage,
-            confidence: sugg.confidence
-          });
-        });
-      }
-    });
-    
-    // If no matches, provide generic suggestions based on stage
-    if (matchedSuggestions.length === 0) {
-      const genericSuggestions = {
-        introduction: [
-          {
-            text: "I'd love to learn more about your business and the challenges you're currently facing. Could you tell me a bit about your role and what you're looking to accomplish?",
-            reasoning: "Open-ended discovery question",
-            keywords: ["business", "challenges", "role"],
-            confidence: 0.88
-          },
-          {
-            text: "Thanks for connecting! I'm curious - what prompted you to explore AI sales assistant solutions at this time?",
-            reasoning: "Identify trigger event",
-            keywords: ["timing", "explore", "solutions"],
-            confidence: 0.85
-          }
-        ],
-        discovery: [
-          {
-            text: "Based on what you've shared, it sounds like [summarize key pain point]. Is that accurate? And how has this affected your team's performance?",
-            reasoning: "Confirm understanding and explore impact",
-            keywords: ["accurate", "affected", "performance"],
-            confidence: 0.87
-          },
-          {
-            text: "That's helpful context. If you could wave a magic wand and solve any aspect of this challenge instantly, which part would you tackle first?",
-            reasoning: "Identify highest priority need",
-            keywords: ["solve", "challenge", "priority"],
-            confidence: 0.83
-          }
-        ],
-        presentation: [
-          {
-            text: "Given what you've shared about [specific need], I think our [relevant feature] would be particularly valuable for you because [personalized benefit].",
-            reasoning: "Personalized feature-benefit connection",
-            keywords: ["feature", "valuable", "benefit"],
-            confidence: 0.89
-          },
-          {
-            text: "Many companies in your industry have seen [specific result] after implementing YoBot. For example, [brief case study example] achieved [measurable outcome].",
-            reasoning: "Industry-specific social proof",
-            keywords: ["companies", "implementing", "achieved"],
-            confidence: 0.86
-          }
-        ],
-        objection: [
-          {
-            text: "I understand your concern about [objection topic]. What aspects of this are most important for you to address before moving forward?",
-            reasoning: "Acknowledge and explore objection deeply",
-            keywords: ["understand", "concern", "important"],
-            confidence: 0.84
-          },
-          {
-            text: "That's a valid point. Other clients have raised similar concerns, and here's how we've typically addressed it: [specific solution approach].",
-            reasoning: "Validate and share proven solutions",
-            keywords: ["valid", "similar", "addressed"],
-            confidence: 0.82
-          }
-        ],
-        closing: [
-          {
-            text: "Based on our conversation, I'd recommend starting with [specific next step]. This would give you [specific benefit] while [addressing key concern].",
-            reasoning: "Clear recommendation addressing needs and concerns",
-            keywords: ["recommend", "starting", "benefit"],
-            confidence: 0.90
-          },
-          {
-            text: "Would it make sense to schedule a more detailed demonstration with one of our specialists to see exactly how YoBot would work in your specific environment?",
-            reasoning: "Low-pressure next step with clear value",
-            keywords: ["schedule", "demonstration", "specific"],
-            confidence: 0.88
-          }
-        ]
-      };
-      
-      const stageSuggestions = genericSuggestions[stage as keyof typeof genericSuggestions] || [];
-      matchedSuggestions = stageSuggestions.map(sugg => ({
-        ...sugg,
-        id: Math.random().toString(36).substring(2, 9),
-        stage: stage
-      }));
-    }
-    
-    // Sort by confidence
-    return matchedSuggestions.sort((a, b) => b.confidence - a.confidence);
+    // Return suggestions for the current stage
+    // In a real implementation, we would match based on message content
+    return stageSuggestions[stage] || [];
   };
 
   const handleSendMessage = () => {
@@ -392,7 +213,7 @@ export default function ConversationEngine() {
         aiResponse = suggestions[0].text;
       } else {
         // Fallback responses based on stage
-        const fallbacks = {
+        const fallbacks: Record<string, string> = {
           introduction: "Thanks for sharing that! I'd love to learn more about your specific needs. Could you tell me about the challenges you're facing?",
           discovery: "I appreciate that insight. How has this issue affected your team's productivity or results?",
           presentation: "Based on what you've shared, I think our AI-powered solution would be a great fit because it addresses your specific needs around communication efficiency.",
@@ -400,7 +221,7 @@ export default function ConversationEngine() {
           closing: "Given our discussion, would you be interested in seeing a personalized demo of how this would work in your environment?"
         };
         
-        aiResponse = fallbacks[currentStage as keyof typeof fallbacks] || "I understand. Can you tell me more about that?";
+        aiResponse = fallbacks[currentStage] || "I understand. Can you tell me more about that?";
       }
       
       const aiMessage: ChatMessage = {
@@ -455,12 +276,10 @@ export default function ConversationEngine() {
             <CardContent>
               <div className="space-y-3">
                 {conversationStages.map((stage) => (
-                  <motion.div 
+                  <div
                     key={stage.id}
                     className={`p-3 border rounded-lg cursor-pointer ${currentStage === stage.id ? 'border-primary bg-primary/5' : ''}`}
                     onClick={() => advanceStage(stage.id)}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
                   >
                     <div className="flex items-center">
                       <div className={`w-3 h-3 rounded-full ${stage.color} mr-2`}></div>
@@ -470,7 +289,7 @@ export default function ConversationEngine() {
                     {currentStage === stage.id && (
                       <Badge variant="outline" className="mt-2">Current Stage</Badge>
                     )}
-                  </motion.div>
+                  </div>
                 ))}
               </div>
             </CardContent>
@@ -567,12 +386,9 @@ export default function ConversationEngine() {
                     </div>
                   ) : (
                     conversation.map((msg) => (
-                      <motion.div 
+                      <div 
                         key={msg.id} 
-                        className={`flex ${msg.isUser ? 'justify-end' : 'justify-start'}`}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.3 }}
+                        className={`flex ${msg.isUser ? 'justify-end' : 'justify-start'} mb-4`}
                       >
                         <div className="flex items-start gap-2 max-w-[80%]">
                           {!msg.isUser && (
@@ -580,26 +396,25 @@ export default function ConversationEngine() {
                               AI
                             </div>
                           )}
-                          <motion.div 
+                          <div 
                             className={`rounded-lg px-4 py-2 ${
                               msg.isUser 
                                 ? 'bg-primary text-primary-foreground' 
                                 : 'bg-muted'
                             }`}
-                            whileHover={{ scale: 1.02 }}
                           >
                             <div className="text-sm whitespace-pre-wrap">{msg.content}</div>
                             <div className="text-xs mt-1 opacity-70">
                               {new Date(msg.timestamp).toLocaleTimeString()}
                             </div>
-                          </motion.div>
+                          </div>
                           {msg.isUser && (
                             <div className="h-8 w-8 mt-1 rounded-full bg-slate-600 text-white flex items-center justify-center text-xs font-medium">
                               You
                             </div>
                           )}
                         </div>
-                      </motion.div>
+                      </div>
                     ))
                   )}
                 </div>
@@ -646,12 +461,9 @@ export default function ConversationEngine() {
                 ) : suggestions.length > 0 ? (
                   <div className="space-y-4">
                     {suggestions.map((suggestion) => (
-                      <motion.div 
+                      <div 
                         key={suggestion.id}
                         className="p-3 border rounded-lg"
-                        initial={{ opacity: 0, x: 20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.4 }}
                       >
                         <div className="flex justify-between items-start mb-2">
                           <Badge variant="outline" className={`
@@ -684,7 +496,7 @@ export default function ConversationEngine() {
                             </Badge>
                           ))}
                         </div>
-                      </motion.div>
+                      </div>
                     ))}
                   </div>
                 ) : (
