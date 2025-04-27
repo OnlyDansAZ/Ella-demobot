@@ -1,8 +1,9 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
-import { initVectorDB } from "./vectordb";
-import { seedKnowledgeBase } from "./documentProcessor";
+// Temporarily comment out these imports to speed up startup
+// import { initVectorDB } from "./vectordb";
+// import { seedKnowledgeBase } from "./documentProcessor";
 
 // Global error handler for uncaught database errors 
 // to prevent app crashes on database connection issues
@@ -63,27 +64,8 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  // Initialize vector database for RAG capabilities
-  try {
-    log("Initializing vector database for RAG capabilities...");
-    const dbInitialized = await initVectorDB();
-    if (dbInitialized) {
-      log("Vector database initialized successfully");
-      
-      // Seed knowledge base with YoBot product information
-      log("Seeding knowledge base with YoBot product information...");
-      const seedResult = await seedKnowledgeBase();
-      if (seedResult.success) {
-        log(`Knowledge base seeded successfully with ${seedResult.count} document chunks`);
-      } else {
-        log("Warning: Failed to seed knowledge base");
-      }
-    } else {
-      log("Warning: Failed to initialize vector database");
-    }
-  } catch (error: unknown) {
-    log(`Error initializing RAG system: ${error instanceof Error ? error.message : String(error)}`);
-  }
+  // Skip vector database initialization for now to speed up startup
+  log("Skipping vector database initialization to speed up startup...");
   
   const server = await registerRoutes(app);
 
