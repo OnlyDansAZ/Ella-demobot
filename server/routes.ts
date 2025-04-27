@@ -23,6 +23,8 @@ import { ELEVENLABS_AUDIO_DIR, cleanupOldAudioFiles } from './elevenLabsService'
 import { followupIntelService } from './followupIntelService';
 import { getClient } from './signalWireClient';
 import { WebSocketServer, WebSocket } from 'ws';
+import { setupAuth } from './auth';
+import cookieParser from 'cookie-parser';
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Initialize SignalWire client for phone calls and SMS
@@ -36,6 +38,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Clean up old audio files on startup
   cleanupOldAudioFiles();
+  
+  // Setup authentication
+  app.use(cookieParser());
+  setupAuth(app);
 
   // API Routes
   app.get("/api/health", (_req, res) => {
