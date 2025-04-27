@@ -1,46 +1,46 @@
-// Custom server startup script
-import { spawn } from 'child_process';
-import { createServer } from 'http';
-import { createProxyMiddleware } from 'http-proxy-middleware';
-import express from 'express';
+// Development server startup script that ensures proper port and host settings
+// This script acts as a compatibility wrapper for Vite
 
-// Start the vite dev server as a child process
-const viteProcess = spawn('npm', ['run', 'dev'], { 
+import { spawn } from 'child_process';
+import { fileURLToPath } from 'url';
+import path from 'path';
+import fs from 'fs';
+
+// Get the directory name using ES modules approach
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Set environment variables to control Vite configuration
+process.env.VITE_PORT = '5000';
+process.env.VITE_HOST = '0.0.0.0';
+
+console.log('Starting Ella AI development server on port 5000...');
+
+// Use npm run dev with additional parameters to control Vite
+const devProcess = spawn('npx', ['vite', '--port', '5000', '--host'], {
+  cwd: __dirname,
   stdio: 'inherit',
-  shell: true 
+  shell: true,
+  env: {
+    ...process.env,
+    // Add any additional environment variables needed for development
+  }
 });
 
-console.log('Starting Vite development server...');
+// Handle server process events
+devProcess.on('error', (err) => {
+  console.error('Failed to start development server:', err);
+  process.exit(1);
+});
 
-// Give vite some time to start
-setTimeout(() => {
-  // Create a proxy server on port 5000 that forwards to the Vite server
-  const app = express();
-  
-  // Add health check endpoint
-  app.get('/api/health', (req, res) => {
-    res.json({ status: 'ok', message: 'YoBot proxy server is running' });
-  });
-  
-  // Proxy all other requests to the Vite development server
-  app.use('/', createProxyMiddleware({ 
-    target: 'http://localhost:5173',
-    changeOrigin: true,
-    ws: true,
-    logLevel: 'debug'
-  }));
-  
-  // Start the proxy server
-  const server = app.listen(5000, '0.0.0.0', () => {
-    console.log('📣 Proxy server running at http://0.0.0.0:5000 -> forwarding to Vite on port 5173');
-  });
-  
-  // Handle shutdown gracefully
-  process.on('SIGINT', () => {
-    console.log('Shutting down proxy server...');
-    server.close();
-    viteProcess.kill();
-    process.exit(0);
-  });
-  
-}, 3000); // Wait 3 seconds for Vite to start
+// Handle clean shutdown
+process.on('SIGINT', () => {
+  console.log('Shutting down development server...');
+  devProcess.kill('SIGINT');
+});
+
+// Forward exit code from child process
+devProcess.on('exit', (code) => {
+  console.log(`Development server exited with code ${code}`);
+  process.exit(code);
+});

@@ -1,41 +1,50 @@
-// Simple server startup that serves the Ella AI application on port 5000
+// Production-ready server startup script
 import express from 'express';
-import path from 'path';
 import { fileURLToPath } from 'url';
-// Skip auth for now to simplify startup
-// import { setupAuth } from './server/auth.js';
+import path from 'path';
 import cookieParser from 'cookie-parser';
+import { registerRoutes } from './server/routes.js';
 
-// ES modules don't have __dirname, so we need to create it
+// Get the directory name using ES modules approach
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Create Express app
-const app = express();
+async function startServer() {
+  const app = express();
+  const PORT = process.env.PORT || 5000;
 
-// Middleware
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
-app.use(cookieParser());
+  // Middleware
+  app.use(express.json());
+  app.use(express.urlencoded({ extended: true }));
+  app.use(cookieParser());
 
-// Skip auth setup for now
-// setupAuth(app);
+  // Serve static files from the React app build directory
+  app.use(express.static(path.join(__dirname, 'dist/public')));
 
-// API routes
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', message: 'YoBot API is running' });
-});
+  // Register API routes
+  const server = await registerRoutes(app);
 
-// Serve static files
-app.use(express.static(path.join(__dirname, 'client')));
+  // For any request that doesn't match an API route, serve the React app
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'dist/public', 'index.html'));
+  });
 
-// Catch-all route that serves the index.html
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'client', 'index.html'));
-});
+  // Start the server
+  server.listen(PORT, '0.0.0.0', () => {
+    console.log(`🚀 Server running on port ${PORT}`);
+  });
 
-// Start server
-const PORT = 5000;
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`✅ Server running on http://0.0.0.0:${PORT}`);
+  // Handle termination signals
+  process.on('SIGINT', () => {
+    console.log('Shutting down server gracefully...');
+    server.close(() => {
+      console.log('Server terminated');
+      process.exit(0);
+    });
+  });
+}
+
+startServer().catch(error => {
+  console.error('Failed to start server:', error);
+  process.exit(1);
 });
