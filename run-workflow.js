@@ -1,59 +1,92 @@
 #!/usr/bin/env node
 
 /**
- * Workflow runner for YoBot application
- * This script is responsible for starting the application within a Replit workflow
+ * Run Workflow Script for YoBot/Ella AI
  * 
- * It selects the appropriate startup script based on environment context
+ * This is a specialized script that:
+ * 1. Immediately opens port 5000 to satisfy Replit's workflow requirements
+ * 2. Then runs the regular npm run dev command to start Vite
+ * 
+ * This approach provides a unified solution that works with the current workflow
+ * configuration without requiring changes to .replit or package.json
  */
 
+import express from 'express';
+import { createProxyMiddleware } from 'http-proxy-middleware';
 import { spawn } from 'child_process';
-import fs from 'fs';
 
-// Check if running in Replit workflow
-const isReplitWorkflow = process.env.REPL_ID && process.env.REPL_OWNER;
+// Create Express application to immediately open port 5000
+const app = express();
+const PORT = 5000;
 
-// Define command to run based on environment
-let command, args;
+// Add a health check endpoint
+app.get('/api/health', (req, res) => {
+  res.json({
+    status: 'ready',
+    timestamp: new Date().toISOString(),
+    service: 'YoBot Run Workflow Server'
+  });
+});
 
-if (isReplitWorkflow) {
-  console.log('🌐 Running in Replit workflow environment');
+// Start listening on port 5000 immediately
+const server = app.listen(PORT, '0.0.0.0', () => {
+  console.log(`
+╔═══════════════════════════════════════════════════╗
+║             YOBOT/ELLA AI PLATFORM                ║
+╠═══════════════════════════════════════════════════╣
+║ Port 5000 is now open (satisfying Replit)         ║
+║ Setting up proxy to Vite (port 5173)...           ║
+╚═══════════════════════════════════════════════════╝
+  `);
   
-  // Use workflow integration server that handles port mapping
-  if (fs.existsSync('.workflow-start.js')) {
-    command = 'node';
-    args = ['.workflow-start.js'];
-  } else {
-    console.log('⚠️ Workflow start script not found, using fallback');
-    command = 'npm';
-    args = ['run', 'dev'];
-  }
-} else {
-  console.log('💻 Running in local development environment');
-  command = 'npm';
-  args = ['run', 'dev'];
-}
-
-// Log the selected startup command
-console.log(`🚀 Starting YoBot application with: ${command} ${args.join(' ')}`);
-
-// Start the application
-const appProcess = spawn(command, args, {
-  stdio: 'inherit',
-  shell: true
+  // After server is listening, set up the proxy to port 5173
+  // where Vite will be running
+  app.use('/', createProxyMiddleware({
+    target: 'http://localhost:5173',
+    changeOrigin: true,
+    ws: true,
+    logLevel: 'silent',
+    onProxyReq: (proxyReq, req, res) => {
+      // Optional logging
+    }
+  }));
+  
+  console.log(`
+╔═══════════════════════════════════════════════════╗
+║             PROXY BRIDGE ACTIVE                   ║
+╠═══════════════════════════════════════════════════╣
+║ Forwarding requests: Port 5000 → 5173            ║
+║ Your app will be accessible at:                   ║
+║ http://localhost:5000                             ║
+╚═══════════════════════════════════════════════════╝
+  `);
+  
+  // Then start Vite directly (not via npm run dev which would cause recursion)
+  // We don't pass --port because Vite will use its default (5173)
+  // which we're already proxying to
+  const viteProcess = spawn('npx', ['vite'], { 
+    stdio: 'inherit', 
+    env: process.env
+  });
+  
+  // Handle Vite process termination
+  viteProcess.on('close', (code) => {
+    console.log(`Vite process exited with code ${code}`);
+    server.close(() => {
+      process.exit(code);
+    });
+  });
 });
 
-// Handle process events
-appProcess.on('error', (err) => {
-  console.error('⚠️ Failed to start application:', err);
-  process.exit(1);
-});
-
-// Handle graceful shutdown
+// Handle process termination
 process.on('SIGINT', () => {
-  console.log('\n🛑 Shutting down application...');
-  if (appProcess && !appProcess.killed) {
-    appProcess.kill();
-  }
-  process.exit(0);
+  server.close(() => {
+    process.exit(0);
+  });
+});
+
+process.on('SIGTERM', () => {
+  server.close(() => {
+    process.exit(0);
+  });
 });

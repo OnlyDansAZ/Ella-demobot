@@ -9,13 +9,43 @@ The YoBot/Ella AI Platform faces a port configuration mismatch when running in R
 
 This mismatch causes workflow failures and prevents proper development within Replit.
 
-## Solution: Integration Server
+## Solution: Unified Starter Script
 
-We've created an integration server solution that addresses this mismatch through several approaches:
+We've created a unified solution that automatically selects the best server option:
 
-### Option 1: Express Server (Recommended for Replit)
+```bash
+# Start using the unified Replit starter
+./start-replit.sh
+# or
+node start-replit.js
+```
 
-The simplest approach is to use our standalone Express server:
+This script automatically selects and runs the optimal server solution based on availability:
+1. Workflow Runner (run-workflow.js) - Best for Replit integration
+2. Express Server (server-express.js) - Simplest standalone option
+3. Port Bridge (dev-server.js) - Best for development work
+4. Minimal Workflow (workflow-setup.js) - Fastest startup option
+
+## Detailed Server Options
+
+### Option 1: Workflow Runner (Best for Replit)
+
+The most integrated solution for Replit workflows:
+
+```bash
+# Run the workflow-optimized server
+node run-workflow.js
+```
+
+This script:
+- Immediately opens port 5000 (satisfying Replit's workflow requirement)
+- Sets up a proxy to forward requests from 5000 → 5173
+- Automatically starts Vite on port 5173
+- Provides a health check endpoint at `/api/health`
+
+### Option 2: Express Server (Simplest)
+
+The most straightforward standalone approach:
 
 ```bash
 # Start the basic Express server on port 5000
@@ -27,7 +57,7 @@ This server:
 - Provides a health check endpoint at `/api/health`
 - Returns a simple message confirming the server is running
 
-### Option 2: Port Bridge with Vite (Recommended for Development)
+### Option 3: Port Bridge (Best for Development)
 
 For active development with hot reloading:
 
@@ -41,19 +71,19 @@ This script:
 2. Creates a port bridge from 5000 → 5173
 3. Provides health checks and proper process management
 
-### Option 3: Replit-Specific Starter (Most Reliable)
+### Option 4: Minimal Workflow Setup
 
-For compatibility with Replit's workflow system:
+For the fastest possible initialization:
 
 ```bash
-# Start using the Replit compatibility script
-node start-dev.js
+# Run the minimal workflow setup
+node workflow-setup.js
 ```
 
 This script:
 1. Opens port 5000 immediately (satisfying Replit's requirement)
-2. Then starts Vite on port 5173
-3. Sets up a proxy to forward requests between ports
+2. Provides a minimal health check endpoint
+3. Doesn't start the full application stack
 
 ## Server-Side API Access
 

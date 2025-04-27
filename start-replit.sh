@@ -1,7 +1,9 @@
 #!/bin/bash
 
-# Startup script for YoBot application in Replit
-# This script starts the integration server that handles port forwarding
+# Start Replit Script for YoBot/Ella AI
+# This shell script wrapper is designed to be used in Replit workflows
+# It starts the optimal server solution that provides immediate port 5000 access
 
-echo "Starting YoBot application..."
+# Start the Node.js application using the Replit starter script
+echo "Starting YoBot/Ella AI Platform for Replit..."
 node start-replit.js
