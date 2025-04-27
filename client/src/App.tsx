@@ -18,9 +18,6 @@ import MemoryDemo from "@/pages/MemoryDemo";
 import ConversationEngine from "@/pages/ConversationEngine";
 import FollowupIntel from "@/pages/FollowupIntel";
 import SalesIntelligence from "@/pages/SalesIntelligence";
-import AuthPage from "@/pages/AuthPage";
-import { AuthProvider } from "./hooks/useAuth";
-import { ProtectedRoute } from "./components/ProtectedRoute";
 
 function Router() {
   return (
@@ -28,29 +25,7 @@ function Router() {
       <Route path="/" component={LaunchPage} />
       <Route path="/home" component={Home} />
       <Route path="/test-speech" component={TestSpeech} />
-      <Route path="/auth" component={AuthPage} />
-      {/* Protected admin routes */}
-      <Route path="/admin">
-        <ProtectedRoute>
-          <Admin />
-        </ProtectedRoute>
-      </Route>
-      <Route path="/followup">
-        <ProtectedRoute>
-          <FollowupIntel />
-        </ProtectedRoute>
-      </Route>
-      <Route path="/followup/:id">
-        <ProtectedRoute>
-          <FollowupIntel />
-        </ProtectedRoute>
-      </Route>
-      <Route path="/sales-intelligence">
-        <ProtectedRoute>
-          <SalesIntelligence />
-        </ProtectedRoute>
-      </Route>
-      {/* Other routes */}
+      <Route path="/admin" component={Admin} />
       <Route path="/chat" component={EllaChat} />
       <Route path="/ella-chat" component={EllaChat} />
       <Route path="/demo-dashboard" component={DemoDashboard} />
@@ -60,6 +35,9 @@ function Router() {
       <Route path="/voice-test" component={VoiceTest} />
       <Route path="/memory-demo" component={MemoryDemo} />
       <Route path="/conversation-engine" component={ConversationEngine} />
+      <Route path="/followup" component={FollowupIntel} />
+      <Route path="/followup/:id" component={FollowupIntel} />
+      <Route path="/sales-intelligence" component={SalesIntelligence} />
       <Route component={NotFound} />
     </Switch>
   );

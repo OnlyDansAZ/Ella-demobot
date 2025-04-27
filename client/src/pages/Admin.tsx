@@ -9,7 +9,7 @@ import { Link } from 'wouter';
 import { LockKeyhole, ArrowLeft, Image, FileText, Phone } from 'lucide-react';
 
 export default function Admin() {
-  const [isAuthenticated, setIsAuthenticated] = useState(true); // For demo, default to authenticated
+  const { isAuthenticated, login } = useAuth();
   
   // In a real app, implement proper authentication
   const handleLogin = () => {
