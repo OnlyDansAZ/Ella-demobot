@@ -1,46 +1,62 @@
-// Development server startup script that ensures proper port and host settings
-// This script acts as a compatibility wrapper for Vite
+#!/usr/bin/env node
 
-import { spawn } from 'child_process';
-import { fileURLToPath } from 'url';
-import path from 'path';
-import fs from 'fs';
+/**
+ * Unified Server Startup
+ * This script starts both the API server on port 5000 and forwards to Vite on port 5173
+ * It's designed to be the single entry point for the application
+ */
 
-// Get the directory name using ES modules approach
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const express = require('express');
+const { createProxyMiddleware } = require('http-proxy-middleware');
+const { spawn } = require('child_process');
+const app = express();
+const PORT = process.env.PORT || 5000;
+const VITE_PORT = 5173;
 
-// Set environment variables to control Vite configuration
-process.env.VITE_PORT = '5000';
-process.env.VITE_HOST = '0.0.0.0';
-
-console.log('Starting Ella AI development server on port 5000...');
-
-// Use npm run dev with additional parameters to control Vite
-const devProcess = spawn('npx', ['vite', '--port', '5000', '--host'], {
-  cwd: __dirname,
+// Start Vite in the background
+console.log('Starting Vite development server...');
+const viteProcess = spawn('npm', ['run', 'dev'], {
   stdio: 'inherit',
-  shell: true,
-  env: {
-    ...process.env,
-    // Add any additional environment variables needed for development
-  }
+  shell: true
 });
 
-// Handle server process events
-devProcess.on('error', (err) => {
-  console.error('Failed to start development server:', err);
-  process.exit(1);
+// Set up proxy server
+app.use('/api/health', (req, res) => {
+  res.json({
+    status: 'ok',
+    message: 'YoBot server is running',
+    environment: process.env.NODE_ENV || 'development',
+    timestamp: new Date().toISOString()
+  });
 });
 
-// Handle clean shutdown
+// Log all API requests
+app.use('/api', (req, res, next) => {
+  console.log(`API Request: ${req.method} ${req.path}`);
+  next();
+});
+
+// Forward everything else to Vite
+app.use('/', createProxyMiddleware({
+  target: `http://localhost:${VITE_PORT}`,
+  changeOrigin: true,
+  ws: true,
+  logLevel: 'warn'
+}));
+
+// Start the server
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`YoBot server listening on http://0.0.0.0:${PORT}`);
+  console.log(`Forwarding frontend requests to Vite on port ${VITE_PORT}`);
+});
+
+// Handle graceful shutdown
 process.on('SIGINT', () => {
-  console.log('Shutting down development server...');
-  devProcess.kill('SIGINT');
-});
-
-// Forward exit code from child process
-devProcess.on('exit', (code) => {
-  console.log(`Development server exited with code ${code}`);
-  process.exit(code);
+  console.log('Shutting down servers...');
+  
+  if (viteProcess) {
+    viteProcess.kill();
+  }
+  
+  process.exit(0);
 });

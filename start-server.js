@@ -1,50 +1,81 @@
-// Production-ready server startup script
-import express from 'express';
-import { fileURLToPath } from 'url';
-import path from 'path';
-import cookieParser from 'cookie-parser';
-import { registerRoutes } from './server/routes.js';
+#!/usr/bin/env node
 
-// Get the directory name using ES modules approach
+/**
+ * Main server entry point for the YoBot application
+ * This script ensures the server is available on port 5000 while
+ * still using Vite for development
+ */
+
+// Rather than modifying package.json, we'll create an integrated server that:
+// 1. Starts a server on port 5000 (required by the Replit workflow)
+// 2. Proxies to the Vite development server when needed
+
+import express from 'express';
+import { createProxyMiddleware } from 'http-proxy-middleware';
+import { spawn } from 'child_process';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+// Get the directory name
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-async function startServer() {
-  const app = express();
-  const PORT = process.env.PORT || 5000;
+// Create Express server
+const app = express();
+const PORT = process.env.PORT || 5000;
+const VITE_PORT = 5173;
 
-  // Middleware
-  app.use(express.json());
-  app.use(express.urlencoded({ extended: true }));
-  app.use(cookieParser());
+console.log('📡 Starting YoBot integrated server...');
 
-  // Serve static files from the React app build directory
-  app.use(express.static(path.join(__dirname, 'dist/public')));
+// Start the Vite development server as a child process
+console.log('🛠️ Starting Vite development server...');
+const viteProcess = spawn('npm', ['run', 'dev'], {
+  stdio: 'inherit',
+  shell: true,
+  detached: false
+});
 
-  // Register API routes
-  const server = await registerRoutes(app);
-
-  // For any request that doesn't match an API route, serve the React app
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'dist/public', 'index.html'));
+// Basic health check endpoint
+app.get('/api/health', (req, res) => {
+  res.json({
+    status: 'ok',
+    message: 'YoBot server is running',
+    environment: process.env.NODE_ENV || 'development',
+    timestamp: new Date().toISOString()
   });
+});
 
-  // Start the server
-  server.listen(PORT, '0.0.0.0', () => {
-    console.log(`🚀 Server running on port ${PORT}`);
-  });
+// Add middleware to log API requests
+app.use('/api', (req, res, next) => {
+  console.log(`API Request: ${req.method} ${req.path}`);
+  next();
+});
 
-  // Handle termination signals
-  process.on('SIGINT', () => {
-    console.log('Shutting down server gracefully...');
-    server.close(() => {
-      console.log('Server terminated');
-      process.exit(0);
-    });
-  });
-}
+// Create proxy middleware to forward requests to Vite
+console.log(`⚡ Setting up proxy from port ${PORT} to Vite on port ${VITE_PORT}`);
+const viteProxy = createProxyMiddleware({
+  target: `http://localhost:${VITE_PORT}`,
+  changeOrigin: true,
+  ws: true,
+  logLevel: 'silent'
+});
 
-startServer().catch(error => {
-  console.error('Failed to start server:', error);
-  process.exit(1);
+// Use proxy for all other requests
+app.use('/', viteProxy);
+
+// Start the server on port 5000
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 YoBot server running at http://0.0.0.0:${PORT}`);
+  console.log(`🔄 Forwarding frontend requests to Vite on port ${VITE_PORT}`);
+});
+
+// Handle graceful shutdown
+process.on('SIGINT', () => {
+  console.log('Shutting down servers...');
+  
+  if (viteProcess && !viteProcess.killed) {
+    viteProcess.kill();
+  }
+  
+  process.exit(0);
 });
