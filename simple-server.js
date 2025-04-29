@@ -3,8 +3,8 @@
 /**
  * Basic HTTP server for YoBot/Ella AI
  * 
- * This ultra-simple server only uses Node.js built-in modules
- * to avoid any potential dependency issues
+ * This ultra-simple server just serves our single HTML file
+ * without any dependencies or complications.
  */
 
 import http from 'http';
@@ -35,11 +35,10 @@ const server = http.createServer((req, res) => {
     });
   } 
   // Handle API endpoint
-  else if (req.url === '/api/health') {
+  else if (req.url === '/api/status') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({
-      status: 'ok',
-      message: 'YoBot/Ella AI server is operational',
+      status: 'online',
       timestamp: new Date().toISOString()
     }));
   }

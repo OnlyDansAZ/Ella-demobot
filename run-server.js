@@ -1,72 +1,47 @@
-#!/usr/bin/env node
+// This is a special script that will kill any existing vite servers and run our custom server
+import { spawn, execSync } from 'child_process';
+import http from 'http';
 
-/**
- * Simplified server runner for the Replit workflow
- * This script starts a server on port 5000 that forwards to the Vite server
- */
+// Try to kill any existing vite servers
+try {
+  console.log('Attempting to kill any existing Vite processes...');
+  execSync('pkill -f vite || true');
+  console.log('Done');
+} catch (error) {
+  console.log('Note: No Vite processes found or unable to kill them');
+}
 
-// Import required modules
-import express from 'express';
-import cookieParser from 'cookie-parser';
-import { spawn } from 'child_process';
-import { createProxyMiddleware } from 'http-proxy-middleware';
-
-// Configuration
-const PORT = 5000; // The port required by the Replit workflow
-const VITE_PORT = 5173; // Vite's default port
-
-// Create Express server
-const app = express();
-
-// Add middleware
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(cookieParser());
-
-// Start Vite development server
-console.log('Starting Vite development server...');
-const viteProcess = spawn('npm', ['run', 'dev'], {
-  stdio: 'inherit',
-  shell: true
-});
-
-// Health check endpoint
-app.get('/api/health', (req, res) => {
-  res.json({
-    status: 'ok',
-    message: 'YoBot server is running',
-    timestamp: new Date().toISOString()
+// Give the system a moment to release the port
+setTimeout(() => {
+  // Test if port 5000 is available
+  const testServer = http.createServer();
+  testServer.once('error', (err) => {
+    console.error('Port 5000 is still in use, trying to force it closed...');
+    // Try harder to kill whatever is using the port
+    try {
+      execSync('fuser -k 5000/tcp || true');
+      console.log('Force killed processes using port 5000');
+      
+      // Start our server
+      console.log('Starting our custom server...');
+      const serverProcess = spawn('node', ['vite-on-5000.js'], {
+        stdio: 'inherit'
+      });
+    } catch (error) {
+      console.error('Failed to start server:', error);
+    }
   });
-});
-
-// Add API middleware
-app.use('/api', (req, res, next) => {
-  console.log(`API Request: ${req.method} ${req.path}`);
-  next();
-});
-
-// Forward all requests to Vite
-app.use('/', createProxyMiddleware({
-  target: `http://localhost:${VITE_PORT}`,
-  changeOrigin: true,
-  ws: true,
-  logLevel: 'silent'
-}));
-
-// Start the server
-const server = app.listen(PORT, '0.0.0.0', () => {
-  console.log(`YoBot proxy server running on http://0.0.0.0:${PORT}`);
-  console.log(`Forwarding to Vite on port ${VITE_PORT}`);
-});
-
-// Handle graceful shutdown
-process.on('SIGINT', () => {
-  console.log('Shutting down server...');
-  server.close();
   
-  if (viteProcess && !viteProcess.killed) {
-    viteProcess.kill();
-  }
+  testServer.once('listening', () => {
+    // Port is available, close the test server and start our actual server
+    testServer.close(() => {
+      console.log('Port 5000 is available, starting our server...');
+      const serverProcess = spawn('node', ['vite-on-5000.js'], {
+        stdio: 'inherit'
+      });
+    });
+  });
   
-  process.exit(0);
-});
+  // Try to listen on port 5000 to see if it's available
+  testServer.listen(5000);
+}, 1000);

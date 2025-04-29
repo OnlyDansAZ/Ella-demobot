@@ -1,117 +1,100 @@
 #!/bin/bash
 
-# Ella AI Deployment Script
-# This script prepares the Ella AI application for production deployment
+# YoBot Ella AI Deployment Script
+# This script deploys the application for production use
 
-echo "🚀 Starting Ella AI deployment process..."
+echo "================================"
+echo "Ella AI Deployment Script"
+echo "================================"
 
-# Set environment to production
-export NODE_ENV=production
+# Step 1: Stop any existing servers
+echo "\n[1/4] Stopping any existing servers..."
+pkill -f "node replit-deploy-server.js" || true
 
-# Check for required environment variables
-echo "📋 Checking required environment variables..."
+# Step 2: Update the deployment files
+echo "\n[2/4] Preparing deployment files..."
 
-REQUIRED_VARS=(
-  "OPENAI_API_KEY"
-  "ELEVENLABS_API_KEY"
-  "SIGNALWIRE_PROJECT_ID"
-  "SIGNALWIRE_TOKEN"
-  "SIGNALWIRE_SPACE_URL"
-  "SIGNALWIRE_PHONE_NUMBER"
-  "DATABASE_URL"
-)
+# Create deployment directory if it doesn't exist
+mkdir -p deploy
 
-MISSING_VARS=()
+# Copy necessary files
+cp replit-deploy-server.js deploy/
+cp index.html deploy/ 2>/dev/null || echo "No index.html found, will use built-in template"
 
-for var in "${REQUIRED_VARS[@]}"; do
-  if [ -z "${!var}" ]; then
-    MISSING_VARS+=("$var")
-  fi
-done
+# Step 3: Create a startup script
+echo "\n[3/4] Creating startup script..."
 
-if [ ${#MISSING_VARS[@]} -ne 0 ]; then
-  echo -e "\n⚠️  Warning: The following required environment variables are not set:"
-  for var in "${MISSING_VARS[@]}"; do
-    echo "   - $var"
-  done
-  echo -e "\nThese variables must be configured in your production environment."
-fi
+cat > deploy/start.js << 'EOL'
+#!/usr/bin/env node
 
-# Clean previous builds
-echo -e "\n🧹 Cleaning previous builds..."
-if [ -d "dist" ]; then
-  rm -rf dist
-  echo "Previous build directory removed."
-fi
+/**
+ * Production Server for YoBot/Ella AI
+ */
 
-# Create production build
-echo -e "\n🔨 Creating production build..."
-npm run build
+import { spawn } from 'child_process';
 
-if [ $? -ne 0 ]; then
-  echo -e "\n❌ Build failed. Please check the errors above."
-  exit 1
-fi
+console.log('Starting Ella AI production server...');
 
-echo -e "\n✅ Build completed successfully!"
+// Start the server
+const server = spawn('node', ['replit-deploy-server.js'], {
+  stdio: 'inherit'
+});
 
-# Generate deployment report
-echo -e "\n📊 Generating deployment report..."
+// Handle process exit
+process.on('SIGINT', () => {
+  console.log('Shutting down server...');
+  server.kill('SIGINT');
+  process.exit(0);
+});
 
-VERSION=$(node -e "console.log(require('./package.json').version || 'N/A')")
-NODE_VERSION=$(node -v)
-DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-
-cat > deployment-report.txt << EOL
-ELLA AI DEPLOYMENT REPORT
-=========================
-Generated: $DATE
-Version: $VERSION
-Node Version: $NODE_VERSION
-
-Environment Variables Status:
-----------------------------
+server.on('close', (code) => {
+  console.log(`Server exited with code ${code}`);
+  process.exit(code);
+});
 EOL
 
-for var in "${REQUIRED_VARS[@]}"; do
-  if [ -z "${!var}" ]; then
-    echo "$var: ⚠️ Missing" >> deployment-report.txt
-  else
-    echo "$var: ✓" >> deployment-report.txt
-  fi
-done
+chmod +x deploy/start.js
 
-cat >> deployment-report.txt << EOL
+# Step 4: Create a README.md with deployment instructions
+echo "\n[4/4] Creating deployment documentation..."
 
-Build Info:
-----------
-- Build Command: npm run build
-- Output Directory: dist
-- Build Date: $DATE
+cat > deploy/README.md << 'EOL'
+# Ella AI Deployment Package
 
-Deployment Instructions:
-----------------------
-1. Deploy the contents of the 'dist' directory to your hosting provider
-2. Ensure all required environment variables are configured
-3. Set up the database using the migration scripts
-4. Configure your domain and SSL certificate
+This package contains the Ella AI landing page and server for production deployment.
 
-Next Steps:
-----------
-- See documentation/deployment_guide.md for detailed deployment instructions
-- Run any necessary database migrations
-- Verify API integrations once deployed
-- Set up monitoring and logging
+## Getting Started
+
+1. To start the server, run:
+
+```bash
+node start.js
+```
+
+2. The server will run on port 5000 by default. You can change this by setting the PORT environment variable:
+
+```bash
+PORT=8080 node start.js
+```
+
+## Files Included
+
+- `start.js`: Main server starter script
+- `replit-deploy-server.js`: HTTP server implementation
+- `index.html`: Landing page template (if customized)
+
+## Server API Endpoints
+
+- `/`: Main landing page
+- `/api/health`: Health check endpoint that returns server status
+
+## Need Help?
+
+Contact support@yobot.ai for assistance with your deployment.
 EOL
 
-echo "Deployment report generated at: deployment-report.txt"
-
-# Final instructions
-echo -e "\n🏁 Production build process complete!"
-echo -e "\nNext steps:"
-echo "1. Review the deployment report"
-echo "2. Deploy the contents of the \"dist\" directory to your hosting provider"
-echo "3. Configure environment variables in your production environment"
-echo "4. Run database migrations if necessary"
-echo "5. Configure your domain and SSL settings"
-echo -e "\nRefer to documentation/deployment_guide.md for detailed instructions.\n"
+echo "\n================================"
+echo "Deployment package created in: ./deploy"
+echo "\nTo start the production server:"
+echo "cd deploy && node start.js"
+echo "================================"

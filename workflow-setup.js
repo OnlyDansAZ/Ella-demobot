@@ -1,44 +1,56 @@
 #!/usr/bin/env node
 
 /**
- * Minimal Express Server for YoBot/Ella AI
+ * Workflow Setup for YoBot/Ella AI
  * 
- * This simplified server is specifically designed for Replit's workflow
- * It immediately opens port 5000 with a health check endpoint
- * This satisfies Replit's workflow requirement without extra configuration
+ * This script configures the Replit workflow to use our Express server
+ * instead of the Vite development server.
  */
 
-import express from 'express';
+import { readdirSync, writeFileSync } from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-// Create Express application
-const app = express();
-const PORT = 5000;
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-// Add a basic route
-app.get('/', (req, res) => {
-  res.send('YoBot/Ella AI Platform - Workflow Server Running');
+// Create the .replit-start.js file that will be used by the workflow
+const replitStartContent = `#!/usr/bin/env node
+
+/**
+ * Special startup script for Replit's "Start application" workflow
+ * This script starts the Express server on port 5000 (required by Replit)
+ */
+
+import { spawn } from 'child_process';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Start the Express server
+const serverProcess = spawn('node', ['express-server.js'], {
+  stdio: 'inherit',
+  cwd: __dirname
 });
 
-// Add health check endpoint
-app.get('/api/health', (req, res) => {
-  res.json({
-    status: 'ok',
-    timestamp: new Date().toISOString(),
-    service: 'YoBot Workflow Server'
-  });
+// Handle process exit
+process.on('SIGINT', () => {
+  console.log('Shutting down server...');
+  serverProcess.kill('SIGINT');
+  process.exit(0);
 });
 
-// Start the server
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`
-==========================================
-   YoBot/Ella AI Platform - Workflow Server
-==========================================
-Server available at: http://localhost:${PORT}
-Health check: http://localhost:${PORT}/api/health
-
-❗ NOTICE: This is a minimal server designed
-   specifically for Replit workflows. It does not
-   provide full application functionality.
-  `);
+// Handle server process exit
+serverProcess.on('close', (code) => {
+  console.log('Server process exited with code ' + code);
+  process.exit(code);
 });
+`;
+
+// Write the file
+writeFileSync(path.join(__dirname, '.replit-start.js'), replitStartContent, 'utf8');
+console.log('Created .replit-start.js');
+
+console.log('Workflow setup complete. Please restart the "Start application" workflow.');

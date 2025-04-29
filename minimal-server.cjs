@@ -1,19 +1,13 @@
-#!/usr/bin/env node
-
 /**
- * Basic HTTP server for YoBot/Ella AI
+ * Minimal Express Server for YoBot
  * 
- * This ultra-simple server only uses Node.js built-in modules
- * to avoid any potential dependency issues
+ * This is a simplified server that just listens on port 5000
+ * to verify that the port is accessible
  */
 
-import http from 'http';
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const http = require('http');
+const fs = require('fs');
+const path = require('path');
 
 // Configuration
 const PORT = process.env.PORT || 5000;
