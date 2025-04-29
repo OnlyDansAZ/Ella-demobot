@@ -1,19 +1,26 @@
 #!/usr/bin/env node
 
 /**
- * Simple HTTP Server for Ella AI
+ * Custom Server for Ella AI on port 3000
  * 
- * This is a barebones server that will work in any environment
- * without any framework dependencies or configuration issues.
+ * This server provides a reliable landing page and API endpoints
+ * that work regardless of Vite host restrictions.
  */
 
 import http from 'http';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+// Get current file and directory paths
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Configuration
-const PORT = process.env.PORT || 3000;
+const PORT = 3000;
 
-// Basic HTML content
-const htmlContent = `<!DOCTYPE html>
+// Define the HTML content for our landing page
+const landingPageHTML = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -117,7 +124,7 @@ const htmlContent = `<!DOCTYPE html>
       padding-left: 1.5rem;
     }
     .plan-features li:before {
-      content: '✓';
+      content: "✓";
       color: #10b981;
       position: absolute;
       left: 0;
@@ -143,6 +150,61 @@ const htmlContent = `<!DOCTYPE html>
     .button-outline:hover {
       background: rgba(37, 99, 235, 0.1);
     }
+    .section-title {
+      text-align: center;
+      margin-bottom: 3rem;
+    }
+    .cta {
+      background: linear-gradient(135deg, #2563eb 0%, #8b5cf6 100%);
+      color: white;
+      padding: 4rem 0;
+      text-align: center;
+      border-radius: 0.5rem;
+      margin-bottom: 4rem;
+    }
+    .cta h2 {
+      color: white;
+    }
+    footer {
+      background: #1f2937;
+      color: white;
+      padding: 4rem 0;
+    }
+    .footer-content {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 2rem;
+    }
+    .footer-logo {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+    }
+    .footer-links h3 {
+      margin-bottom: 1rem;
+      font-size: 1.25rem;
+    }
+    .footer-links ul {
+      list-style: none;
+      padding: 0;
+    }
+    .footer-links li {
+      margin-bottom: 0.5rem;
+    }
+    .footer-links a {
+      color: #9ca3af;
+      text-decoration: none;
+      transition: color 0.3s ease;
+    }
+    .footer-links a:hover {
+      color: white;
+    }
+    .copyright {
+      text-align: center;
+      margin-top: 4rem;
+      color: #9ca3af;
+      font-size: 0.875rem;
+    }
     .api-status {
       background: white;
       border-radius: 0.5rem;
@@ -158,24 +220,6 @@ const htmlContent = `<!DOCTYPE html>
       background: #10b981;
       margin-right: 0.5rem;
     }
-    pre {
-      background: #f1f5f9;
-      padding: 1rem;
-      border-radius: 0.5rem;
-      overflow: auto;
-    }
-    footer {
-      background: #1f2937;
-      color: white;
-      padding: 4rem 0 2rem;
-      margin-top: 4rem;
-    }
-    .copyright {
-      text-align: center;
-      color: #9ca3af;
-      font-size: 0.875rem;
-      margin-top: 2rem;
-    }
   </style>
 </head>
 <body>
@@ -183,13 +227,17 @@ const htmlContent = `<!DOCTYPE html>
     <div class="container">
       <h1>Ella AI</h1>
       <p class="subtitle">The AI Sales Assistant That Sounds Human</p>
+      <a href="#pricing" class="button">View Pricing</a>
+      <a href="#contact" class="button button-outline">Contact Us</a>
     </div>
   </header>
 
   <div class="container">
-    <h2>Welcome to Ella AI</h2>
-    <p>Ella is a comprehensive AI sales assistant capable of conducting natural, human-like conversations with your prospects. She handles outbound sales calls, texting, appointment setting, and client follow-ups - functioning as a complete virtual salesperson.</p>
-    
+    <div class="section-title">
+      <h2>What Ella Can Do For You</h2>
+      <p>Ella isn't just another AI bot. She's a comprehensive sales assistant capable of handling your entire outbound sales process with human-like conversations.</p>
+    </div>
+
     <div class="features">
       <div class="feature">
         <div class="feature-icon">📞</div>
@@ -213,6 +261,11 @@ const htmlContent = `<!DOCTYPE html>
       </div>
     </div>
 
+    <div class="section-title" id="pricing">
+      <h2>Pricing Plans</h2>
+      <p>Choose the plan that fits your business needs and scale as you grow.</p>
+    </div>
+
     <div class="pricing">
       <div class="plan">
         <div class="plan-name">Starter</div>
@@ -225,6 +278,7 @@ const htmlContent = `<!DOCTYPE html>
           <li>Email notifications</li>
           <li>8am-5pm support</li>
         </ul>
+        <a href="#contact" class="button">Get Started</a>
       </div>
       <div class="plan">
         <div class="plan-name">Professional</div>
@@ -237,6 +291,7 @@ const htmlContent = `<!DOCTYPE html>
           <li>SMS & email follow-ups</li>
           <li>24/7 premium support</li>
         </ul>
+        <a href="#contact" class="button">Get Started</a>
       </div>
       <div class="plan">
         <div class="plan-name">Enterprise</div>
@@ -249,40 +304,79 @@ const htmlContent = `<!DOCTYPE html>
           <li>Dedicated success manager</li>
           <li>White-label options</li>
         </ul>
+        <a href="#contact" class="button">Contact Us</a>
       </div>
+    </div>
+
+    <div class="cta" id="contact">
+      <h2>Ready to transform your sales process?</h2>
+      <p>Get in touch with our team to schedule a demo and see Ella in action.</p>
+      <a href="mailto:sales@yobot.ai" class="button">Request a Demo</a>
     </div>
 
     <div class="api-status">
       <h3>Server Status</h3>
-      <p><span class="status-indicator"></span> API Status: <span id="status-text">Operational</span></p>
-      <button id="check-api" class="button button-outline">Check API Status</button>
-      <div id="api-response" style="margin-top: 1rem;"></div>
+      <p><span class="status-indicator"></span> API health endpoint: <span id="status-message">Operational</span></p>
+      <p><button onclick="checkApiHealth()" class="button button-outline">Check API Status</button></p>
+      <div id="api-response"></div>
     </div>
   </div>
 
   <footer>
     <div class="container">
-      <div class="copyright">&copy; 2025 YoBot Inc. All rights reserved.</div>
+      <div class="footer-content">
+        <div>
+          <div class="footer-logo">Ella AI</div>
+          <p>The most advanced AI sales assistant, powered by YoBot.</p>
+        </div>
+        <div class="footer-links">
+          <h3>Company</h3>
+          <ul>
+            <li><a href="#">About Us</a></li>
+            <li><a href="#">Careers</a></li>
+            <li><a href="#">Blog</a></li>
+          </ul>
+        </div>
+        <div class="footer-links">
+          <h3>Resources</h3>
+          <ul>
+            <li><a href="#">Documentation</a></li>
+            <li><a href="#">API Reference</a></li>
+            <li><a href="#">Support</a></li>
+          </ul>
+        </div>
+        <div class="footer-links">
+          <h3>Legal</h3>
+          <ul>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Service</a></li>
+            <li><a href="#">Cookie Policy</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="copyright">
+        &copy; 2025 YoBot Inc. All rights reserved.
+      </div>
     </div>
   </footer>
 
   <script>
-    document.getElementById('check-api').addEventListener('click', function() {
-      const responseDiv = document.getElementById('api-response');
-      const statusText = document.getElementById('status-text');
-      responseDiv.innerHTML = 'Checking API health...';
+    function checkApiHealth() {
+      const responseElement = document.getElementById('api-response');
+      const statusMessage = document.getElementById('status-message');
+      responseElement.innerHTML = 'Checking API health...';
       
       fetch('/api/health')
         .then(response => response.json())
         .then(data => {
-          statusText.textContent = 'Operational';
-          responseDiv.innerHTML = '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+          statusMessage.textContent = 'Operational';
+          responseElement.innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
         })
         .catch(error => {
-          statusText.textContent = 'Service Disruption';
-          responseDiv.innerHTML = '<pre>Error: ' + error.message + '</pre>';
+          statusMessage.textContent = 'Service Disruption';
+          responseElement.innerHTML = `<pre>Error: ${error.message}</pre>`;
         });
-    });
+    }
   </script>
 </body>
 </html>`;
@@ -292,7 +386,7 @@ const server = http.createServer((req, res) => {
   const url = req.url;
   console.log(`Request for ${url}`);
 
-  // Handle API requests
+  // API endpoint for health check
   if (url === '/api/health') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({
@@ -303,9 +397,9 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  // Serve landing page for all other routes
+  // Serve landing page for root URL or any non-API route
   res.writeHead(200, { 'Content-Type': 'text/html' });
-  res.end(htmlContent);
+  res.end(landingPageHTML);
 });
 
 // Start the server
