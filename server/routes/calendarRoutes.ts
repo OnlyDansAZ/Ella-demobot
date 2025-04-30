@@ -159,7 +159,7 @@ router.get('/agenda/today', (req, res) => {
  * Get upcoming events summary
  * GET /api/calendar/summary?days=7
  */
-router.get('/summary', (req, res) => {
+router.get('/summary', (req: express.Request, res: express.Response) => {
   try {
     const days = parseInt(req.query.days as string) || 7;
 
