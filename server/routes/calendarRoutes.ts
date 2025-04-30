@@ -26,7 +26,7 @@ router.get('/', (req, res) => {
  * Get events for a specific date
  * GET /api/calendar/date/:date
  */
-router.get('/date/:date', (req, res) => {
+router.get('/date/:date', (req: express.Request, res: express.Response) => {
   try {
     const { date } = req.params;
     

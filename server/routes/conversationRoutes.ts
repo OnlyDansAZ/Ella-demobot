@@ -1,4 +1,4 @@
-import { Router, Request, Response } from "express";
+import express, { Router, Request, Response } from "express";
 import { conversationStorage, ChatMessage, ConversationSession } from "../conversationStorage";
 import { v4 as uuidv4 } from "uuid";
 
