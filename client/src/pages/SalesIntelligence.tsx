@@ -214,7 +214,13 @@ const SalesIntelligence: React.FC = () => {
   const heatmaps = Array.isArray(heatmapsData) ? heatmapsData : [];
 
   // Fetch performance report
-  const { data: performanceReport, isLoading: reportLoading, isError: reportError } = useQuery({
+  const { data: performanceReport = {
+    totalCalls: 0,
+    averageDuration: 0,
+    conversionRate: 0,
+    stageBreakdown: {},
+    topPerformingPersonas: []
+  }, isLoading: reportLoading, isError: reportError } = useQuery<PerformanceReport>({
     queryKey: ['/api/sales-intel/performance'],
     retry: 1,
     retryDelay: 1000,
