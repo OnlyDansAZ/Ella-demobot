@@ -141,7 +141,7 @@ router.get('/agenda/:date', (req, res) => {
  * Get agenda for today
  * GET /api/calendar/agenda/today
  */
-router.get('/agenda/today', (req, res) => {
+router.get('/agenda/today', (req: express.Request, res: express.Response) => {
   try {
     const agenda = calendarService.getTodaySummary();
     res.json({ success: true, agenda });
