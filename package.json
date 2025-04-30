@@ -67,6 +67,8 @@
     "express-session": "^1.18.1",
     "framer-motion": "^10.16.4",
     "fs-extra": "^11.3.0",
+    "google-auth-library": "^9.15.1",
+    "googleapis": "^148.0.0",
     "http-proxy-middleware": "^3.0.5",
     "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.279.0",
