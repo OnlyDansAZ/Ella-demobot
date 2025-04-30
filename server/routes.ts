@@ -44,7 +44,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   setupAuth(app);
 
   // API Routes
-  app.get("/api/health", (_req, res) => {
+  app.get("/api/health", (_req: Request, res: Response) => {
     res.json({ status: "ok", message: "YoBot API is running" });
   });
   

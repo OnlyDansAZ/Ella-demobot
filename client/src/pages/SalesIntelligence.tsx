@@ -209,7 +209,7 @@ const SalesIntelligence: React.FC = () => {
     retryDelay: 1000,
     refetchOnWindowFocus: false,
   });
-  
+
   // Safely access heatmaps data
   const heatmaps = Array.isArray(heatmapsData) ? heatmapsData : [];
 
@@ -232,7 +232,7 @@ const SalesIntelligence: React.FC = () => {
   // Prepare stage breakdown data for chart
   const getStageChartData = () => {
     if (!performanceReport || !performanceReport.stageBreakdown) return [];
-    
+
     return Object.entries(performanceReport.stageBreakdown).map(([stage, data]) => ({
       name: stage.charAt(0).toUpperCase() + stage.slice(1),
       duration: Math.round(data.averageDuration / 60), // Convert to minutes
@@ -244,7 +244,7 @@ const SalesIntelligence: React.FC = () => {
   // Prepare pipeline data for chart
   const getPipelineChartData = () => {
     if (!pipelineData) return [];
-    
+
     return pipelineData.map(stage => ({
       name: stage.stageName,
       count: stage.count,
@@ -256,7 +256,7 @@ const SalesIntelligence: React.FC = () => {
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-6">Sales Intelligence</h1>
-      
+
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid grid-cols-4 md:w-[600px] mb-6">
           <TabsTrigger value="heatmaps" className="flex items-center">
@@ -287,7 +287,7 @@ const SalesIntelligence: React.FC = () => {
             <p className="text-muted-foreground mb-4">
               Visualize how conversations flow through different stages and identify patterns in customer interactions.
             </p>
-            
+
             {heatmapsLoading ? (
               <div className="flex justify-center py-10">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
@@ -319,7 +319,7 @@ const SalesIntelligence: React.FC = () => {
             <p className="text-muted-foreground mb-4">
               Track conversation performance metrics across personas and stages.
             </p>
-            
+
             {reportLoading ? (
               <div className="flex justify-center py-10">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
@@ -424,7 +424,7 @@ const SalesIntelligence: React.FC = () => {
             <p className="text-muted-foreground mb-4">
               Track how leads move through your sales pipeline and identify bottlenecks.
             </p>
-            
+
             {pipelineLoading ? (
               <div className="flex justify-center py-10">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
@@ -504,7 +504,7 @@ const SalesIntelligence: React.FC = () => {
             <p className="text-muted-foreground mb-4">
               View and analyze your most recent sales calls.
             </p>
-            
+
             <Card>
               <CardHeader>
                 <CardTitle>Recent Calls</CardTitle>
