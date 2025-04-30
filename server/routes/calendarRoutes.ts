@@ -26,19 +26,19 @@ router.get('/', (req, res) => {
  * Get events for a specific date
  * GET /api/calendar/date/:date
  */
-router.get('/date/:date', (req: express.Request, res: express.Response) => {
+router.get('/date/:date', (req: express.Request<{date: string}>, res: express.Response) => {
   try {
     const { date } = req.params;
-    
+
     if (!date) {
       return res.status(400).json({ success: false, error: 'Date parameter is required' });
     }
-    
+
     const dateObj = new Date(date);
     if (isNaN(dateObj.getTime())) {
       return res.status(400).json({ success: false, error: 'Invalid date format' });
     }
-    
+
     const events = calendarService.getEventsForDate(dateObj);
     res.json({ success: true, events });
   } catch (error) {
@@ -95,7 +95,7 @@ router.get('/upcoming', (req, res) => {
   try {
     const days = parseInt(req.query.days as string) || 7;
     const limit = parseInt(req.query.limit as string) || 5;
-    
+
     const events = calendarService.getUpcomingEvents(days, limit);
     res.json({ success: true, events });
   } catch (error) {
@@ -115,16 +115,16 @@ router.get('/upcoming', (req, res) => {
 router.get('/agenda/:date', (req, res) => {
   try {
     const { date } = req.params;
-    
+
     if (!date) {
       return res.status(400).json({ success: false, error: 'Date parameter is required' });
     }
-    
+
     const dateObj = new Date(date);
     if (isNaN(dateObj.getTime())) {
       return res.status(400).json({ success: false, error: 'Invalid date format' });
     }
-    
+
     const agenda = calendarService.getAgenda(dateObj);
     res.json({ success: true, agenda });
   } catch (error) {
@@ -162,7 +162,7 @@ router.get('/agenda/today', (req, res) => {
 router.get('/summary', (req, res) => {
   try {
     const days = parseInt(req.query.days as string) || 7;
-    
+
     const summary = calendarService.getUpcomingSummary(days);
     res.json({ success: true, summary });
   } catch (error) {
@@ -182,11 +182,11 @@ router.get('/summary', (req, res) => {
 router.post('/', (req, res) => {
   try {
     const { title, description, start, end, location, participants, allDay, recurring, recurrencePattern, reminderMinutes } = req.body;
-    
+
     if (!title || !start || !end) {
       return res.status(400).json({ success: false, error: 'Title, start, and end are required fields' });
     }
-    
+
     const event = calendarService.addEvent({
       title,
       description,
@@ -199,7 +199,7 @@ router.post('/', (req, res) => {
       recurrencePattern,
       reminderMinutes
     });
-    
+
     // Trigger automated follow-up process when a booking is created
     try {
       // Trigger an immediate agenda send
@@ -210,7 +210,7 @@ router.post('/', (req, res) => {
         .catch(error => {
           console.error('Error scheduling agenda automation:', error);
         });
-      
+
       // Schedule a reminder for the day before
       automationService.triggerAutomation(event, 'reminder', '1day')
         .then(success => {
@@ -219,13 +219,13 @@ router.post('/', (req, res) => {
         .catch(error => {
           console.error('Error scheduling reminder automation:', error);
         });
-        
+
       console.log(`Automations triggered for new booking: ${event.title}`);
     } catch (autoError) {
       console.error('Error triggering automations for new booking:', autoError);
       // Non-blocking - we still want to return the event even if automations fail
     }
-    
+
     res.json({ success: true, event });
   } catch (error) {
     console.error('Error adding calendar event:', error);
@@ -245,11 +245,11 @@ router.put('/:id', (req, res) => {
   try {
     const { id } = req.params;
     const { title, description, start, end, location, participants, allDay, recurring, recurrencePattern, reminderMinutes } = req.body;
-    
+
     if (!id) {
       return res.status(400).json({ success: false, error: 'Event ID parameter is required' });
     }
-    
+
     const event = calendarService.updateEvent(id, {
       title,
       description,
@@ -262,11 +262,11 @@ router.put('/:id', (req, res) => {
       recurrencePattern,
       reminderMinutes
     });
-    
+
     if (!event) {
       return res.status(404).json({ success: false, error: `Calendar event with ID ${id} not found` });
     }
-    
+
     res.json({ success: true, event });
   } catch (error) {
     console.error('Error updating calendar event:', error);
@@ -285,17 +285,17 @@ router.put('/:id', (req, res) => {
 router.delete('/:id', (req, res) => {
   try {
     const { id } = req.params;
-    
+
     if (!id) {
       return res.status(400).json({ success: false, error: 'Event ID parameter is required' });
     }
-    
+
     const deleted = calendarService.deleteEvent(id);
-    
+
     if (!deleted) {
       return res.status(404).json({ success: false, error: `Calendar event with ID ${id} not found` });
     }
-    
+
     res.json({ success: true, message: `Calendar event with ID ${id} deleted successfully` });
   } catch (error) {
     console.error('Error deleting calendar event:', error);
@@ -315,26 +315,26 @@ router.post('/:id/automation', (req, res) => {
   try {
     const { id } = req.params;
     const { type, timing } = req.body;
-    
+
     if (!id) {
       return res.status(400).json({ success: false, error: 'Event ID parameter is required' });
     }
-    
+
     if (!type || !['reminder', 'agenda', 'followup'].includes(type)) {
       return res.status(400).json({ success: false, error: 'Valid automation type is required (reminder, agenda, or followup)' });
     }
-    
+
     if (!timing || !['immediately', '1hour', '3hours', '1day', '2days'].includes(timing)) {
       return res.status(400).json({ success: false, error: 'Valid timing is required (immediately, 1hour, 3hours, 1day, or 2days)' });
     }
-    
+
     // Get the event
     const event = calendarService.getEventById(id);
-    
+
     if (!event) {
       return res.status(404).json({ success: false, error: `Calendar event with ID ${id} not found` });
     }
-    
+
     // Trigger the automation
     automationService.triggerAutomation(event, type as 'reminder' | 'agenda' | 'followup', timing)
       .then(success => {

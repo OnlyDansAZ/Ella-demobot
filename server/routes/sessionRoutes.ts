@@ -11,7 +11,7 @@ const router = express.Router();
  * GET /api/session/:sessionId/messages
  * Get messages for a session
  */
-router.get('/:sessionId/messages', async (req: Request, res: Response) => {
+router.get('/:sessionId/messages', async (req: express.Request<{sessionId: string}>, res: express.Response) => {
   const { sessionId } = req.params;
   const { memoryModeOverride } = req.query; // Support query param for GET requests
   
