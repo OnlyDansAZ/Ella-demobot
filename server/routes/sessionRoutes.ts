@@ -152,7 +152,7 @@ router.delete('/:sessionId/messages', async (req: Request, res: Response) => {
  * POST /api/session/:sessionId/persona
  * Set the active persona for a session
  */
-router.post('/:sessionId/persona', (req: Request, res: Response) => {
+router.post('/:sessionId/persona', (req: Request<{sessionId: string}, any, {personaId: string}>, res: Response) => {
   const { sessionId } = req.params;
   const { personaId } = req.body;
   

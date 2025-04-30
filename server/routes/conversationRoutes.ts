@@ -36,7 +36,7 @@ router.get('/:sessionId', async (req: Request, res: Response) => {
  * 
  * Adds a new message to the conversation history
  */
-router.post('/:sessionId/messages', async (req: Request, res: Response) => {
+router.post('/:sessionId/messages', async (req: Request<{sessionId: string}, any, {content: string; isUser: boolean}>, res: Response) => {
   try {
     const { sessionId } = req.params;
     const { content, isUser } = req.body;
