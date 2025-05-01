@@ -84,3 +84,10 @@ export const updateConversationSchema = createInsertSchema(conversationHistory)
 export type InsertConversation = z.infer<typeof insertConversationSchema>;
 export type UpdateConversation = z.infer<typeof updateConversationSchema>;
 export type ConversationHistory = typeof conversationHistory.$inferSelect;
+
+export interface User {
+  id?: string;
+  name?: string;
+  email?: string;
+  role?: string;
+}
