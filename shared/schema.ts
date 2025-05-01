@@ -14,7 +14,6 @@ export const personas = pgTable("personas", {
   description: text("description").notNull(),
   systemPrompt: text("system_prompt").notNull(),
   memoryMode: text("memory_mode").notNull(),
-  memoryMode: text("memory_mode").notNull(),
   isDefault: boolean("is_default").default(false),
   voiceSettings: jsonb("voice_settings"),
   behaviorModifiers: jsonb("behavior_modifiers")
