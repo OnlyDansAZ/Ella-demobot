@@ -53,6 +53,7 @@
     "@types/node-fetch": "^2.6.12",
     "@types/passport": "^1.0.17",
     "@types/passport-local": "^1.0.38",
+    "@types/twilio": "^3.19.2",
     "@types/uuid": "^10.0.0",
     "@types/ws": "^8.18.1",
     "bcryptjs": "^3.0.2",
