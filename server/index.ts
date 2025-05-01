@@ -14,16 +14,16 @@ process.on('uncaughtException', (error: any) => {
        error.code === '08006' || // Connection failure
        error.code === '08001' || // Unable to connect
        error.code === '57P03')) { // Cannot connect now
-    
+
     console.error('Uncaught database connection error:', error.message);
-    
+
     // Log the error but prevent app from crashing
     console.error('Database connection was interrupted. The application will continue running with degraded functionality.');
-    
+
     // Don't throw the error further, just log it and keep the app running
     return;
   }
-  
+
   // For non-database uncaught errors, log and let Node.js handle normally
   console.error('Uncaught exception:', error);
   throw error;
@@ -66,7 +66,7 @@ app.use((req, res, next) => {
 (async () => {
   // Skip vector database initialization for now to speed up startup
   log("Skipping vector database initialization to speed up startup...");
-  
+
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
