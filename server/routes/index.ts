@@ -20,4 +20,7 @@ router.get('/health', (req, res) => {
   res.json({ status: 'ok' });
 });
 
-export default router;
+export const registerRoutes = (app) => {
+  app.use('/api', router);
+  return app;
+};
