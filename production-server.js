@@ -9,26 +9,26 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Basic middleware for security and parsing
+// Basic middleware for security
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Health check endpoint
+// Health check endpoint - this is crucial for deployment
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// Serve static files from the build directory
-app.use(express.static(path.join(__dirname, 'dist')));
+// Serve static files from the dist directory
+app.use(express.static('dist'));
 
-// SPA fallback - serve index.html for all routes
+// SPA fallback - serve index.html for client-side routing
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
-// Error handling
+// Error handling middleware
 app.use((err, req, res, next) => {
-  console.error(err.stack);
+  console.error(err);
   res.status(500).json({ error: 'Internal Server Error' });
 });
 
