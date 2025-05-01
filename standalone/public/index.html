@@ -1,9 +1,4 @@
-const http = require('http');
-
-const PORT = 5173;
-
-// Simple HTML content
-const html = `<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang='en'>
 <head>
   <meta charset='UTF-8'>
@@ -48,25 +43,4 @@ const html = `<!DOCTYPE html>
     </div>
   </div>
 </body>
-</html>`;
-
-// Create HTTP server
-const server = http.createServer((req, res) => {
-  if (req.url === '/api/health') {
-    res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({
-      status: 'ok',
-      message: 'Ella AI server is operational',
-      timestamp: new Date().toISOString()
-    }));
-    return;
-  }
-  
-  res.writeHead(200, { 'Content-Type': 'text/html' });
-  res.end(html);
-});
-
-// Start server
-server.listen(PORT, '0.0.0.0', () => {
-  console.log(`Ella AI server running on http://localhost:${PORT}`);
-});
+</html>

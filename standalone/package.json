@@ -1,0 +1,13 @@
+{
+  "name": "ella-ai-landing",
+  "version": "1.0.0",
+  "description": "Ella AI Landing Page",
+  "main": "app.cjs",
+  "scripts": {
+    "start": "node app.cjs"
+  },
+  "dependencies": {
+  `
+    "express": "^4.18.2"
+  }
+}
