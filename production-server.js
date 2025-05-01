@@ -1,39 +1,27 @@
-
 import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { registerRoutes } from './server/routes/index.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 5000;
-const DIST_DIR = path.join(__dirname, 'dist');
 
-// Basic error handling
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).send('Something broke!');
-});
-
-// Request logging
-app.use((req, res, next) => {
-  console.log(`${new Date().toISOString()} ${req.method} ${req.url}`);
-  next();
-});
-
-// Static files
-app.use(express.static(DIST_DIR));
+// Basic middleware
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-// Health check
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
-});
+// API routes
+registerRoutes(app);
+
+// Serve static files
+app.use(express.static(path.join(__dirname, 'dist')));
 
 // SPA fallback
 app.get('*', (req, res) => {
-  res.sendFile(path.join(DIST_DIR, 'index.html'));
+  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
 app.listen(PORT, '0.0.0.0', () => {
