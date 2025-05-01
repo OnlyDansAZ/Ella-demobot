@@ -11,11 +11,27 @@ const PORT = process.env.PORT || 5000;
 // API routes
 app.use(express.json());
 
-// Serve static files
-app.use(express.static('dist'));
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
 
-// SPA fallback
-app.get('*', (req, res) => {
+// API routes
+app.use('/api', (req, res, next) => {
+  if (!req.path.startsWith('/health')) {
+    console.log(`API ${req.method} ${req.path}`);
+  }
+  next();
+});
+
+// Serve static files
+app.use(express.static('dist', { maxAge: '1h' }));
+
+// SPA fallback for non-API routes
+app.get('*', (req, res, next) => {
+  if (req.path.startsWith('/api/')) {
+    return next();
+  }
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 

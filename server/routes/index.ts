@@ -20,9 +20,7 @@ router.get('/health', (req, res) => {
   res.json({ status: 'ok' });
 });
 
-export const registerRoutes = (app: Express): Promise<Express> => {
-  return new Promise((resolve) => {
-    app.use('/api', router);
-    resolve(app);
-  });
+export const registerRoutes = (app: express.Application): express.Application => {
+  app.use('/api', router);
+  return app;
 };
