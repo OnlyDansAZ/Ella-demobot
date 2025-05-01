@@ -22,7 +22,7 @@ const router = express.Router();
  * Make an outbound phone call using SignalWire
  * POST /api/phone-call
  */
-router.post('/phone-call', async (req: Request, res: Response) => {
+router.post('/phone-call', async (req: Request, res: Response): Promise<any> => {
   try {
     const { to, script, persona = 'default', voice = 'female' } = req.body;
 
@@ -76,7 +76,7 @@ router.post('/phone-call', async (req: Request, res: Response) => {
  * Handle status callbacks from SignalWire
  * POST /api/phone-call/status-callback
  */
-router.post('/phone-call/status-callback', async (req: Request, res: Response) => {
+router.post('/phone-call/status-callback', async (req: Request, res: Response): Promise<any> => {
   try {
     // SignalWire uses similar parameter names to Twilio
     const { 
@@ -185,7 +185,7 @@ router.post('/phone-call/status-callback', async (req: Request, res: Response) =
  * Handle speech response from user during call
  * POST /api/phone-call/response
  */
-router.post('/phone-call/response', (req: Request, res: Response) => {
+router.post('/phone-call/response', (req: Request, res: Response): void => {
   try {
     console.log('🔊 CALL RESPONSE RECEIVED:', req.body);
 
