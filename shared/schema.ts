@@ -8,6 +8,17 @@ export const users = pgTable("users", {
   password: text("password").notNull(),
 });
 
+export const personas = pgTable("personas", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description").notNull(),
+  systemPrompt: text("system_prompt").notNull(),
+  memoryMode: text("memory_mode").notNull(),
+  isDefault: boolean("is_default").default(false),
+  voiceSettings: jsonb("voice_settings"),
+  behaviorModifiers: jsonb("behavior_modifiers")
+});
+
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,

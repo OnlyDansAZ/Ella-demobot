@@ -61,6 +61,10 @@ mode = "sequential"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
+args = "tsc --noEmit"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
 args = "npm run build"
 
 [[workflows.workflow]]
