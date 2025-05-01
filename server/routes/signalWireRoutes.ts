@@ -16,13 +16,13 @@ import { conversationStorage } from '../conversationStorage';
 // Maps call SID to array of transcript entries
 const activeCallTranscripts = new Map<string, TranscriptEntry[]>();
 
-const router = express.Router();
+const router: express.Router = express.Router();
 
 /**
  * Make an outbound phone call using SignalWire
  * POST /api/phone-call
  */
-router.post('/phone-call', async (req: Request, res: Response): Promise<any> => {
+router.post('/phone-call', async (req: Request, res: Response): Promise<void> => {
   try {
     const { to, script, persona = 'default', voice = 'female' } = req.body;
 
@@ -76,7 +76,7 @@ router.post('/phone-call', async (req: Request, res: Response): Promise<any> => 
  * Handle status callbacks from SignalWire
  * POST /api/phone-call/status-callback
  */
-router.post('/phone-call/status-callback', async (req: Request, res: Response): Promise<any> => {
+router.post('/phone-call/status-callback', async (req: Request, res: Response): Promise<void> => {
   try {
     // SignalWire uses similar parameter names to Twilio
     const { 
