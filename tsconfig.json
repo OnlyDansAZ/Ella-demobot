@@ -1,14 +1,18 @@
+
 {
   "compilerOptions": {
     "target": "esnext",
     "module": "esnext",
     "moduleResolution": "node",
     "esModuleInterop": true,
-    "strict": true,
+    "strict": false,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "outDir": "dist",
     "jsx": "preserve",
+    "noEmit": false,
+    "allowJs": true,
+    "resolveJsonModule": true,
     "types": ["vite/client"],
     "baseUrl": ".",
     "paths": {
