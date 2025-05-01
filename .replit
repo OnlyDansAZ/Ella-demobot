@@ -8,7 +8,7 @@ packages = ["zip"]
 
 [deployment]
 deploymentTarget = "autoscale"
-build = ["sh", "-c", "npx tsc --skipLibCheck --noEmitOnError=false && npm run build"]
+build = ["sh", "-c", "npx tsc --skipLibCheck --noEmit false"]
 run = ["sh", "-c", "node production-server.js"]
 
 [[ports]]
