@@ -43,6 +43,8 @@ function Router() {
   );
 }
 
+import { AuthProvider } from "./hooks/useAuth";
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
