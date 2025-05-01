@@ -18,7 +18,7 @@ const router = Router();
  * - startTime: string (HH:MM format)
  * - Optional fields: description, endTime, location, userId, timeZone
  */
-router.post('/', async (req: Request, res: Response): Promise<void> => {
+router.post('/', async (req: Request, res: Response) => {
   try {
     // Validate the request body
     const validatedData = insertAppointmentSchema.parse(req.body);
@@ -211,7 +211,7 @@ router.delete('/:id', async (req: Request, res: Response) => {
  * - startTime: string (HH:MM format)
  * - endTime?: string (HH:MM format) - optional
  */
-router.get('/conflicts', async (req: Request, res: Response) => {
+router.get('/conflicts', (req: Request, res: Response) => {
   try {
     const { date, startTime, endTime } = req.query;
     
