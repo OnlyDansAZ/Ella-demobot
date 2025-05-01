@@ -1,5 +1,4 @@
 
-#!/usr/bin/env node
 import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -11,15 +10,22 @@ const DIST_DIR = path.join(__dirname, 'dist');
 
 const app = express();
 
+// Basic logging middleware
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} ${req.method} ${req.url}`);
+  next();
+});
+
+// Serve static files from dist
 app.use(express.static(DIST_DIR));
 app.use(express.json());
 
-// API routes
+// Health check endpoint
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// SPA fallback
+// SPA fallback - must be last route
 app.get('*', (req, res) => {
   res.sendFile(path.join(DIST_DIR, 'index.html'));
 });
