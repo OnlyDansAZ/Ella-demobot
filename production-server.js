@@ -10,29 +10,41 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// JSON parsing middleware
+// Middleware
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-// API routes
+// API error logging
+app.use((req, res, next) => {
+  const start = Date.now();
+  res.on('finish', () => {
+    if (req.path.startsWith('/api')) {
+      console.log(`${req.method} ${req.path} ${res.statusCode} ${Date.now() - start}ms`);
+    }
+  });
+  next();
+});
+
+// Health check endpoint
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// Register API routes
+// Register API routes before static files
 registerRoutes(app);
 
-// Serve static files from the React app build directory
-app.use(express.static('dist/public', { maxAge: '1h' }));
+// Serve static files from the client build
+app.use(express.static('dist'));
 
-// Handle React routing, return all requests to React app
+// SPA fallback
 app.get('*', (req, res, next) => {
   if (req.path.startsWith('/api/')) {
     return next();
   }
-  res.sendFile(path.join(__dirname, 'dist/public', 'index.html'));
+  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
-// Error handling middleware
+// Global error handler
 app.use((err, req, res, next) => {
   console.error('Server error:', err);
   res.status(500).json({ error: 'Internal server error' });
