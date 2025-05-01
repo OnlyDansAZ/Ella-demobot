@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Link } from "wouter";
 import yobotLogo from "../assets/yobot-logo.png";
-import yobotTransparentLogo from "../assets/yobot-transparent-logo.png";
+import yobotTransparentLogo from "../assets/YoBot Engange Smarter Logo w no background.png";
 
 const Header: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
