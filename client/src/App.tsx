@@ -44,6 +44,17 @@ function Router() {
 }
 
 import { AuthProvider } from "./hooks/useAuth";
+import { User } from "@shared/schema";
+
+// Initialize with proper types
+const initialAuthState = {
+  user: null as User | null,
+  isLoading: true,
+  error: null,
+  login: async () => false,
+  logout: async () => false,
+  register: async () => false
+};
 
 function App() {
   return (
