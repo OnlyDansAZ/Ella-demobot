@@ -1,4 +1,3 @@
-
 import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -9,30 +8,14 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Request logging
-app.use((req, res, next) => {
-  console.log(`${new Date().toISOString()} ${req.method} ${req.url}`);
-  next();
-});
-
-// API Routes first
+// API routes
 app.use(express.json());
 
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
-});
-
-// Static file serving
-app.use(express.static('dist', {
-  maxAge: '1h',
-  index: false
-}));
+// Serve static files
+app.use(express.static('dist'));
 
 // SPA fallback
-app.get('*', (req, res, next) => {
-  if (req.url.startsWith('/api/')) {
-    return next();
-  }
+app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
