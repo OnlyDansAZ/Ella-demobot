@@ -12,13 +12,8 @@ const PORT = 5000;
 // Basic middleware
 app.use(express.json());
 
-// Serve static files from dist directory
+// Serve static files
 app.use(express.static('dist'));
-
-// Health check endpoint
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok' });
-});
 
 // SPA fallback
 app.get('*', (req, res) => {
