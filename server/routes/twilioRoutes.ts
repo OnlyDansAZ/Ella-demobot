@@ -32,28 +32,28 @@ const phoneCallSchema = z.object({
 router.post('/phone-call', async (req: Request, res: Response) => {
   try {
     const validationResult = phoneCallSchema.safeParse(req.body);
-    
+
     if (!validationResult.success) {
       return res.status(400).json({ 
         error: 'Invalid request data', 
         details: validationResult.error.format() 
       });
     }
-    
+
     const callData = validationResult.data;
-    
+
     // Convert scheduledTime string to Date if present
     const request: PhoneCallRequest = {
       ...callData,
       scheduledTime: callData.scheduledTime ? new Date(callData.scheduledTime) : undefined
     };
-    
+
     const callRecord = await makeOutboundCall(request);
-    
+
     if (!callRecord) {
       return res.status(500).json({ error: 'Failed to make call' });
     }
-    
+
     return res.json(callRecord);
   } catch (error) {
     console.error('Error making phone call:', error);
@@ -68,23 +68,23 @@ router.post('/phone-call', async (req: Request, res: Response) => {
 router.post('/phone-call/status', (req: Request, res: Response) => {
   try {
     const { CallSid, CallStatus, CallDuration, RecordingUrl } = req.body;
-    
+
     if (!CallSid || !CallStatus) {
       return res.status(400).json({ error: 'Missing required parameters' });
     }
-    
+
     const updatedCall = handleStatusCallback(CallSid, CallStatus, CallDuration, RecordingUrl);
-    
+
     if (!updatedCall) {
       return res.status(404).json({ error: 'Call record not found' });
     }
-    
+
     // Return a valid TwiML response
     res.setHeader('Content-Type', 'text/xml');
     return res.send('<Response></Response>');
   } catch (error) {
     console.error('Error handling call status callback:', error);
-    
+
     // Always return valid TwiML even on error
     res.setHeader('Content-Type', 'text/xml');
     return res.send('<Response></Response>');
@@ -98,26 +98,26 @@ router.post('/phone-call/status', (req: Request, res: Response) => {
 router.post('/phone-call/response', (req: Request, res: Response) => {
   try {
     const { CallSid, SpeechResult, Confidence } = req.body;
-    
+
     console.log(`Received speech from call ${CallSid}: "${SpeechResult}" (confidence: ${Confidence})`);
-    
+
     // Create TwiML response - this handles the user's voice response
     const twiml = new twilio.twiml.VoiceResponse();
-    
+
     // Add a small pause for more natural conversation flow
     twiml.pause({ length: 1 });
-    
+
     // Use Amazon Polly voice for maximum reliability
     // Polly voices are known to be very reliable with Twilio
     const voiceType = 'Polly.Joanna'; // Reliable female Polly voice
-    
+
     if (SpeechResult) {
       // User said something, respond to them with appropriate context
       let responseText = "Thank you for your feedback. I've noted that down and will have our team follow up with you soon.";
-      
+
       // Enhanced response logic based on keywords
       const userSpeech = SpeechResult.toLowerCase();
-      
+
       if (userSpeech.includes('price') || userSpeech.includes('cost') || userSpeech.includes('expensive') || userSpeech.includes('pricing') || userSpeech.includes('how much')) {
         responseText = "Our pricing is very competitive. We offer multiple tiers starting with our Starter package at five thousand dollars plus a monthly fee of four hundred ninety-nine dollars. Would you like me to send you our detailed pricing information?";
       } else if (userSpeech.includes('demo') || userSpeech.includes('try') || userSpeech.includes('test') || userSpeech.includes('see')) {
@@ -131,13 +131,13 @@ router.post('/phone-call/response', (req: Request, res: Response) => {
       } else if (userSpeech.includes('integration') || userSpeech.includes('connect') || userSpeech.includes('work with')) {
         responseText = "YoBot integrates seamlessly with most business systems including CRMs like Salesforce, calendar apps like Google Calendar and Microsoft Outlook, and communication platforms like Slack. What systems are you currently using that you'd need integration with?";
       }
-      
+
       // Simple response without SSML for maximum reliability
       twiml.say({
         voice: voiceType,
         language: 'en-US'
       }, responseText);
-      
+
       // Continue the conversation with another gather
       // We need to cast the entire options object to any to avoid TypeScript errors
       // with the Twilio types which are quite strict
@@ -157,20 +157,20 @@ router.post('/phone-call/response', (req: Request, res: Response) => {
         language: 'en-US'
       }, "I'm sorry, I didn't catch what you said. If you're interested in learning more about YoBot, please visit our website or call us back at a more convenient time. Thank you for your interest!");
     }
-    
+
     // Set the appropriate content type and send the TwiML response
     res.setHeader('Content-Type', 'text/xml');
     res.send(twiml.toString());
   } catch (error) {
     console.error('Error handling speech response:', error);
-    
+
     // Provide a helpful error response
     const errorTwiml = new twilio.twiml.VoiceResponse();
     errorTwiml.say({
       voice: 'Polly.Joanna',
       language: 'en-US'
     }, "I apologize, but we encountered a technical issue. Please call us back later or visit our website for more information.");
-    
+
     res.setHeader('Content-Type', 'text/xml');
     res.send(errorTwiml.toString());
   }
@@ -199,11 +199,11 @@ router.get('/phone-call/:id', (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const call = getCallRecord(id);
-    
+
     if (!call) {
       return res.status(404).json({ error: 'Call record not found' });
     }
-    
+
     return res.json(call);
   } catch (error) {
     console.error('Error getting call record:', error);
