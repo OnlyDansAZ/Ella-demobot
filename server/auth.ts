@@ -60,7 +60,7 @@ export function setupAuth(app: Express) {
     }),
   );
 
-  passport.serializeUser((user, done) => done(null, user.id));
+  passport.serializeUser((user: Express.User, done) => done(null, user.id));
   passport.deserializeUser(async (id: number, done) => {
     const user = await storage.getUser(id);
     done(null, user);
@@ -92,7 +92,7 @@ export function setupAuth(app: Express) {
     passport.authenticate("local", (err, user, info) => {
       if (err) return next(err);
       if (!user) return res.status(401).json({ error: "Invalid credentials" });
-      
+
       req.login(user, (loginErr) => {
         if (loginErr) return next(loginErr);
         return res.status(200).json(user);

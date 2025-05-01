@@ -29,15 +29,15 @@ export async function initializeGoogleCalendar(): Promise<boolean> {
     const clientId = process.env.GOOGLE_CLIENT_ID;
     const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
     const redirectUri = process.env.GOOGLE_REDIRECT_URI;
-    
+
     if (!clientId || !clientSecret || !redirectUri) {
       logInfo('Google Calendar integration disabled: Missing required OAuth credentials');
       return false;
     }
-    
+
     // Create OAuth client
     oAuth2Client = new google.auth.OAuth2(clientId, clientSecret, redirectUri);
-    
+
     // Check if we have a refresh token
     const refreshToken = process.env.GOOGLE_REFRESH_TOKEN;
     if (refreshToken) {
@@ -45,11 +45,11 @@ export async function initializeGoogleCalendar(): Promise<boolean> {
       oAuth2Client.setCredentials({
         refresh_token: refreshToken,
       });
-      
+
       // Initialize the calendar client
       calendarClient = google.calendar({ version: 'v3', auth: oAuth2Client });
       isCalendarAvailable = true;
-      
+
       logInfo('Google Calendar integration initialized successfully');
       return true;
     } else {
@@ -79,7 +79,7 @@ export function getAuthorizationUrl(): string | null {
     logError('Cannot generate auth URL - OAuth client not initialized');
     return null;
   }
-  
+
   return oAuth2Client.generateAuthUrl({
     access_type: 'offline',
     scope: SCOPES,
@@ -98,22 +98,22 @@ export async function handleOAuthCallback(code: string): Promise<boolean> {
     logError('Cannot handle callback - OAuth client not initialized');
     return false;
   }
-  
+
   try {
     const { tokens } = await oAuth2Client.getToken(code);
     oAuth2Client.setCredentials(tokens);
-    
+
     // Store the refresh token (should be securely stored in production)
     if (tokens.refresh_token) {
       logInfo('Obtained refresh token. Store this securely: ' + tokens.refresh_token);
     } else {
       logWarn('No refresh token returned. You may need to revoke access and try again with prompt=consent');
     }
-    
+
     // Initialize the calendar client
     calendarClient = google.calendar({ version: 'v3', auth: oAuth2Client });
     isCalendarAvailable = true;
-    
+
     return true;
   } catch (error) {
     logError('Error handling OAuth callback', error);
@@ -136,7 +136,7 @@ export async function listUpcomingEvents(
     logError('Cannot list events - Google Calendar integration not available');
     return null;
   }
-  
+
   try {
     const response = await calendarClient!.events.list({
       calendarId,
@@ -145,7 +145,7 @@ export async function listUpcomingEvents(
       singleEvents: true,
       orderBy: 'startTime',
     });
-    
+
     return response.data.items || [];
   } catch (error) {
     logError('Error listing calendar events', error);
@@ -179,14 +179,14 @@ export async function createCalendarEvent(
     logError('Cannot create event - Google Calendar integration not available');
     return null;
   }
-  
+
   try {
     const response = await calendarClient!.events.insert({
       calendarId,
       requestBody: event,
       sendUpdates: 'all', // Send invitations to attendees
     });
-    
+
     return response.data;
   } catch (error) {
     logError('Error creating calendar event', error);
@@ -215,10 +215,10 @@ export function appointmentToCalendarEvent(
 ): calendar_v3.Schema$Event {
   // Parse date and times
   const { title, description, date, startTime, endTime, location, details, timeZone } = appointment;
-  
+
   // Convert date and time strings to ISO format
   const startDateTime = new Date(`${date}T${startTime}`);
-  
+
   // If endTime is not provided, default to 1 hour after start
   let endDateTime: Date;
   if (endTime) {
@@ -226,7 +226,7 @@ export function appointmentToCalendarEvent(
   } else {
     endDateTime = new Date(startDateTime.getTime() + 60 * 60 * 1000); // Add 1 hour
   }
-  
+
   // Create event object
   const event: calendar_v3.Schema$Event = {
     summary: title,
@@ -248,7 +248,7 @@ export function appointmentToCalendarEvent(
       ],
     },
   };
-  
+
   // Add attendees if provided
   if (appointment.attendees && appointment.attendees.length > 0) {
     event.attendees = appointment.attendees.map(attendee => ({
@@ -256,8 +256,22 @@ export function appointmentToCalendarEvent(
       displayName: attendee.name,
     }));
   }
-  
-  return event;
+
+  return {
+    summary: event.summary || '',
+    description: event.description,
+    location: event.location,
+    start: {
+      dateTime: event.start?.dateTime || new Date().toISOString(),
+      timeZone: event.start?.timeZone
+    },
+    end: {
+      dateTime: event.end?.dateTime || new Date().toISOString(),
+      timeZone: event.end?.timeZone
+    },
+    reminders: event.reminders,
+    attendees: event.attendees
+  };
 }
 
 /**
@@ -285,7 +299,7 @@ export async function createAppointmentEvent(
     logError('Cannot create appointment event - Google Calendar integration not available');
     return null;
   }
-  
+
   const event = appointmentToCalendarEvent(appointment);
   return createCalendarEvent(event, calendarId);
 }
@@ -305,13 +319,13 @@ export async function getCalendarEvent(
     logError('Cannot get event - Google Calendar integration not available');
     return null;
   }
-  
+
   try {
     const response = await calendarClient!.events.get({
       calendarId,
       eventId,
     });
-    
+
     return response.data;
   } catch (error) {
     logError(`Error getting calendar event ${eventId}`, error);
@@ -336,25 +350,25 @@ export async function updateCalendarEvent(
     logError('Cannot update event - Google Calendar integration not available');
     return null;
   }
-  
+
   try {
     // First get the current event
     const currentEvent = await getCalendarEvent(eventId, calendarId);
-    
+
     if (!currentEvent) {
       return null;
     }
-    
+
     // Merge updates with current event
     const updatedEvent = { ...currentEvent, ...updates };
-    
+
     const response = await calendarClient!.events.update({
       calendarId,
       eventId,
       requestBody: updatedEvent,
       sendUpdates: 'all', // Send updates to attendees
     });
-    
+
     return response.data;
   } catch (error) {
     logError(`Error updating calendar event ${eventId}`, error);
@@ -377,14 +391,14 @@ export async function deleteCalendarEvent(
     logError('Cannot delete event - Google Calendar integration not available');
     return false;
   }
-  
+
   try {
     await calendarClient!.events.delete({
       calendarId,
       eventId,
       sendUpdates: 'all', // Notify attendees
     });
-    
+
     return true;
   } catch (error) {
     logError(`Error deleting calendar event ${eventId}`, error);
@@ -413,12 +427,12 @@ export async function findAvailableTimeSlots(
     logError('Cannot find available time slots - Google Calendar integration not available');
     return null;
   }
-  
+
   try {
     // Create start and end of day
     const startOfDay = new Date(`${date}T${String(startHour).padStart(2, '0')}:00:00`);
     const endOfDay = new Date(`${date}T${String(endHour).padStart(2, '0')}:00:00`);
-    
+
     // Get events for the day
     const events = await calendarClient!.events.list({
       calendarId,
@@ -427,9 +441,9 @@ export async function findAvailableTimeSlots(
       singleEvents: true,
       orderBy: 'startTime',
     });
-    
+
     const busyTimes: Array<{ start: Date; end: Date }> = [];
-    
+
     // Extract busy times from events
     if (events.data.items && events.data.items.length > 0) {
       events.data.items.forEach(event => {
@@ -441,17 +455,17 @@ export async function findAvailableTimeSlots(
         }
       });
     }
-    
+
     // Find available slots
     const availableSlots: Array<{ start: Date; end: Date }> = [];
     let currentTime = new Date(startOfDay);
-    
+
     // Duration in milliseconds
     const durationMs = durationMinutes * 60 * 1000;
-    
+
     while (currentTime.getTime() + durationMs <= endOfDay.getTime()) {
       const potentialEndTime = new Date(currentTime.getTime() + durationMs);
-      
+
       // Check if this time slot overlaps with any busy times
       const isOverlapping = busyTimes.some(busySlot => {
         return (
@@ -460,18 +474,18 @@ export async function findAvailableTimeSlots(
           (currentTime <= busySlot.start && potentialEndTime >= busySlot.end)
         );
       });
-      
+
       if (!isOverlapping) {
         availableSlots.push({
           start: new Date(currentTime),
           end: potentialEndTime
         });
       }
-      
+
       // Move to next 30-minute increment
       currentTime = new Date(currentTime.getTime() + 30 * 60 * 1000);
     }
-    
+
     return availableSlots;
   } catch (error) {
     logError('Error finding available time slots', error);
@@ -493,10 +507,10 @@ export function formatAvailableTimeSlots(
     const startMinute = slot.start.getMinutes();
     const endHour = slot.end.getHours();
     const endMinute = slot.end.getMinutes();
-    
+
     const startTime = `${startHour % 12 || 12}:${String(startMinute).padStart(2, '0')} ${startHour >= 12 ? 'PM' : 'AM'}`;
     const endTime = `${endHour % 12 || 12}:${String(endMinute).padStart(2, '0')} ${endHour >= 12 ? 'PM' : 'AM'}`;
-    
+
     return {
       formatted: `${startTime} - ${endTime}`,
       start: slot.start,
