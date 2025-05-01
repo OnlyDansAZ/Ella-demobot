@@ -1,4 +1,3 @@
-
 import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -36,53 +35,36 @@ app.use((req, res, next) => {
 
 // Health check endpoint - important for deployment monitoring
 app.get('/api/health', (req, res) => {
-  res.json({ 
+  res.json({
     status: 'ok',
     timestamp: new Date().toISOString(),
     uptime: process.uptime()
   });
 });
 
-// Register API routes
+// Register API routes before the SPA handler
 registerRoutes(app);
 
-// Static file serving
+// Static file serving with proper caching
 app.use(express.static('dist', {
   maxAge: '1h',
   etag: true,
   lastModified: true
 }));
 
-// SPA fallback
-app.get('*', (req, res, next) => {
-  if (req.path.startsWith('/api/')) {
-    return next();
-  }
+// SPA fallback - must come after API routes
+app.get('*', (req, res) => {
+  if (req.path.startsWith('/api/')) return;
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
 // Global error handler
 app.use((err, req, res, next) => {
-  console.error('Server error:', err);
-  res.status(500).json({ 
-    error: 'Internal server error',
-    message: err.message
-  });
+  console.error('[Error]:', err);
+  res.status(500).json({ error: 'Internal server error' });
 });
 
-// Start server with proper error handling
-const server = app.listen(PORT, '0.0.0.0', () => {
+// Start server
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`Production server running on port ${PORT}`);
-}).on('error', (error) => {
-  console.error('Failed to start server:', error);
-  process.exit(1);
-});
-
-// Handle graceful shutdown
-process.on('SIGTERM', () => {
-  console.log('SIGTERM received, shutting down...');
-  server.close(() => {
-    console.log('Server closed');
-    process.exit(0);
-  });
 });
