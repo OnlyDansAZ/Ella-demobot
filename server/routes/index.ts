@@ -1,28 +1,21 @@
-
 import express from 'express';
-import authRoutes from './authRoutes';
-import calendarRoutes from './calendarRoutes';
-import conversationRoutes from './conversationRoutes';
-import personaRoutes from './personaRoutes';
-import followupRoutes from './followupRoutes';
-import salesIntelligenceRoutes from './salesIntelligenceRoutes';
+import { appointmentRoutes } from './appointmentRoutes';
+import { authRoutes } from './authRoutes';
+import { conversationRoutes } from './conversationRoutes';
+import { signalWireRoutes } from './signalWireRoutes';
+import { twilioRoutes } from './twilioRoutes';
 
 const router = express.Router();
 
-// API Routes
+router.use('/appointments', appointmentRoutes);
 router.use('/auth', authRoutes);
-router.use('/calendar', calendarRoutes);
-router.use('/conversation', conversationRoutes);
-router.use('/persona', personaRoutes);
-router.use('/followup', followupRoutes);
-router.use('/sales', salesIntelligenceRoutes);
+router.use('/conversations', conversationRoutes);
+router.use('/signalwire', signalWireRoutes);
+router.use('/twilio', twilioRoutes);
 
 // Health check endpoint
 router.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-export const registerRoutes = (app: express.Application): express.Application => {
-  app.use('/api', router);
-  return app;
-};
+export default router;
