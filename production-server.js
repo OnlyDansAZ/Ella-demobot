@@ -7,6 +7,14 @@ import { registerRoutes } from './server/routes/index.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// Uncaught error handler
+process.on('uncaughtException', (error) => {
+  console.error('[Fatal Error]', error);
+  if (!error.isOperational) {
+    process.exit(1);
+  }
+});
+
 const app = express();
 const PORT = process.env.PORT || 5000;
 
@@ -14,27 +22,36 @@ const PORT = process.env.PORT || 5000;
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// API error logging
+// Request logging
 app.use((req, res, next) => {
   const start = Date.now();
   res.on('finish', () => {
+    const duration = Date.now() - start;
     if (req.path.startsWith('/api')) {
-      console.log(`${req.method} ${req.path} ${res.statusCode} ${Date.now() - start}ms`);
+      console.log(`${req.method} ${req.path} ${res.statusCode} ${duration}ms`);
     }
   });
   next();
 });
 
-// Health check endpoint
+// Health check endpoint - important for deployment monitoring
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  res.json({ 
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime()
+  });
 });
 
-// Register API routes before static files
+// Register API routes
 registerRoutes(app);
 
-// Serve static files from the client build
-app.use(express.static('dist'));
+// Static file serving
+app.use(express.static('dist', {
+  maxAge: '1h',
+  etag: true,
+  lastModified: true
+}));
 
 // SPA fallback
 app.get('*', (req, res, next) => {
@@ -47,9 +64,25 @@ app.get('*', (req, res, next) => {
 // Global error handler
 app.use((err, req, res, next) => {
   console.error('Server error:', err);
-  res.status(500).json({ error: 'Internal server error' });
+  res.status(500).json({ 
+    error: 'Internal server error',
+    message: err.message
+  });
 });
 
-app.listen(PORT, '0.0.0.0', () => {
+// Start server with proper error handling
+const server = app.listen(PORT, '0.0.0.0', () => {
   console.log(`Production server running on port ${PORT}`);
+}).on('error', (error) => {
+  console.error('Failed to start server:', error);
+  process.exit(1);
+});
+
+// Handle graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('SIGTERM received, shutting down...');
+  server.close(() => {
+    console.log('Server closed');
+    process.exit(0);
+  });
 });
