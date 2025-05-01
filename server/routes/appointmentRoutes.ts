@@ -18,7 +18,7 @@ const router = Router();
  * - startTime: string (HH:MM format)
  * - Optional fields: description, endTime, location, userId, timeZone
  */
-router.post('/', async (req: Request, res: Response) => {
+router.post('/', async (req: Request, res: Response): Promise<void> => {
   try {
     // Validate the request body
     const validatedData = insertAppointmentSchema.parse(req.body);
